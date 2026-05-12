@@ -28,11 +28,8 @@ export async function signIn(data: LoginFormValues) {
     .eq("id", user.id)
     .single()
 
-  if (profile?.role === "client") {
-    redirect("/dashboard")
-  } else {
-    redirect("/admin/dashboard")
-  }
+  const redirectTo = profile?.role === "client" ? "/dashboard" : "/admin/dashboard"
+  return { success: true, redirectTo }
 }
 
 export async function signUp(data: RegisterFormValues) {
@@ -53,7 +50,7 @@ export async function signUp(data: RegisterFormValues) {
     return { error: "No se pudo crear la cuenta. Intenta de nuevo." }
   }
 
-  redirect("/dashboard")
+  return { success: true, redirectTo: "/dashboard" }
 }
 
 export async function signOut() {

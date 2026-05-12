@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import {
   Card,
@@ -30,7 +29,7 @@ export default async function AdminDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect("/login")
+  if (!user) return <p className="p-8 text-muted-foreground">Cargando...</p>
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -38,7 +37,7 @@ export default async function AdminDashboardPage() {
     .eq("id", user.id)
     .single()
 
-  if (!profile) redirect("/login")
+  if (!profile) return <p className="p-8 text-muted-foreground">Cargando...</p>
 
   const name = profile.full_name || user.email || "Usuario"
   const title = getPanelTitle(profile.role)

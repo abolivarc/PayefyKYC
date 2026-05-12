@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
@@ -12,6 +13,7 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
 
   const {
@@ -27,6 +29,11 @@ export default function RegisterPage() {
     const result = await signUp(data)
     if (result?.error) {
       setServerError(result.error)
+      return
+    }
+    if (result?.success && result.redirectTo) {
+      router.refresh()
+      router.push(result.redirectTo)
     }
   }
 

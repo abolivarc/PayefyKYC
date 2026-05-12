@@ -30,8 +30,13 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const redirectTo = (path: string) =>
-    NextResponse.redirect(new URL(path, request.url))
+  const redirectTo = (path: string) => {
+    const response = NextResponse.redirect(new URL(path, request.url))
+    sessionResponse.cookies.getAll().forEach((cookie) => {
+      response.cookies.set(cookie.name, cookie.value)
+    })
+    return response
+  }
 
   const isAuthPage = pathname === "/login" || pathname === "/register"
   const isProtected =
