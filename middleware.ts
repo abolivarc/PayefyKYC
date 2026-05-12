@@ -3,7 +3,7 @@ import { createServerClient } from "@supabase/ssr"
 import { updateSession } from "./lib/supabase/middleware"
 
 export async function middleware(request: NextRequest) {
-  // Refresh session and mutate request.cookies with fresh tokens
+  // Step 1: refresh session (mutates request.cookies with fresh tokens)
   const sessionResponse = await updateSession(request)
 
   if (
@@ -13,14 +13,14 @@ export async function middleware(request: NextRequest) {
     return sessionResponse
   }
 
-  // Create a read-only client using the (now-refreshed) request cookies
+  // Step 2: read auth state using the now-refreshed cookies
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll: () => request.cookies.getAll(),
-        setAll: () => {}, // already handled by updateSession above
+        setAll: () => {}, // already handled by updateSession
       },
     }
   )
@@ -30,16 +30,19 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const { pathname } = request.nextUrl
-  const redirect = (path: string) =>
+  const redirectTo = (path: string) =>
     NextResponse.redirect(new URL(path, request.url))
 
   const isAuthPage = pathname === "/login" || pathname === "/register"
   const isProtected =
-    pathname === "/" || pathname.startsWith("/dashboard") || pathname.startsWith("/admin")
+    pathname === "/" ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/admin")
 
-  // Unauthenticated user trying to access protected route
-  if (!user && isProtected) return redirect("/login")
+  // No session → send to login
+  if (!user && isProtected) return redirectTo("/login")
 
+  // Has session → apply role-based routing
   if (user && (isAuthPage || isProtected)) {
     const { data: profile } = await supabase
       .from("profiles")
@@ -47,15 +50,25 @@ export async function middleware(request: NextRequest) {
       .eq("id", user.id)
       .single()
 
-    const isClient = profile?.role === "client"
-    const home = isClient ? "/dashboard" : "/admin/dashboard"
+    const role = profile?.role
 
-    // Authenticated user on auth pages or root → send home
-    if (isAuthPage || pathname === "/") return redirect(home)
+    // If profile unavailable, skip role redirects to avoid loops
+    if (!role) return sessionResponse
+
+    const isClient = role === "client"
+
+    // Auth pages and root: send to the correct home
+    if (isAuthPage || pathname === "/") {
+      return redirectTo(isClient ? "/dashboard" : "/admin/dashboard")
+    }
 
     // Wrong portal for role
-    if (pathname.startsWith("/dashboard") && !isClient) return redirect("/admin/dashboard")
-    if (pathname.startsWith("/admin") && isClient) return redirect("/dashboard")
+    if (pathname.startsWith("/dashboard") && !isClient) {
+      return redirectTo("/admin/dashboard")
+    }
+    if (pathname.startsWith("/admin") && isClient) {
+      return redirectTo("/dashboard")
+    }
   }
 
   return sessionResponse
