@@ -5,11 +5,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import type { Database } from "@/types/database.types"
 
-type UserRole = Database["public"]["Enums"]["user_role"]
-
-function getPanelTitle(role: UserRole): string {
+function getPanelTitle(role: string | null): string {
   switch (role) {
     case "super_admin":
     case "sales_director":
@@ -18,6 +15,10 @@ function getPanelTitle(role: UserRole): string {
       return "Panel de Compliance"
     case "sales_agent":
       return "Mis clientes asignados"
+    case "onboarding":
+      return "Panel de Onboarding"
+    case "accounting":
+      return "Panel de Contabilidad"
     default:
       return "Panel de administración"
   }
@@ -29,7 +30,9 @@ export default async function AdminDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return <p className="p-8 text-muted-foreground">Cargando...</p>
+  if (!user) {
+    return <p className="p-8 text-muted-foreground">Cargando sesión...</p>
+  }
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -37,10 +40,8 @@ export default async function AdminDashboardPage() {
     .eq("id", user.id)
     .single()
 
-  if (!profile) return <p className="p-8 text-muted-foreground">Cargando...</p>
-
-  const name = profile.full_name || user.email || "Usuario"
-  const title = getPanelTitle(profile.role)
+  const name = profile?.full_name || user.email || "Usuario"
+  const title = getPanelTitle(profile?.role ?? null)
 
   return (
     <div className="p-6 sm:p-8 max-w-4xl mx-auto">

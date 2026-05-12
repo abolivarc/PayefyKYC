@@ -14,7 +14,9 @@ export default async function ClientDashboardPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return <p className="p-8 text-muted-foreground">Cargando...</p>
+  if (!user) {
+    return <p className="p-8 text-muted-foreground">Cargando sesión...</p>
+  }
 
   const { data: profile } = await supabase
     .from("profiles")

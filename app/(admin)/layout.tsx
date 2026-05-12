@@ -9,19 +9,21 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     data: { user },
   } = await supabase.auth.getUser()
 
-  let profileData: { email: string; full_name: string | null } | null = null
+  let fullName: string | null = null
+  let email = user?.email ?? ""
 
   if (user) {
-    const { data } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
-      .select("email, full_name")
+      .select("full_name, email")
       .eq("id", user.id)
       .single()
-    profileData = data
-  }
 
-  const email = profileData?.email ?? user?.email ?? ""
-  const fullName = profileData?.full_name ?? null
+    if (profile) {
+      fullName = profile.full_name
+      email = profile.email
+    }
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

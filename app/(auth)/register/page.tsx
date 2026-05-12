@@ -1,99 +1,72 @@
-"use client"
-
-import { useState } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { registerSchema, type RegisterFormValues } from "@/lib/validations/auth"
 import { signUp } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default function RegisterPage() {
-  const router = useRouter()
-  const [serverError, setServerError] = useState<string | null>(null)
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-  })
-
-  async function onSubmit(data: RegisterFormValues) {
-    setServerError(null)
-    const result = await signUp(data)
-    if (result?.error) {
-      setServerError(result.error)
-      return
-    }
-    if (result?.success && result.redirectTo) {
-      router.refresh()
-      router.push(result.redirectTo)
-    }
-  }
+export default async function RegisterPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-      <p className="text-sm text-center text-muted-foreground">
+    <div className="space-y-4">
+      <p className="text-sm text-center text-muted-foreground mb-6">
         Crea tu cuenta para iniciar tu proceso KYC con Payefy.
       </p>
 
-      {serverError && (
+      {error && (
         <Alert variant="destructive">
-          <AlertDescription>{serverError}</AlertDescription>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="fullName">Nombre completo</Label>
-        <Input
-          id="fullName"
-          type="text"
-          placeholder="Juan García"
-          autoComplete="name"
-          {...register("fullName")}
-        />
-        {errors.fullName && (
-          <p className="text-sm text-destructive">{errors.fullName.message}</p>
-        )}
-      </div>
+      <form action={signUp} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="fullName">Nombre completo</Label>
+          <Input
+            id="fullName"
+            name="fullName"
+            type="text"
+            placeholder="Juan Pérez"
+            autoComplete="name"
+            required
+            minLength={2}
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="email">Correo electrónico</Label>
-        <Input
-          id="email"
-          type="email"
-          placeholder="tu@empresa.com"
-          autoComplete="email"
-          {...register("email")}
-        />
-        {errors.email && (
-          <p className="text-sm text-destructive">{errors.email.message}</p>
-        )}
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="email">Correo electrónico</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="tu@empresa.com"
+            autoComplete="email"
+            required
+          />
+        </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Contraseña</Label>
-        <Input
-          id="password"
-          type="password"
-          placeholder="••••••••"
-          autoComplete="new-password"
-          {...register("password")}
-        />
-        {errors.password && (
-          <p className="text-sm text-destructive">{errors.password.message}</p>
-        )}
-      </div>
+        <div className="space-y-2">
+          <Label htmlFor="password">Contraseña</Label>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
+            required
+            minLength={8}
+          />
+        </div>
 
-      <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "Creando cuenta..." : "Crear cuenta"}
-      </Button>
+        <Button type="submit" className="w-full">
+          Crear cuenta
+        </Button>
+      </form>
 
       <p className="text-center text-sm text-muted-foreground">
         ¿Ya tienes cuenta?{" "}
@@ -101,6 +74,6 @@ export default function RegisterPage() {
           Inicia sesión
         </Link>
       </p>
-    </form>
+    </div>
   )
 }
