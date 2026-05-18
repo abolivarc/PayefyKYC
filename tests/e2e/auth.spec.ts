@@ -91,4 +91,54 @@ test.describe("Autenticación", () => {
     await expect(page.locator('input[name="email"]')).toBeVisible()
     await expect(page.locator('input[name="password"]')).toBeVisible()
   })
+
+  test("forgot-password page es accesible y muestra formulario", async ({
+    page,
+  }) => {
+    await page.goto("/forgot-password")
+    await expect(page).toHaveURL(/\/forgot-password/)
+    await expect(page.locator('input[name="email"]')).toBeVisible()
+    await expect(
+      page.getByRole("button", { name: /enviar enlace/i })
+    ).toBeVisible()
+    await expect(
+      page.getByRole("link", { name: /regresar/i })
+    ).toBeVisible()
+  })
+
+  test("forgot-password: email inválido muestra error", async ({ page }) => {
+    await page.goto("/forgot-password")
+    await page.locator('input[name="email"]').fill("noesunemail")
+    await page.getByRole("button", { name: /enviar enlace/i }).click()
+    await page.waitForURL(/\?error=/, { timeout: 20_000 })
+    await expect(
+      page.locator('[role="alert"]:not(#__next-route-announcer__)')
+    ).toBeVisible()
+  })
+
+  test("forgot-password: email válido muestra mensaje de éxito", async ({
+    page,
+  }) => {
+    await page.goto("/forgot-password")
+    await page.locator('input[name="email"]').fill("cliente-test@payefy.me")
+    await page.getByRole("button", { name: /enviar enlace/i }).click()
+    await page.waitForURL(/\?success=/, { timeout: 20_000 })
+    await expect(
+      page.locator('[role="alert"]:not(#__next-route-announcer__)')
+    ).toBeVisible()
+  })
+
+  test("reset-password: sin sesión redirige a login", async ({ page }) => {
+    await page.goto("/reset-password")
+    // El middleware redirige a /login porque no hay sesión de recovery
+    await page.waitForURL(/\/login/, { timeout: 20_000 })
+    await expect(page).toHaveURL(/\/login/)
+  })
+
+  test("login page: tiene link a forgot-password", async ({ page }) => {
+    await page.goto("/login")
+    await expect(
+      page.getByRole("link", { name: /olvidaste tu contraseña/i })
+    ).toBeVisible()
+  })
 })

@@ -1,11 +1,11 @@
 import Link from "next/link"
-import { signIn } from "../actions"
+import { requestPasswordReset } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default async function LoginPage({
+export default async function ForgotPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; success?: string }>
@@ -15,7 +15,8 @@ export default async function LoginPage({
   return (
     <div className="space-y-4">
       <p className="text-sm text-center text-muted-foreground mb-6">
-        Inicia sesión en tu cuenta
+        Ingresa tu correo y te enviaremos un enlace para restablecer tu
+        contraseña.
       </p>
 
       {error && (
@@ -30,7 +31,7 @@ export default async function LoginPage({
         </Alert>
       )}
 
-      <form action={signIn} className="space-y-4">
+      <form action={requestPasswordReset} className="space-y-4" noValidate>
         <div className="space-y-2">
           <Label htmlFor="email">Correo electrónico</Label>
           <Input
@@ -43,41 +44,16 @@ export default async function LoginPage({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Contraseña</Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            required
-            minLength={8}
-          />
-        </div>
-
         <Button type="submit" className="w-full">
-          Iniciar sesión
+          Enviar enlace
         </Button>
       </form>
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm text-muted-foreground">
-          ¿No tienes cuenta?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-primary hover:underline"
-          >
-            Regístrate
-          </Link>
-        </p>
-        <Link
-          href="/forgot-password"
-          className="text-sm text-muted-foreground hover:underline"
-        >
-          ¿Olvidaste tu contraseña?
+      <p className="text-center text-sm text-muted-foreground">
+        <Link href="/login" className="font-medium text-primary hover:underline">
+          Regresar al inicio de sesión
         </Link>
-      </div>
+      </p>
     </div>
   )
 }
