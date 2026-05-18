@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import { createClient } from "@/lib/supabase/server"
-import { Header } from "@/components/layout/header"
-import { UserNav } from "@/components/layout/user-nav"
+import { AdminSidebar } from "@/components/layout/admin-sidebar"
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient()
@@ -26,9 +25,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <Header userNav={<UserNav email={email} fullName={fullName} />} />
-      <main className="flex-1">{children}</main>
+    <div className="flex min-h-screen">
+      <AdminSidebar email={email} fullName={fullName} />
+      <main className="flex-1 overflow-auto">{children}</main>
     </div>
   )
 }

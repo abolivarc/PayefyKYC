@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { logAudit } from "@/lib/audit"
+import { emailDocsSubmitted } from "@/lib/email/templates"
+import { Resend } from "resend"
 
 // ─────────────────────────────────────
 // Crear empresa + applications + documents iniciales
@@ -210,4 +213,88 @@ export async function addExtraDocument(
   if (error || !doc) return { error: "No se pudo agregar" }
   revalidatePath(`/applications/${applicationId}/documents`)
   return { success: true, documentId: doc.id }
+}
+
+// ─────────────────────────────────────
+// Enviar expediente para revisión
+// ─────────────────────────────────────
+export async function submitApplication(applicationId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  // Verificar que todos los requeridos están al menos en pending_review
+  const { data: docs } = await supabase
+    .from("documents")
+    .select("status, document_templates(is_required)")
+    .eq("application_id", applicationId)
+
+  const requiredPending = (docs ?? []).filter(
+    (d) =>
+      ((d.document_templates as unknown as { is_required: boolean } | null)?.is_required ??
+        false) && d.status === "pending_upload"
+  )
+
+  if (requiredPending.length > 0) {
+    return {
+      error: `Faltan ${requiredPending.length} documentos requeridos por subir.`,
+    }
+  }
+
+  const { error } = await supabase
+    .from("applications")
+    .update({
+      status: "documents_pending",
+      submitted_at: new Date().toISOString(),
+    })
+    .eq("id", applicationId)
+
+  if (error) return { error: error.message }
+
+  // Obtener datos para notificación al reviewer
+  const { data: app } = await supabase
+    .from("applications")
+    .select(
+      "id, company_id, companies(legal_name), products(name, internal_reviewer_email)"
+    )
+    .eq("id", applicationId)
+    .single()
+
+  const company = (app?.companies as unknown) as { legal_name: string } | null
+  const product = (app?.products as unknown) as {
+    name: string
+    internal_reviewer_email: string | null
+  } | null
+  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
+
+  if (product?.internal_reviewer_email && process.env.RESEND_API_KEY) {
+    const resend = new Resend(process.env.RESEND_API_KEY)
+    await resend.emails
+      .send({
+        from: process.env.RESEND_FROM_EMAIL ?? "onboarding@payefy.com.mx",
+        to: product.internal_reviewer_email,
+        subject: `[PayefyKYC] Nueva solicitud: ${company?.legal_name ?? ""}`,
+        html: emailDocsSubmitted({
+          companyName: company?.legal_name ?? "",
+          productName: product?.name ?? "",
+          reviewerName: "Equipo Payefy",
+          applicationUrl: appUrl,
+        }),
+      })
+      .catch(() => {})
+  }
+
+  await logAudit({
+    actorId: user.id,
+    action: "application_submitted",
+    entityType: "application",
+    entityId: applicationId,
+    changes: { from: "draft", to: "documents_pending" },
+  })
+
+  revalidatePath(`/applications/${applicationId}/documents`)
+  revalidatePath("/dashboard")
+  return { success: true }
 }

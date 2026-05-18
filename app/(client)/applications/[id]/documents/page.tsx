@@ -9,7 +9,7 @@ import {
 } from "@/components/documents/document-checklist"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { SubmitApplicationButton } from "@/components/documents/submit-application-button"
 
 const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id"])
 
@@ -213,9 +213,11 @@ export default async function DocumentsPage({
 
       {/* Botón enviar */}
       <div className="mt-8 flex justify-end">
-        <Button disabled={!allRequiredReady}>
-          {allRequiredReady ? "Enviar expediente" : "Completa los documentos requeridos"}
-        </Button>
+        <SubmitApplicationButton
+          applicationId={appId}
+          allRequiredUploaded={allRequiredReady}
+          alreadySubmitted={app.status !== "draft"}
+        />
       </div>
     </div>
   )
