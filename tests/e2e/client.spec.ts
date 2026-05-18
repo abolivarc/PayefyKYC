@@ -142,3 +142,11 @@ test.describe("Portal del cliente — Status", () => {
     }
   })
 })
+
+test.describe("Portal del cliente — Identidad visual", () => {
+  test("portal cliente muestra 'Portal del Cliente' en la UI", async ({ page }) => {
+    await page.goto("/dashboard")
+    await expect(page.getByText(/portal del cliente/i).first()).toBeVisible()
+    await expect(page.getByText(/payefykyc/i).first()).toBeVisible()
+  })
+})

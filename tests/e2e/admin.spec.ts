@@ -6,20 +6,22 @@ test.describe("Portal del admin — Navegación y layout", () => {
   test("dashboard admin carga correctamente", async ({ page }) => {
     await page.goto("/admin/dashboard")
     await expect(page).toHaveURL(/\/admin\/dashboard/)
-    await expect(page.getByText(/payefykyc/i).first()).toBeVisible()
-    await expect(page.getByRole("link", { name: /kanban/i })).toBeVisible()
-    await expect(page.getByRole("link", { name: /clientes/i })).toBeVisible()
+    // El sidebar ahora dice "Payefy Equipo" (no PayefyKYC)
+    await expect(page.getByText(/payefy equipo/i).first()).toBeVisible()
+    await expect(page.getByRole("link", { name: "Kanban", exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: "Clientes", exact: true })).toBeVisible()
   })
 
   test("sidebar: navegación a kanban funciona", async ({ page }) => {
     await page.goto("/admin/dashboard")
-    await page.getByRole("link", { name: /kanban/i }).click()
+    // Usar el link exacto del sidebar (no "Ver Kanban completo" del dashboard)
+    await page.getByRole("link", { name: "Kanban", exact: true }).click()
     await expect(page).toHaveURL(/\/admin\/kanban/)
   })
 
   test("sidebar: navegación a clientes funciona", async ({ page }) => {
     await page.goto("/admin/dashboard")
-    await page.getByRole("link", { name: /clientes/i }).click()
+    await page.getByRole("link", { name: "Clientes", exact: true }).click()
     await expect(page).toHaveURL(/\/admin\/clients/)
   })
 
@@ -121,6 +123,23 @@ test.describe("Portal del admin — super_admin", () => {
   test("super_admin ve todos los recursos del admin", async ({ page }) => {
     await page.goto("/admin/dashboard")
     await expect(page).toHaveURL(/\/admin\/dashboard/)
-    await expect(page.getByRole("link", { name: /kanban/i })).toBeVisible()
+    // Verificar el link exacto del sidebar
+    await expect(page.getByRole("link", { name: "Kanban", exact: true })).toBeVisible()
+  })
+})
+
+test.describe("Portal del admin — Identidad visual", () => {
+  test("portal admin muestra 'Payefy Equipo' en el sidebar", async ({ page }) => {
+    await page.goto("/admin/dashboard")
+    await expect(page.getByText(/payefy equipo/i).first()).toBeVisible()
+    await expect(page.getByText(/panel interno/i).first()).toBeVisible()
+  })
+
+  test("admin dashboard muestra métricas reales", async ({ page }) => {
+    await page.goto("/admin/dashboard")
+    await expect(page.getByText(/total solicitudes/i)).toBeVisible()
+    // Usar first() para evitar conflicto con "No hay documentos pendientes de revisión"
+    await expect(page.getByText(/pendientes de revisión/i).first()).toBeVisible()
+    await expect(page.getByText(/aprobadas/i).first()).toBeVisible()
   })
 })
