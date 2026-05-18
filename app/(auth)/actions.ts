@@ -26,8 +26,26 @@ export async function signIn(formData: FormData) {
     )
   }
 
+  // Leer el rol del perfil para redirigir directamente al dashboard correcto
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  let destination = "/dashboard"
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role && profile.role !== "client") {
+      destination = "/admin/dashboard"
+    }
+  }
+
   revalidatePath("/", "layout")
-  redirect("/") // El middleware redirige al dashboard correcto según rol
+  redirect(destination)
 }
 
 export async function signUp(formData: FormData) {
@@ -45,9 +63,7 @@ export async function signUp(formData: FormData) {
   if (password.length < 8) {
     redirect(
       "/register?error=" +
-        encodeURIComponent(
-          "La contraseña debe tener al menos 8 caracteres"
-        )
+        encodeURIComponent("La contraseña debe tener al menos 8 caracteres")
     )
   }
 
@@ -66,12 +82,13 @@ export async function signUp(formData: FormData) {
   }
 
   revalidatePath("/", "layout")
-  redirect("/")
+  redirect("/dashboard")
 }
 
 export async function signOut() {
   const supabase = await createClient()
-  await supabase.auth.signOut()
+  // scope: 'local' para no invalidar otras sesiones del mismo usuario
+  await supabase.auth.signOut({ scope: "local" })
   revalidatePath("/", "layout")
   redirect("/login")
 }

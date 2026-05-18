@@ -43,3 +43,8 @@ next-env.d.ts
 
 # supabase
 supabase/.temp/
+
+# playwright
+tests/e2e/.auth/
+playwright-report/
+test-results/
