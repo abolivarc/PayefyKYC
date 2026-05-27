@@ -284,6 +284,33 @@ function WizardContent() {
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="operator_name">Nombre del responsable</Label>
+              <Input
+                id="operator_name"
+                name="operator_name"
+                placeholder="Juan Pérez"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Persona de contacto para operaciones
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="operator_email">Correo empresarial</Label>
+              <Input
+                id="operator_email"
+                name="operator_email"
+                type="email"
+                placeholder="operaciones@miempresa.com"
+                required
+              />
+              <p className="text-xs text-muted-foreground">
+                Este correo se usará para comunicaciones operativas
+              </p>
+            </div>
+
             <div className="flex gap-3">
               <Button
                 type="button"
