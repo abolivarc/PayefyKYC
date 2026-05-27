@@ -23,9 +23,8 @@ export async function createApplications(formData: FormData) {
   const phone = formData.get("phone") as string
   const terminalType = (formData.get("terminal_type") as string) || null
   const operatorEmail = formData.get("operator_email") as string
-  const operatorName = formData.get("operator_name") as string
 
-  if (!products.length || !legalName || !taxId || !phone || !operatorEmail || !operatorName) {
+  if (!products.length || !legalName || !taxId || !phone || !operatorEmail) {
     redirect(
       "/applications/new?error=" +
         encodeURIComponent("Todos los campos son requeridos")
@@ -41,7 +40,6 @@ export async function createApplications(formData: FormData) {
       phone,
       terminal_type: terminalType,
       operator_email: operatorEmail,
-      operator_name: operatorName,
       created_by: user.id,
     })
     .select("id")
