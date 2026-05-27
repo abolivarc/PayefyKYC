@@ -100,13 +100,21 @@ export async function createApplications(formData: FormData) {
 
     // 6. Crear un document record por template
     if (templates?.length) {
-      await supabase.from("documents").insert(
+      const { error: docsErr } = await supabase.from("documents").insert(
         templates.map((t) => ({
           application_id: app.id,
           template_id: t.id,
           status: "pending_upload",
         }))
       )
+      if (docsErr) {
+        redirect(
+          "/applications/new?error=" +
+            encodeURIComponent(
+              "Error al crear el expediente de documentos. Intenta de nuevo."
+            )
+        )
+      }
     }
   }
 
