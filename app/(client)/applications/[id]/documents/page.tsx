@@ -11,7 +11,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { SubmitApplicationButton } from "@/components/documents/submit-application-button"
 
-const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id"])
+const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal_rep_id"])
 
 // Categorías hard-coded según el brief
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [

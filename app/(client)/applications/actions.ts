@@ -54,11 +54,19 @@ export async function createApplications(formData: FormData) {
 
   // 2. Vincular al usuario como miembro de la empresa
   // Nota: company_users usa role_in_company, no hay campo email
-  await supabase.from("company_users").insert({
+  const { error: cuError } = await supabase.from("company_users").insert({
     company_id: company.id,
     user_id: user.id,
     role_in_company: "operator",
   })
+  if (cuError) {
+    redirect(
+      "/applications/new?error=" +
+        encodeURIComponent(
+          "Error al vincular tu cuenta con la empresa. Intenta de nuevo."
+        )
+    )
+  }
 
   // 3. Obtener productos seleccionados
   const { data: productRows } = await supabase
