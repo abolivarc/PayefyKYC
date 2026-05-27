@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { signIn } from "../actions"
+import { signInClient } from "../actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -30,7 +30,7 @@ export default async function LoginPage({
         </Alert>
       )}
 
-      <form action={signIn} className="space-y-4">
+      <form action={signInClient} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Correo electrónico</Label>
           <Input

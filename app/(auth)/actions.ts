@@ -48,6 +48,103 @@ export async function signIn(formData: FormData) {
   redirect(destination)
 }
 
+export async function signInClient(formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+
+  if (!email || !password) {
+    redirect(
+      "/login?error=" + encodeURIComponent("Correo y contraseña son requeridos")
+    )
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    redirect(
+      "/login?error=" +
+        encodeURIComponent(
+          "Credenciales inválidas. Verifica tu correo y contraseña."
+        )
+    )
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role && profile.role !== "client") {
+      await supabase.auth.signOut({ scope: "local" })
+      redirect(
+        "/login?error=" +
+          encodeURIComponent(
+            "Esta cuenta es de uso interno. Accede por el portal de empleados."
+          )
+      )
+    }
+  }
+
+  revalidatePath("/", "layout")
+  redirect("/dashboard")
+}
+
+export async function signInEmployee(formData: FormData) {
+  const email = formData.get("email") as string
+  const password = formData.get("password") as string
+
+  if (!email || !password) {
+    redirect(
+      "/admin/login?error=" +
+        encodeURIComponent("Correo y contraseña son requeridos")
+    )
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.signInWithPassword({ email, password })
+
+  if (error) {
+    redirect(
+      "/admin/login?error=" +
+        encodeURIComponent(
+          "Credenciales inválidas. Verifica tu correo y contraseña."
+        )
+    )
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (profile?.role === "client") {
+      await supabase.auth.signOut({ scope: "local" })
+      redirect(
+        "/admin/login?error=" +
+          encodeURIComponent(
+            "Esta cuenta no tiene acceso al portal interno. Si eres cliente, ingresa por el portal de onboarding."
+          )
+      )
+    }
+  }
+
+  revalidatePath("/", "layout")
+  redirect("/admin/dashboard")
+}
+
 export async function signUp(formData: FormData) {
   const fullName = formData.get("fullName") as string
   const email = formData.get("email") as string

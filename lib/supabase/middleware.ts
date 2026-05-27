@@ -41,15 +41,17 @@ export async function updateSession(request: NextRequest) {
 
   const isAuthPage =
     pathname === "/login" ||
+    pathname === "/admin/login" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
     pathname.startsWith("/auth/")
   // /reset-password requiere sesión (recovery) → va en isProtected, no en isAuthPage
   const isProtected =
-    pathname === "/" ||
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/admin") ||
-    pathname === "/reset-password"
+    (pathname === "/" ||
+      pathname.startsWith("/dashboard") ||
+      pathname.startsWith("/admin") ||
+      pathname === "/reset-password") &&
+    pathname !== "/admin/login"
 
   // Sin sesión + ruta protegida → /login
   if (!user && isProtected) {

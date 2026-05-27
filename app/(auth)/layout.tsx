@@ -10,16 +10,11 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           <PayefyLogo size={40} />
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900">PayefyKYC</h1>
-            <p className="text-xs text-slate-500 mt-0.5">Portal del Cliente</p>
+            <p className="text-xs text-slate-500 mt-0.5">Portal de Onboarding</p>
           </div>
         </div>
         {children}
       </div>
-      {/* Nota para empleados */}
-      <p className="text-xs text-slate-400 text-center mt-4">
-        ¿Eres del equipo Payefy?{" "}
-        El acceso es con el mismo correo institucional.
-      </p>
     </div>
   )
 }
