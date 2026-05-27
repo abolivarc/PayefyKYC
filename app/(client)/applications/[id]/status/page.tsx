@@ -28,14 +28,33 @@ export default async function StatusPage({
 }) {
   const { id: appId } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return notFound()
 
-  const { data: app } = await supabase
+  // Usamos service_role porque is_company_member falla en edge/serverless
+  const { createClient: createAdmin } = await import("@supabase/supabase-js")
+  const admin = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: app } = await admin
     .from("applications")
-    .select("id, status, rejection_reason, products(name, code)")
+    .select("id, status, rejection_reason, products(name, code), company_id")
     .eq("id", appId)
     .single()
 
   if (!app) return notFound()
+
+  // Verificar membresía manualmente
+  const { data: membership } = await admin
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+
+  if (!membership) return notFound()
 
   const currentStatus = app.status as string
   const isRejected = currentStatus === "rejected"

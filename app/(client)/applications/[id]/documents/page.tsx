@@ -55,9 +55,18 @@ export default async function DocumentsPage({
 }) {
   const { id: appId } = await params
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return notFound()
+
+  // Usamos service_role porque is_company_member falla en edge/serverless
+  const { createClient: createAdmin } = await import("@supabase/supabase-js")
+  const admin = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   // 1. Obtener la application actual
-  const { data: app } = await supabase
+  const { data: app } = await admin
     .from("applications")
     .select("id, status, company_id, products(name, code)")
     .eq("id", appId)
@@ -65,8 +74,18 @@ export default async function DocumentsPage({
 
   if (!app) return notFound()
 
+  // Verificar membresía manualmente
+  const { data: membership } = await admin
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+
+  if (!membership) return notFound()
+
   // 2. Obtener todas las applications de la misma empresa
-  const { data: allApps } = await supabase
+  const { data: allApps } = await admin
     .from("applications")
     .select("id, product_id")
     .eq("company_id", app.company_id)
@@ -74,7 +93,7 @@ export default async function DocumentsPage({
   const allAppIds = (allApps ?? []).map((a) => a.id)
 
   // 3. Cargar todos los documents con templates para todas las applications
-  const { data: allDocs } = await supabase
+  const { data: allDocs } = await admin
     .from("documents")
     .select(
       `id, status, storage_path, file_name, application_id, template_id,

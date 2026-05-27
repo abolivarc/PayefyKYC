@@ -134,7 +134,14 @@ export default async function ClientDashboardPage() {
   const company = ((membership as unknown) as { company_id: string; companies: { id: string; legal_name: string; tax_id: string } | null }).companies
   const companyId = membership.company_id
 
-  const { data: applications } = await supabase
+  // Usamos service_role porque is_company_member falla en edge/serverless
+  const { createClient: createAdmin } = await import("@supabase/supabase-js")
+  const admin = createAdmin(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: applications } = await admin
     .from("applications")
     .select(
       "id, status, product_id, products(name, code), documents(id, status)"
