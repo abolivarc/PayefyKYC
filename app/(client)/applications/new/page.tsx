@@ -12,15 +12,38 @@ import { Badge } from "@/components/ui/badge"
 
 type ProductCode = "cards" | "terminals"
 
+const PRODUCT_NAMES: Record<ProductCode, string> = {
+  cards: "Tarjetas de crédito empresariales",
+  terminals: "Terminales TPV",
+}
+
+const VALID_CODES: ProductCode[] = ["cards", "terminals"]
+
+function parseProductParam(param: string | null): {
+  products: ProductCode[]
+  skipStep1: boolean
+} {
+  if (!param || param === "both") return { products: [], skipStep1: false }
+
+  const parts = param
+    .split(",")
+    .filter((p): p is ProductCode => VALID_CODES.includes(p as ProductCode))
+
+  if (parts.length === 0) return { products: [], skipStep1: false }
+  return { products: parts, skipStep1: true }
+}
+
 function WizardContent() {
   const searchParams = useSearchParams()
   const urlError = searchParams.get("error")
-  const preselected = searchParams.get("product") as ProductCode | null
 
-  const [step, setStep] = useState(1)
-  const [selectedProducts, setSelectedProducts] = useState<ProductCode[]>(
-    preselected ? [preselected] : []
+  const { products: initialProducts, skipStep1 } = parseProductParam(
+    searchParams.get("product")
   )
+
+  const [step, setStep] = useState(skipStep1 ? 2 : 1)
+  const [selectedProducts, setSelectedProducts] =
+    useState<ProductCode[]>(initialProducts)
   const [terminalType, setTerminalType] = useState("")
 
   const toggleProduct = (code: ProductCode) => {
@@ -30,6 +53,11 @@ function WizardContent() {
   }
 
   const hasTerminals = selectedProducts.includes("terminals")
+
+  const productLabel =
+    selectedProducts.length === 1
+      ? `Producto: ${PRODUCT_NAMES[selectedProducts[0]]}`
+      : `Productos: ${selectedProducts.map((p) => PRODUCT_NAMES[p]).join(" + ")}`
 
   return (
     <div className="max-w-xl mx-auto p-6 sm:p-8">
@@ -173,6 +201,20 @@ function WizardContent() {
       {/* Paso 2 */}
       {step === 2 && (
         <div className="space-y-4">
+          {/* Banner de producto pre-seleccionado */}
+          {skipStep1 && (
+            <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
+              <span className="text-muted-foreground">{productLabel}</span>
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="font-medium text-primary hover:underline"
+              >
+                ← Cambiar producto
+              </button>
+            </div>
+          )}
+
           <h1 className="text-xl font-bold">Datos de tu empresa</h1>
           <p className="text-sm text-muted-foreground">
             Ingresa los datos fiscales de la empresa que solicitará el producto.
@@ -185,6 +227,25 @@ function WizardContent() {
             ))}
             {terminalType && (
               <input type="hidden" name="terminal_type" value={terminalType} />
+            )}
+
+            {/* Terminal type cuando se llegó pre-seleccionado con terminals */}
+            {skipStep1 && hasTerminals && (
+              <div className="space-y-2">
+                <Label htmlFor="terminal_type_step2">
+                  Modalidad de la terminal
+                </Label>
+                <Select
+                  id="terminal_type_step2"
+                  value={terminalType}
+                  onChange={(e) => setTerminalType(e.target.value)}
+                >
+                  <option value="">Selecciona una modalidad</option>
+                  <option value="card_present">Tarjeta Presente (punto de venta)</option>
+                  <option value="ecommerce">E-commerce (tienda en línea)</option>
+                  <option value="both">Ambas modalidades</option>
+                </Select>
+              </div>
             )}
 
             <div className="space-y-2">
