@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { emailDocsSubmitted } from "@/lib/email/templates"
 import { Resend } from "resend"
@@ -98,9 +99,15 @@ export async function createApplications(formData: FormData) {
       .select("id")
       .eq("product_id", product.id)
 
-    // 6. Crear un document record por template
+    // 6. Crear un document record por template — usa service_role para bypass RLS
+    // (la policy documents_insert_member usa is_company_member que puede fallar
+    //  si la sesión del usuario no se propaga correctamente en este contexto)
     if (templates?.length) {
-      const { error: docsErr } = await supabase.from("documents").insert(
+      const adminSupabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+      const { error: docsErr } = await adminSupabase.from("documents").insert(
         templates.map((t) => ({
           application_id: app.id,
           template_id: t.id,
