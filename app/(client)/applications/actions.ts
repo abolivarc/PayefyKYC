@@ -94,10 +94,12 @@ export async function createApplications(formData: FormData) {
     if (!firstAppId) firstAppId = app.id
 
     // 5. Obtener templates del producto
-    const { data: templates } = await supabase
+    const { data: templates, error: tmplErr } = await supabase
       .from("document_templates")
       .select("id")
       .eq("product_id", product.id)
+
+    console.log("[CREATE DEBUG] templates found:", templates?.length, "for product:", product.id, "error:", tmplErr?.message)
 
     // 6. Crear un document record por template — usa service_role para bypass RLS
     // (la policy documents_insert_member usa is_company_member que puede fallar
@@ -114,6 +116,7 @@ export async function createApplications(formData: FormData) {
           status: "pending_upload",
         }))
       )
+      console.log("[CREATE DEBUG] docs insert result:", { appId: app.id, count: templates.length, error: docsErr?.message })
       if (docsErr) {
         redirect(
           "/applications/new?error=" +

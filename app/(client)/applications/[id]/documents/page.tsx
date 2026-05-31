@@ -56,44 +56,59 @@ export default async function DocumentsPage({
   const { id: appId } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return notFound()
+  console.log("[DOCS DEBUG] user:", { userId: user?.id, appId })
+  if (!user) {
+    console.error("[DOCS DEBUG] notFound: no user session")
+    return notFound()
+  }
+
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  console.log("[DOCS DEBUG] URL exists:", !!url, "KEY exists:", !!key, "KEY length:", key?.length)
 
   // Usamos service_role porque is_company_member falla en edge/serverless
   const { createClient: createAdmin } = await import("@supabase/supabase-js")
-  const admin = createAdmin(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const admin = createAdmin(url!, key!)
 
   // 1. Obtener la application actual
-  const { data: app } = await admin
+  const { data: app, error: appErr } = await admin
     .from("applications")
     .select("id, status, company_id, products(name, code)")
     .eq("id", appId)
     .single()
 
-  if (!app) return notFound()
+  console.log("[DOCS DEBUG] app query:", { appId, app: !!app, error: appErr?.message })
+  if (!app) {
+    console.error("[DOCS DEBUG] notFound: app is null, error:", appErr?.message)
+    return notFound()
+  }
 
   // Verificar membresía manualmente
-  const { data: membership } = await admin
+  const { data: membership, error: memErr } = await admin
     .from("company_users")
     .select("id")
     .eq("company_id", app.company_id)
     .eq("user_id", user.id)
     .single()
 
-  if (!membership) return notFound()
+  console.log("[DOCS DEBUG] membership:", { company_id: app.company_id, user_id: user.id, found: !!membership, error: memErr?.message })
+  if (!membership) {
+    console.error("[DOCS DEBUG] notFound: no membership")
+    return notFound()
+  }
 
   // 2. Obtener todas las applications de la misma empresa
-  const { data: allApps } = await admin
+  const { data: allApps, error: allAppsErr } = await admin
     .from("applications")
     .select("id, product_id")
     .eq("company_id", app.company_id)
 
+  console.log("[DOCS DEBUG] allApps:", { count: allApps?.length, error: allAppsErr?.message })
+
   const allAppIds = (allApps ?? []).map((a) => a.id)
 
   // 3. Cargar todos los documents con templates para todas las applications
-  const { data: allDocs } = await admin
+  const { data: allDocs, error: docsErr } = await admin
     .from("documents")
     .select(
       `id, status, storage_path, file_name, application_id, template_id,
@@ -101,7 +116,11 @@ export default async function DocumentsPage({
     )
     .in("application_id", allAppIds)
 
-  if (!allDocs) return notFound()
+  console.log("[DOCS DEBUG] allDocs:", { count: allDocs?.length, error: docsErr?.message })
+  if (!allDocs) {
+    console.error("[DOCS DEBUG] notFound: allDocs is null, error:", docsErr?.message)
+    return notFound()
+  }
 
   type TemplateMeta = {
     id: string; code: string; name: string; description: string | null;
