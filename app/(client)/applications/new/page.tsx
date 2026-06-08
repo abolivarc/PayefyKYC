@@ -10,60 +10,78 @@ import { Select } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 
-type ProductCode = "cards" | "terminals"
+type ProductOption = "cards" | "terminals" | "both"
 
-const PRODUCT_NAMES: Record<ProductCode, string> = {
-  cards: "Tarjetas de crédito empresariales",
-  terminals: "Terminales TPV",
+const OPTION_META: Record<
+  ProductOption,
+  { label: string; description: string; products: ("cards" | "terminals")[] }
+> = {
+  cards: {
+    label: "Solo Tarjeta Payefy",
+    description: "Líneas de crédito empresariales para financiar tu negocio.",
+    products: ["cards"],
+  },
+  terminals: {
+    label: "Solo Terminal TPV",
+    description: "Acepta pagos con tarjeta en tu punto de venta o e-commerce.",
+    products: ["terminals"],
+  },
+  both: {
+    label: "Tarjeta + Terminal",
+    description: "Ambos productos en un solo proceso de onboarding.",
+    products: ["cards", "terminals"],
+  },
 }
 
-const VALID_CODES: ProductCode[] = ["cards", "terminals"]
-
 function parseProductParam(param: string | null): {
-  products: ProductCode[]
+  selected: ProductOption | null
   skipStep1: boolean
 } {
-  if (!param || param === "both") return { products: [], skipStep1: false }
+  if (!param) return { selected: null, skipStep1: false }
+  if (param === "both") return { selected: "both", skipStep1: true }
+  if (param === "cards") return { selected: "cards", skipStep1: true }
+  if (param === "terminals") return { selected: "terminals", skipStep1: true }
+  if (param === "cards,terminals" || param === "terminals,cards")
+    return { selected: "both", skipStep1: true }
+  return { selected: null, skipStep1: false }
+}
 
-  const parts = param
-    .split(",")
-    .filter((p): p is ProductCode => VALID_CODES.includes(p as ProductCode))
-
-  if (parts.length === 0) return { products: [], skipStep1: false }
-  return { products: parts, skipStep1: true }
+function CheckIcon() {
+  return (
+    <svg
+      className="h-3 w-3 text-white"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={3}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  )
 }
 
 function WizardContent() {
   const searchParams = useSearchParams()
   const urlError = searchParams.get("error")
 
-  const { products: initialProducts, skipStep1 } = parseProductParam(
+  const { selected: initialSelected, skipStep1 } = parseProductParam(
     searchParams.get("product")
   )
 
   const [step, setStep] = useState(skipStep1 ? 2 : 1)
-  const [selectedProducts, setSelectedProducts] =
-    useState<ProductCode[]>(initialProducts)
+  const [selected, setSelected] = useState<ProductOption | null>(initialSelected)
   const [terminalType, setTerminalType] = useState("")
 
-  const toggleProduct = (code: ProductCode) => {
-    setSelectedProducts((prev) =>
-      prev.includes(code) ? prev.filter((p) => p !== code) : [...prev, code]
-    )
-  }
+  const hasTerminals = selected === "terminals" || selected === "both"
+  const products = selected ? OPTION_META[selected].products : []
 
-  const hasTerminals = selectedProducts.includes("terminals")
-
-  const productLabel =
-    selectedProducts.length === 1
-      ? `Producto: ${PRODUCT_NAMES[selectedProducts[0]]}`
-      : `Productos: ${selectedProducts.map((p) => PRODUCT_NAMES[p]).join(" + ")}`
+  const selectedLabel = selected ? OPTION_META[selected].label : ""
 
   return (
     <div className="max-w-xl mx-auto p-6 sm:p-8">
       {/* Progress */}
       <div className="flex items-center gap-2 mb-8">
-        <Badge variant={step === 1 ? "default" : "pending"}>1. Productos</Badge>
+        <Badge variant={step === 1 ? "default" : "pending"}>1. Producto</Badge>
         <div className="h-px flex-1 bg-border" />
         <Badge variant={step === 2 ? "default" : "pending"}>2. Empresa</Badge>
       </div>
@@ -77,120 +95,48 @@ function WizardContent() {
       {/* Paso 1 */}
       {step === 1 && (
         <div className="space-y-4">
-          <h1 className="text-xl font-bold">¿Qué producto(s) necesitas?</h1>
+          <h1 className="text-xl font-bold">¿Qué producto necesitas?</h1>
           <p className="text-sm text-muted-foreground">
-            Puedes solicitar uno o ambos. Se creará un expediente por producto.
+            Selecciona una opción. Puedes cambiarla antes de enviar tu solicitud.
           </p>
 
-          <button
-            type="button"
-            onClick={() => toggleProduct("cards")}
-            className={`w-full text-left rounded-xl border-2 p-4 transition-colors ${
-              selectedProducts.includes("cards")
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`mt-0.5 h-5 w-5 rounded border-2 flex items-center justify-center ${
-                  selectedProducts.includes("cards")
-                    ? "border-primary bg-primary"
-                    : "border-input"
+          {(["cards", "terminals", "both"] as ProductOption[]).map((opt) => {
+            const meta = OPTION_META[opt]
+            const isSelected = selected === opt
+            return (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => setSelected(opt)}
+                className={`w-full text-left rounded-xl border-2 p-4 transition-colors ${
+                  isSelected
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:border-primary/50"
                 }`}
               >
-                {selectedProducts.includes("cards") && (
-                  <svg
-                    className="h-3 w-3 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
+                <div className="flex items-start gap-3">
+                  <div
+                    className={`mt-0.5 h-5 w-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                      isSelected ? "border-primary bg-primary" : "border-input"
+                    }`}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">Tarjetas de crédito empresariales</p>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Líneas de crédito para financiar tu negocio con Payefy.
-                </p>
-              </div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => toggleProduct("terminals")}
-            className={`w-full text-left rounded-xl border-2 p-4 transition-colors ${
-              selectedProducts.includes("terminals")
-                ? "border-primary bg-primary/5"
-                : "border-border hover:border-primary/50"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <div
-                className={`mt-0.5 h-5 w-5 rounded border-2 flex items-center justify-center ${
-                  selectedProducts.includes("terminals")
-                    ? "border-primary bg-primary"
-                    : "border-input"
-                }`}
-              >
-                {selectedProducts.includes("terminals") && (
-                  <svg
-                    className="h-3 w-3 text-white"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={3}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                )}
-              </div>
-              <div>
-                <p className="font-semibold">Terminales TPV</p>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                  Acepta pagos con tarjeta en tu punto de venta o e-commerce.
-                </p>
-              </div>
-            </div>
-          </button>
-
-          {hasTerminals && (
-            <div className="space-y-2 pt-1">
-              <Label htmlFor="terminal_type_select">
-                Modalidad de la terminal
-              </Label>
-              <Select
-                id="terminal_type_select"
-                value={terminalType}
-                onChange={(e) => setTerminalType(e.target.value)}
-              >
-                <option value="">Selecciona una modalidad</option>
-                <option value="card_present">Tarjeta Presente (punto de venta)</option>
-                <option value="ecommerce">E-commerce (tienda en línea)</option>
-                <option value="both">Ambas modalidades</option>
-              </Select>
-            </div>
-          )}
+                    {isSelected && <div className="h-2 w-2 rounded-full bg-white" />}
+                  </div>
+                  <div>
+                    <p className="font-semibold">{meta.label}</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {meta.description}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            )
+          })}
 
           <Button
             type="button"
             className="w-full"
-            disabled={
-              selectedProducts.length === 0 ||
-              (hasTerminals && !terminalType)
-            }
+            disabled={!selected}
             onClick={() => setStep(2)}
           >
             Continuar
@@ -201,19 +147,19 @@ function WizardContent() {
       {/* Paso 2 */}
       {step === 2 && (
         <div className="space-y-4">
-          {/* Banner de producto pre-seleccionado */}
-          {skipStep1 && (
-            <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
-              <span className="text-muted-foreground">{productLabel}</span>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                className="font-medium text-primary hover:underline"
-              >
-                ← Cambiar producto
-              </button>
-            </div>
-          )}
+          {/* Banner de producto seleccionado */}
+          <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5 text-sm">
+            <span className="text-muted-foreground">
+              Producto: <span className="font-medium text-foreground">{selectedLabel}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setStep(1)}
+              className="font-medium text-primary hover:underline"
+            >
+              ← Cambiar
+            </button>
+          </div>
 
           <h1 className="text-xl font-bold">Datos de tu empresa</h1>
           <p className="text-sm text-muted-foreground">
@@ -222,21 +168,21 @@ function WizardContent() {
 
           <form action={createApplications} className="space-y-4">
             {/* Hidden: productos seleccionados */}
-            {selectedProducts.map((p) => (
+            {products.map((p) => (
               <input key={p} type="hidden" name="products" value={p} />
             ))}
             {terminalType && (
               <input type="hidden" name="terminal_type" value={terminalType} />
             )}
 
-            {/* Terminal type cuando se llegó pre-seleccionado con terminals */}
-            {skipStep1 && hasTerminals && (
+            {hasTerminals && (
               <div className="space-y-2">
-                <Label htmlFor="terminal_type_step2">
-                  Modalidad de la terminal
+                <Label htmlFor="terminal_type_select">
+                  Modalidad de la terminal{" "}
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
                 </Label>
                 <Select
-                  id="terminal_type_step2"
+                  id="terminal_type_select"
                   value={terminalType}
                   onChange={(e) => setTerminalType(e.target.value)}
                 >
@@ -294,11 +240,11 @@ function WizardContent() {
                 required
               />
               <p className="text-xs text-muted-foreground">
-                Este correo se usará para comunicaciones operativas
+                Se usará para comunicaciones operativas
               </p>
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-3 pt-2">
               <Button
                 type="button"
                 variant="outline"
