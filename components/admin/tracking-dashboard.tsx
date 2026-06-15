@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { ContractManager } from "./contract-manager"
 
 // ── Types ──────────────────────────────────────────────
 type DocItem = {
@@ -300,34 +301,7 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
         <div>
           {app.product.code === "cards" && (
             <>
-              <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:".04em",
-                color:"#5f6b64", margin:"0 0 6px", fontWeight:600 }}>
-                Contratos y firmas
-              </p>
-              {[
-                { label:"Contrato prestación de servicios · Payefy", hint:"DocuSign", val: app.contracts.payefy },
-                { label:"Carta de aumento · Transfer", hint:"", val: app.contracts.transfer_increase },
-                { label:"Contrato Transfer", hint:"weetrust", val: app.contracts.transfer_contract },
-              ].map((c, i) => (
-                <div key={i} style={{ display:"flex", alignItems:"center", gap:9,
-                  padding:"5px 0", fontSize:13, color:"#5f6b64" }}>
-                  {c.val === "signed" ? (
-                    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#0f6e56" strokeWidth={2}>
-                      <rect x={4} y={4} width={16} height={16} rx={3} /><path d="m8 12 3 3 5-6" />
-                    </svg>
-                  ) : c.val === "sent" ? (
-                    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#92500b" strokeWidth={2}>
-                      <rect x={4} y={4} width={16} height={16} rx={3} /><path d="M12 7v5l3 2" />
-                    </svg>
-                  ) : (
-                    <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="#b4bcb7" strokeWidth={2}>
-                      <rect x={4} y={4} width={16} height={16} rx={3} />
-                    </svg>
-                  )}
-                  {c.label}
-                  {c.hint && <span style={{ fontSize:10, color:"#b4bcb7" }}>({c.hint})</span>}
-                </div>
-              ))}
+              <ContractManager applicationId={app.id} contracts={app.contracts} />
               <div style={{ marginBottom:16 }} />
             </>
           )}

@@ -18,41 +18,20 @@ export type { KanbanApp }
 import { updateApplicationStatus } from "@/app/(admin)/applications/actions"
 
 const KANBAN_COLUMNS = [
-  {
-    id: "new",
-    label: "Nuevas",
-    statuses: ["draft", "documents_pending"],
-  },
-  {
-    id: "review",
-    label: "En revisión",
-    statuses: ["in_compliance_review", "in_provider_review"],
-  },
-  {
-    id: "changes",
-    label: "Cambios solicitados",
-    statuses: ["changes_requested", "provider_changes_requested"],
-  },
-  {
-    id: "approved",
-    label: "Aprobadas",
-    statuses: ["approved_compliance", "approved_provider"],
-  },
-  {
-    id: "contracts",
-    label: "Contratos",
-    statuses: ["contracts_pending", "contracts_signed"],
-  },
-  {
-    id: "activation",
-    label: "Activación",
-    statuses: ["activation_pending", "activated"],
-  },
-  {
-    id: "closed",
-    label: "Cerradas",
-    statuses: ["rejected", "archived"],
-  },
+  { id: "draft",                      label: "Borrador",               status: "draft" },
+  { id: "documents_pending",          label: "Docs enviados",          status: "documents_pending" },
+  { id: "in_compliance_review",       label: "En revisión",            status: "in_compliance_review" },
+  { id: "changes_requested",          label: "Cambios solicitados",    status: "changes_requested" },
+  { id: "approved_compliance",        label: "Aprobado compliance",    status: "approved_compliance" },
+  { id: "in_provider_review",         label: "En Transfer",            status: "in_provider_review" },
+  { id: "provider_changes_requested", label: "Cambios Transfer",       status: "provider_changes_requested" },
+  { id: "approved_provider",          label: "Aprobado Transfer",      status: "approved_provider" },
+  { id: "contracts_pending",          label: "Contratos pend.",        status: "contracts_pending" },
+  { id: "contracts_signed",           label: "Contratos firmados",     status: "contracts_signed" },
+  { id: "activation_pending",         label: "Activación pend.",       status: "activation_pending" },
+  { id: "activated",                  label: "Activado ✓",             status: "activated" },
+  { id: "rejected",                   label: "Rechazado",              status: "rejected" },
+  { id: "archived",                   label: "Archivado",              status: "archived" },
 ] as const
 
 type ColumnId = (typeof KANBAN_COLUMNS)[number]["id"]
@@ -112,13 +91,11 @@ export function KanbanBoard({ applications }: Props) {
 
   const columnApps = KANBAN_COLUMNS.map((col) => ({
     ...col,
-    apps: apps.filter((a) => (col.statuses as readonly string[]).includes(a.status)),
+    apps: apps.filter((a) => a.status === col.status),
   }))
 
   function findColumnByStatus(status: string) {
-    return KANBAN_COLUMNS.find((c) =>
-      (c.statuses as readonly string[]).includes(status)
-    )
+    return KANBAN_COLUMNS.find((c) => c.status === status)
   }
 
   function findColumnById(colId: string) {
@@ -144,7 +121,7 @@ export function KanbanBoard({ applications }: Props) {
     }
     if (!targetCol) return
 
-    const newStatus = targetCol.statuses[0]
+    const newStatus = targetCol.status
     if (newStatus === activeApp.status) return
 
     // Optimistic update
