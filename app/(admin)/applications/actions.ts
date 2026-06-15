@@ -158,8 +158,8 @@ export async function updateApplicationStatus(
 
   if (error) return { error: error.message }
 
-  // Notificar al cliente si se activa
-  if (newStatus === "activated") {
+  // Notificar al cliente si se activa — guard: solo si el estado anterior no era ya 'activated'
+  if (newStatus === "activated" && currentApp?.status !== "activated") {
     const { data: member } = await supabase
       .from("company_users")
       .select("user_id, profiles(full_name, email)")
@@ -191,6 +191,8 @@ export async function updateApplicationStatus(
           companyName: company?.legal_name ?? "",
           clientName: profile.full_name,
           productName: product?.name ?? "",
+          manualUrl: process.env.ONBOARDING_MANUAL_URL,
+          videoUrl: process.env.ONBOARDING_VIDEO_URL,
         }),
       })
     }
