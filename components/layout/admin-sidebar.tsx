@@ -10,6 +10,7 @@ import {
   Building2,
   Users,
   BarChart2,
+  ShoppingBag,
   LogOut,
   Menu,
   X,
@@ -23,6 +24,7 @@ const NAV_LINKS = [
   { href: "/admin/tracking", label: "Seguimiento", icon: BarChart2 },
   { href: "/admin/clients", label: "Clientes", icon: Building2 },
   { href: "/admin/leads", label: "Leads", icon: Users },
+  { href: "/admin/tracking/orders", label: "Pedidos", icon: ShoppingBag },
 ]
 
 const ROLE_LABELS: Record<string, string> = {

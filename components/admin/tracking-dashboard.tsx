@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { ContractManager } from "./contract-manager"
 import { EmailComposer } from "./email-composer"
+import { exportExpediente } from "@/app/(admin)/admin/tracking/export-action"
 
 // ── Types ──────────────────────────────────────────────
 type DocItem = {
@@ -226,6 +227,30 @@ function auditEntryLabel(entry: BitacoraEntry): string {
 function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void }) {
   const pct = app.docs.total > 0 ? Math.round((app.docs.uploaded / app.docs.total) * 100) : 0
   const [showEmailComposer, setShowEmailComposer] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const result = await exportExpediente(app.id)
+      if (result.error || !result.base64 || !result.filename) {
+        alert(result.error ?? "Error al exportar")
+        return
+      }
+      const binary = atob(result.base64)
+      const bytes = new Uint8Array(binary.length)
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+      const blob = new Blob([bytes.buffer], { type: "application/zip" })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = result.filename
+      a.click()
+      URL.revokeObjectURL(url)
+    } finally {
+      setExporting(false)
+    }
+  }
 
   return (
     <section style={{ background:"#fff", border:"1px solid #d3dbd6", borderRadius:10,
@@ -257,6 +282,18 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
               <rect x={2} y={5} width={20} height={14} rx={2}/><path d="m22 7-10 5L2 7"/>
             </svg>
             Enviar correo
+          </button>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            style={{ background:"#fff", color:"#004238", border:"1px solid #004238",
+              borderRadius:7, fontSize:13, padding:"8px 14px", cursor:exporting ? "not-allowed" : "pointer",
+              display:"inline-flex", alignItems:"center", gap:6, fontWeight:500, opacity: exporting ? 0.6 : 1 }}
+          >
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {exporting ? "Exportando..." : "Exportar ZIP"}
           </button>
           <Link
             href={`/admin/applications/${app.id}/review`}

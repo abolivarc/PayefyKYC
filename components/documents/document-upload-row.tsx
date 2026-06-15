@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
 import { recordDocumentUpload } from "@/app/(client)/applications/actions"
+import { isDocumentExpired } from "@/lib/documents/expiry"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -36,6 +37,7 @@ interface Props {
   fileFormat: string
   isForm: boolean
   fileName: string | null
+  uploadedAt?: string | null
   isShared?: boolean
 }
 
@@ -49,16 +51,18 @@ export function DocumentUploadRow({
   fileFormat,
   isForm,
   fileName,
+  uploadedAt,
   isShared,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<DocStatus>(currentStatus)
   const [uploadedName, setUploadedName] = useState<string | null>(fileName)
+  const [currentUploadedAt, setCurrentUploadedAt] = useState<string | null | undefined>(uploadedAt)
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const accept =
-    fileFormat === "jpg" ? "image/*" : "application/pdf"
+  const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
+  const expired = isDocumentExpired(currentUploadedAt)
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -90,6 +94,7 @@ export function DocumentUploadRow({
       } else {
         setStatus("pending_review")
         setUploadedName(file.name)
+        setCurrentUploadedAt(new Date().toISOString())
       }
     })
   }
@@ -106,16 +111,27 @@ export function DocumentUploadRow({
               Compartido
             </Badge>
           )}
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          {expired ? (
+            <Badge variant="destructive" className="text-xs">
+              Vencido — vuelve a subir
+            </Badge>
+          ) : (
+            <Badge variant={badge.variant}>{badge.label}</Badge>
+          )}
         </div>
         {templateInstructions && (
           <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
             {templateInstructions}
           </p>
         )}
-        {uploadedName && status !== "pending_upload" && (
+        {uploadedName && status !== "pending_upload" && !expired && (
           <p className="text-xs text-muted-foreground mt-0.5 truncate">
             📎 {uploadedName}
+          </p>
+        )}
+        {expired && uploadedName && (
+          <p className="text-xs text-amber-700 mt-0.5">
+            Este documento tiene más de 60 días y debe reemplazarse.
           </p>
         )}
         {error && (
@@ -127,9 +143,9 @@ export function DocumentUploadRow({
         {isForm ? (
           <Link
             href={`/applications/${applicationId}/forms/${templateCode}`}
-            className={buttonVariants({ size: "sm", variant: "outline" })}
+            className={buttonVariants({ size: "sm", variant: expired ? "default" : "outline" })}
           >
-            {status === "pending_upload" ? "Rellenar" : "Editar"}
+            {status === "pending_upload" || expired ? "Rellenar" : "Editar"}
           </Link>
         ) : (
           <>
@@ -142,7 +158,7 @@ export function DocumentUploadRow({
             />
             <Button
               size="sm"
-              variant={status === "pending_upload" ? "default" : "outline"}
+              variant={status === "pending_upload" || expired ? "default" : "outline"}
               disabled={isPending}
               onClick={() => inputRef.current?.click()}
               className="flex items-center gap-1.5"
@@ -150,7 +166,7 @@ export function DocumentUploadRow({
               {isPending && <Spinner size={13} />}
               {isPending
                 ? "Subiendo..."
-                : status === "pending_upload"
+                : status === "pending_upload" || expired
                 ? "Subir"
                 : "Reemplazar"}
             </Button>

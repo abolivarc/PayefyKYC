@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { isDocumentExpired } from "@/lib/documents/expiry"
 import {
   approveDocument,
   requestDocumentChanges,
@@ -36,6 +37,7 @@ interface Props {
   currentStatus: DocStatus
   storageAvailable: boolean
   reviewerNotes?: string | null
+  uploadedAt?: string | null
 }
 
 export function ReviewDocumentRow({
@@ -46,6 +48,7 @@ export function ReviewDocumentRow({
   currentStatus,
   storageAvailable,
   reviewerNotes,
+  uploadedAt,
 }: Props) {
   const [status, setStatus] = useState<DocStatus>(currentStatus)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -53,9 +56,11 @@ export function ReviewDocumentRow({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
+  const expired = isDocumentExpired(uploadedAt)
   const badge = STATUS_BADGE[status] ?? STATUS_BADGE.pending_review
 
   function handleApprove() {
+    if (expired) return
     setError(null)
     startTransition(async () => {
       const result = await approveDocument(documentId, applicationId)
@@ -94,11 +99,20 @@ export function ReviewDocumentRow({
           {isRequired && (
             <span className="text-xs text-destructive">*requerido</span>
           )}
-          <Badge variant={badge.variant}>{badge.label}</Badge>
+          {expired ? (
+            <Badge variant="destructive" className="text-xs">Vencido (+60 días)</Badge>
+          ) : (
+            <Badge variant={badge.variant}>{badge.label}</Badge>
+          )}
         </div>
         {reviewerNotes && status === "changes_requested" && (
           <p className="text-xs text-amber-700 mt-1 bg-amber-50 rounded px-2 py-1">
             Nota: {reviewerNotes}
+          </p>
+        )}
+        {expired && (
+          <p className="text-xs text-destructive mt-1">
+            Documento vencido — el cliente debe volver a subirlo antes de aprobar.
           </p>
         )}
         {error && (
@@ -122,8 +136,9 @@ export function ReviewDocumentRow({
             <Button
               size="sm"
               variant="outline"
-              className="border-emerald-500 text-emerald-700 hover:bg-emerald-50"
-              disabled={isPending}
+              className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={isPending || expired}
+              title={expired ? "Documento vencido — no se puede aprobar" : undefined}
               onClick={handleApprove}
             >
               {isPending ? "..." : "Aprobar"}
@@ -144,7 +159,8 @@ export function ReviewDocumentRow({
             size="sm"
             variant="ghost"
             className="text-xs text-muted-foreground"
-            disabled={isPending}
+            disabled={isPending || expired}
+            title={expired ? "Documento vencido" : undefined}
             onClick={handleApprove}
           >
             Re-aprobar

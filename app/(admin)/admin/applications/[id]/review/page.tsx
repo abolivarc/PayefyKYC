@@ -93,13 +93,14 @@ export default async function ReviewPage({
   const { data: rawDocs } = await supabase
     .from("documents")
     .select(
-      `id, status, storage_path, reviewer_notes, template_id,
+      `id, status, storage_path, reviewer_notes, template_id, uploaded_at,
        document_templates(id, code, name, is_form, is_required, sort_order)`
     )
     .eq("application_id", appId)
 
   const docs = (rawDocs ?? []).map((d) => ({
     ...d,
+    uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
     template: (d.document_templates as unknown) as {
       id: string
       code: string
@@ -207,6 +208,7 @@ export default async function ReviewPage({
                       }
                       storageAvailable={!!doc.storage_path}
                       reviewerNotes={doc.reviewer_notes}
+                      uploadedAt={doc.uploaded_at}
                     />
                   ))}
                 </div>

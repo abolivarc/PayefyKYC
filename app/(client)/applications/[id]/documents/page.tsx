@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { isDocumentExpired } from "@/lib/documents/expiry"
 import {
   DocumentChecklist,
   type DocWithTemplate,
@@ -128,7 +129,7 @@ export default async function DocumentsPage({
   const { data: allDocs, error: docsErr } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id, is_checked,
+      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at,
        document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
@@ -145,7 +146,7 @@ export default async function DocumentsPage({
     instructions: string | null; sort_order: number
   }
   // 4. Construir mapa de template.code → docs
-  type RawDoc = typeof allDocs[number]
+  type RawDoc = typeof allDocs[number] & { uploaded_at?: string | null }
   const codeMap = new Map<string, RawDoc[]>()
   for (const d of allDocs) {
     const tmpl = (d.document_templates as unknown) as TemplateMeta | null
@@ -182,6 +183,7 @@ export default async function DocumentsPage({
       file_name: d.file_name,
       application_id: d.application_id,
       is_checked: (d as unknown as { is_checked: boolean }).is_checked ?? false,
+      uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
       template: {
         id: tmpl.id,
         code: tmpl.code,
@@ -224,6 +226,7 @@ export default async function DocumentsPage({
   const total = allGroupDocs.length
   const done = allGroupDocs.filter((d) => {
     if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+    if (isDocumentExpired(d.uploaded_at)) return false
     return ["approved", "pending_review"].includes(d.status)
   }).length
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
@@ -235,6 +238,7 @@ export default async function DocumentsPage({
   const allRequiredReady = requiredGroups.every((g) =>
     g.docs.every((d) => {
       if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+      if (isDocumentExpired(d.uploaded_at)) return false
       return ["pending_review", "approved"].includes(d.status)
     })
   )

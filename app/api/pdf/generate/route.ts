@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import * as Sentry from "@sentry/nextjs"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { generateBeneficialOwnerPdf } from "@/lib/pdf/beneficial-owner"
@@ -152,6 +153,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, documentId: doc.id, downloadUrl })
   } catch (err) {
+    Sentry.captureException(err, { extra: { type, applicationId } })
     const msg = err instanceof Error ? err.message : "Error desconocido"
     return NextResponse.json({ error: msg }, { status: 500 })
   }

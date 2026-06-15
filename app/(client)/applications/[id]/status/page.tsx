@@ -3,6 +3,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
+import { ProductOrderForm } from "@/components/client/product-order-form"
 
 const PIPELINE: { key: string; label: string }[] = [
   { key: "draft", label: "Borrador" },
@@ -40,7 +41,7 @@ export default async function StatusPage({
 
   const { data: app } = await admin
     .from("applications")
-    .select("id, status, rejection_reason, products(name, code), company_id")
+    .select("id, status, rejection_reason, products(name, code), company_id, companies(legal_name)")
     .eq("id", appId)
     .single()
 
@@ -173,13 +174,28 @@ export default async function StatusPage({
         </div>
       )}
 
-      <div className="mt-8">
+      <div className="mt-8 space-y-4">
         <Link
           href={`/applications/${appId}/documents`}
           className={buttonVariants({ variant: "outline" })}
         >
           Ver expediente
         </Link>
+
+        {currentStatus === "activated" && (() => {
+          const product = (app.products as unknown) as { name: string; code: string } | null
+          return product ? (
+            <div className="mt-6">
+              <h2 className="text-base font-semibold mb-2">Solicitar plásticos / terminales</h2>
+              <ProductOrderForm
+                applicationId={appId}
+                companyId={app.company_id}
+                productCode={product.code}
+                productName={product.name}
+              />
+            </div>
+          ) : null
+        })()}
       </div>
     </div>
   )

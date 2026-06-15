@@ -9,6 +9,7 @@ export interface DocWithTemplate {
   file_name: string | null
   application_id: string
   is_checked: boolean
+  uploaded_at: string | null
   template: {
     id: string
     code: string
@@ -109,6 +110,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                       fileFormat={group.file_format}
                       isForm={group.is_form}
                       fileName={doc.file_name}
+                      uploadedAt={doc.uploaded_at}
                       isShared={group.isShared}
                     />
                   )

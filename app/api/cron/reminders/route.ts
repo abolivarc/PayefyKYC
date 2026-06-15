@@ -5,6 +5,7 @@ import {
   emailCronReminder,
   emailCronInternalAlert,
 } from "@/lib/email/templates"
+import { isDocumentExpiringSoon } from "@/lib/documents/expiry"
 
 // Statuses where the client needs to act (7-day reminder to client)
 const CLIENT_ACTION_STATUSES = new Set([
@@ -105,8 +106,30 @@ export async function GET(request: Request) {
     processedMap.get(log.entity_id as string)!.add(log.action as string)
   }
 
+  // Expiry check: find documents expiring in days 53-60
+  const { data: expiringDocs } = await admin
+    .from("documents")
+    .select("id, uploaded_at, application_id, applications(company_id, products(name))")
+    .not("uploaded_at", "is", null)
+    .not("storage_path", "is", null)
+    .in("application_id", appIds)
+
+  const expiringSoonByCompany = new Map<string, { appId: string; productName: string; count: number }>()
+  for (const doc of expiringDocs ?? []) {
+    if (!isDocumentExpiringSoon(doc.uploaded_at as string)) continue
+    const app = (doc.applications as unknown) as { company_id: string; products: { name: string } | null } | null
+    if (!app) continue
+    const existing = expiringSoonByCompany.get(app.company_id) ?? {
+      appId: doc.application_id as string,
+      productName: (app.products as unknown as { name?: string } | null)?.name ?? "Producto Payefy",
+      count: 0,
+    }
+    existing.count++
+    expiringSoonByCompany.set(app.company_id, existing)
+  }
+
   const now = Date.now()
-  const results = { reminded: 0, alerted: 0, archived: 0, errors: 0 }
+  const results = { reminded: 0, alerted: 0, archived: 0, errors: 0, expiry_warned: 0 }
 
   for (const app of apps) {
     const companyId = app.company_id as string
@@ -237,6 +260,43 @@ export async function GET(request: Request) {
     } catch (err) {
       results.errors++
       console.error(`[CRON] error processing app ${app.id}:`, err)
+    }
+  }
+
+  // Notify clients with documents expiring soon (days 53–60)
+  for (const [companyId, info] of expiringSoonByCompany.entries()) {
+    try {
+      const client = clientMap.get(companyId)
+      if (!client) continue
+      const alreadyWarned = (processedMap.get(info.appId) ?? new Set()).has("cron_expiry_warn_53d")
+      if (alreadyWarned) continue
+
+      if (resend) {
+        await resend.emails.send({
+          from: CRON_FROM,
+          to: client.email,
+          subject: `Tus documentos de ${info.productName} están por vencer`,
+          html: emailCronReminder({
+            companyName: clientMap.get(companyId)?.name ?? "Tu empresa",
+            clientName: client.name || "Cliente",
+            productName: info.productName,
+            applicationUrl: `${APP_URL}/applications/${info.appId}/documents`,
+            daysSinceUpdate: 0,
+          }),
+        }).catch(() => {})
+      }
+
+      await admin.from("audit_logs").insert({
+        actor_id: null,
+        action: "cron_expiry_warn_53d",
+        entity_type: "application",
+        entity_id: info.appId,
+        metadata: { docs_expiring: info.count, client_email: client.email },
+      })
+
+      results.expiry_warned++
+    } catch {
+      results.errors++
     }
   }
 

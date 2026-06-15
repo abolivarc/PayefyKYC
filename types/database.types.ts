@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       application_comments: {
@@ -687,6 +662,63 @@ export type Database = {
           },
         ]
       }
+      product_orders: {
+        Row: {
+          application_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          invoice_path: string | null
+          notes: string | null
+          product_code: string
+          quantity: number
+          shipping_address: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          invoice_path?: string | null
+          notes?: string | null
+          product_code: string
+          quantity?: number
+          shipping_address: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          invoice_path?: string | null
+          notes?: string | null
+          product_code?: string
+          quantity?: number
+          shipping_address?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_orders_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_orders_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           code: string
@@ -942,9 +974,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       application_status: [

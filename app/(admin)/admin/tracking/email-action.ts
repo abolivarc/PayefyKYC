@@ -1,5 +1,6 @@
 "use server"
 
+import * as Sentry from "@sentry/nextjs"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
@@ -103,12 +104,16 @@ export async function sendExpedienteEmail({
       const bundle = await bundleExpediente(applicationId)
       attachments = [{ filename: bundle.filename, content: bundle.base64 }]
     } catch (e) {
+      Sentry.captureException(e, { extra: { applicationId, templateKey } })
       return { error: `Error al generar ZIP: ${(e as Error).message}` }
     }
   }
 
   const { error: sendErr } = await sendEmail({ to: finalTo, subject, html, attachments })
-  if (sendErr) return { error: sendErr }
+  if (sendErr) {
+    Sentry.captureMessage(`Email send failed: ${sendErr}`, { extra: { applicationId, templateKey, to: finalTo } })
+    return { error: sendErr }
+  }
 
   // Record in bitácora
   const templateLabels: Record<EmailTemplateKey, string> = {
