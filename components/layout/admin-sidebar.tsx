@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { signOut } from "@/app/(auth)/actions"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/layout/notification-bell"
 
 const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -72,11 +73,14 @@ function SidebarContent({ fullName, email, role, onClose }: Props & { onClose?: 
 
       {/* User info + rol badge */}
       <div className="px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
-        {roleLabel && (
-          <span className="text-xs px-2 py-0.5 rounded mb-1.5 inline-block" style={{ background: "rgba(174,255,153,0.15)", color: "#AEFF99" }}>
-            {roleLabel}
-          </span>
-        )}
+        <div className="flex items-center justify-between mb-1">
+          {roleLabel && (
+            <span className="text-xs px-2 py-0.5 rounded inline-block" style={{ background: "rgba(174,255,153,0.15)", color: "#AEFF99" }}>
+              {roleLabel}
+            </span>
+          )}
+          <NotificationBell variant="light" />
+        </div>
         <p className="text-sm truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{fullName || "Usuario"}</p>
         <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.45)" }}>{email}</p>
       </div>
