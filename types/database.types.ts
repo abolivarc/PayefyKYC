@@ -153,9 +153,12 @@ export type Database = {
       companies: {
         Row: {
           assigned_agent_id: string | null
+          contact_email: string | null
           created_at: string
           created_by: string | null
           id: string
+          lead_invited_at: string | null
+          lead_product_code: string | null
           legal_name: string
           operator_email: string | null
           operator_name: string | null
@@ -163,7 +166,7 @@ export type Database = {
           phone: string | null
           status: Database["public"]["Enums"]["company_status"]
           tax_address: Json | null
-          tax_id: string
+          tax_id: string | null
           tax_regime: string | null
           terminal_type: string | null
           updated_at: string
@@ -171,9 +174,12 @@ export type Database = {
         }
         Insert: {
           assigned_agent_id?: string | null
+          contact_email?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          lead_invited_at?: string | null
+          lead_product_code?: string | null
           legal_name: string
           operator_email?: string | null
           operator_name?: string | null
@@ -181,7 +187,7 @@ export type Database = {
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           tax_address?: Json | null
-          tax_id: string
+          tax_id?: string | null
           tax_regime?: string | null
           terminal_type?: string | null
           updated_at?: string
@@ -189,9 +195,12 @@ export type Database = {
         }
         Update: {
           assigned_agent_id?: string | null
+          contact_email?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
+          lead_invited_at?: string | null
+          lead_product_code?: string | null
           legal_name?: string
           operator_email?: string | null
           operator_name?: string | null
@@ -199,7 +208,7 @@ export type Database = {
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           tax_address?: Json | null
-          tax_id?: string
+          tax_id?: string | null
           tax_regime?: string | null
           terminal_type?: string | null
           updated_at?: string
@@ -651,7 +660,7 @@ export type Database = {
         | "activated"
         | "rejected"
         | "archived"
-      company_status: "active" | "archived" | "rejected"
+      company_status: "lead" | "active" | "archived" | "rejected"
       company_user_role:
         | "legal_representative"
         | "operator"
@@ -822,7 +831,7 @@ export const Constants = {
         "rejected",
         "archived",
       ],
-      company_status: ["active", "archived", "rejected"],
+      company_status: ["lead", "active", "archived", "rejected"],
       company_user_role: [
         "legal_representative",
         "operator",

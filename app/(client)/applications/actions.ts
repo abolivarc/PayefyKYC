@@ -33,42 +33,68 @@ export async function createApplications(formData: FormData) {
     )
   }
 
-  // 1. Crear empresa
-  const { data: company, error: companyErr } = await supabase
-    .from("companies")
-    .insert({
+  // 1. Detectar si el cliente ya tiene empresa (flujo de invitación de lead)
+  const { data: existingMembership } = await supabase
+    .from("company_users")
+    .select("company_id")
+    .eq("user_id", user.id)
+    .single()
+
+  let companyId: string
+
+  if (existingMembership) {
+    // Flujo lead: actualizar empresa pre-creada con los datos del wizard
+    companyId = existingMembership.company_id
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    await adminClient.from("companies").update({
       legal_name: legalName,
       tax_id: taxId,
       phone,
       terminal_type: terminalType,
       operator_email: operatorEmail,
       person_type: personType,
-      created_by: user.id,
+    }).eq("id", companyId)
+  } else {
+    // Flujo estándar: crear empresa nueva
+    const { data: company, error: companyErr } = await supabase
+      .from("companies")
+      .insert({
+        legal_name: legalName,
+        tax_id: taxId,
+        phone,
+        terminal_type: terminalType,
+        operator_email: operatorEmail,
+        person_type: personType,
+        created_by: user.id,
+      })
+      .select("id")
+      .single()
+
+    if (companyErr || !company) {
+      const msg = companyErr?.message.includes("unique")
+        ? "Ya tienes una empresa registrada."
+        : "Error al crear empresa."
+      redirect("/applications/new?error=" + encodeURIComponent(msg))
+    }
+    companyId = company.id
+
+    // Vincular usuario a la nueva empresa
+    const { error: cuError } = await supabase.from("company_users").insert({
+      company_id: companyId,
+      user_id: user.id,
+      role_in_company: "operator",
     })
-    .select("id")
-    .single()
-
-  if (companyErr || !company) {
-    const msg = companyErr?.message.includes("unique")
-      ? "Ya tienes una empresa registrada."
-      : "Error al crear empresa."
-    redirect("/applications/new?error=" + encodeURIComponent(msg))
-  }
-
-  // 2. Vincular al usuario como miembro de la empresa
-  // Nota: company_users usa role_in_company, no hay campo email
-  const { error: cuError } = await supabase.from("company_users").insert({
-    company_id: company.id,
-    user_id: user.id,
-    role_in_company: "operator",
-  })
-  if (cuError) {
-    redirect(
-      "/applications/new?error=" +
-        encodeURIComponent(
-          "Error al vincular tu cuenta con la empresa. Intenta de nuevo."
-        )
-    )
+    if (cuError) {
+      redirect(
+        "/applications/new?error=" +
+          encodeURIComponent(
+            "Error al vincular tu cuenta con la empresa. Intenta de nuevo."
+          )
+      )
+    }
   }
 
   // 3. Obtener productos seleccionados
@@ -84,7 +110,7 @@ export async function createApplications(formData: FormData) {
     const { data: app, error: appErr } = await supabase
       .from("applications")
       .insert({
-        company_id: company.id,
+        company_id: companyId,
         product_id: product.id,
         status: "draft",
       })

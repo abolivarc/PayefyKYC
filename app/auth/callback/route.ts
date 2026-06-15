@@ -11,6 +11,7 @@
 
 import { NextResponse, type NextRequest } from "next/server"
 import { createServerClient } from "@supabase/ssr"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { cookies } from "next/headers"
 
 export async function GET(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function GET(request: NextRequest) {
     | "recovery"
     | "signup"
     | "email"
+    | "invite"
     | null
   const next = searchParams.get("next") ?? "/dashboard"
 
@@ -55,6 +57,37 @@ export async function GET(request: NextRequest) {
         "El enlace expiró o ya fue usado. Solicita uno nuevo."
       )}`
     )
+  }
+
+  // Flujo de invitación: vincular al usuario con la empresa pre-creada
+  if (type === "invite") {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const companyId = user?.user_metadata?.company_id as string | undefined
+
+    if (user && companyId) {
+      const admin = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+
+      // Crear vínculo usuario–empresa si no existe
+      await admin
+        .from("company_users")
+        .upsert(
+          { company_id: companyId, user_id: user.id, role_in_company: "operator" },
+          { onConflict: "company_id,user_id", ignoreDuplicates: true }
+        )
+
+      // Promover estado de la empresa de 'lead' a 'active'
+      await admin
+        .from("companies")
+        .update({ status: "active" })
+        .eq("id", companyId)
+        .eq("status", "lead")
+    }
   }
 
   const destination = type === "recovery" ? "/reset-password" : next

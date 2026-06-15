@@ -1,3 +1,38 @@
+export function emailLeadInvite({
+  companyName,
+  agentName,
+  productName,
+  inviteUrl,
+}: {
+  companyName: string
+  agentName: string
+  productName: string
+  inviteUrl: string
+}): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
+  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
+    <h1 style="color:white;margin:0;font-size:20px;">Payefy</h1>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:#065f2e;margin-top:0;">Tu proceso KYC con Payefy está listo</h2>
+    <p>Hola,</p>
+    <p>${agentName} de Payefy ha iniciado tu expediente para el producto <strong>${productName}</strong> a nombre de <strong>${companyName}</strong>.</p>
+    <p>Para continuar, crea tu cuenta y completa tu información haciendo clic en el siguiente enlace:</p>
+    <div style="margin:28px 0;">
+      <a href="${inviteUrl}" style="background:#065f2e;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:15px;">
+        Completar mi registro &rarr;
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;">Este enlace es válido por 24 horas y es de uso único. Si no esperabas este correo, ignóralo.</p>
+    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">Payefy · onboarding@payefy.com.mx</p>
+  </div>
+</body>
+</html>`
+}
+
 export function emailDocsSubmitted({
   companyName,
   productName,
