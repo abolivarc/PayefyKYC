@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 
 type ProductOption = "cards" | "terminals" | "both"
+type PersonType = "persona_fisica" | "persona_moral"
 
 const OPTION_META: Record<
   ProductOption,
@@ -71,6 +72,7 @@ function WizardContent() {
   const [step, setStep] = useState(skipStep1 ? 2 : 1)
   const [selected, setSelected] = useState<ProductOption | null>(initialSelected)
   const [terminalType, setTerminalType] = useState("")
+  const [personType, setPersonType] = useState<PersonType | "">("")
 
   const hasTerminals = selected === "terminals" || selected === "both"
   const products = selected ? OPTION_META[selected].products : []
@@ -166,6 +168,48 @@ function WizardContent() {
             Ingresa los datos fiscales de la empresa que solicitará el producto.
           </p>
 
+          {/* Tipo de persona — requerido cuando el producto incluye terminales */}
+          {hasTerminals && (
+            <div className="space-y-2">
+              <Label>Tipo de persona <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-3">
+                {(
+                  [
+                    { value: "persona_moral", label: "Persona Moral", sub: "Empresa / Sociedad" },
+                    { value: "persona_fisica", label: "Persona Física", sub: "Con actividad empresarial" },
+                  ] as { value: PersonType; label: string; sub: string }[]
+                ).map(({ value, label, sub }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setPersonType(value)}
+                    className={`text-left rounded-xl border-2 p-3 transition-colors ${
+                      personType === value
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-2">
+                      <div
+                        className={`mt-0.5 h-4 w-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${
+                          personType === value ? "border-primary bg-primary" : "border-input"
+                        }`}
+                      >
+                        {personType === value && (
+                          <div className="h-1.5 w-1.5 rounded-full bg-white" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold leading-tight">{label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <form action={createApplications} className="space-y-4">
             {/* Hidden: productos seleccionados */}
             {products.map((p) => (
@@ -173,6 +217,9 @@ function WizardContent() {
             ))}
             {terminalType && (
               <input type="hidden" name="terminal_type" value={terminalType} />
+            )}
+            {personType && (
+              <input type="hidden" name="person_type" value={personType} />
             )}
 
             {hasTerminals && (
@@ -253,7 +300,11 @@ function WizardContent() {
               >
                 Atrás
               </Button>
-              <Button type="submit" className="flex-1">
+              <Button
+                type="submit"
+                className="flex-1"
+                disabled={hasTerminals && !personType}
+              >
                 Crear solicitud
               </Button>
             </div>

@@ -65,11 +65,11 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner"] },
-  { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "efirma", "cif", "company_address_proof", "inscription_rpc"] },
-  { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id"] },
-  { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance"] },
-  { title: "Estado de cuenta", codes: ["bank_statement"] },
-  { title: "Adicionales", codes: ["business_photos", "website_url"] },
+  { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "efirma", "cif", "company_address_proof", "inscription_rpc", "pf_address_proof"] },
+  { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
+  { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
+  { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
+  { title: "Adicionales", codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"] },
 ]
 
 export default async function ReviewPage({

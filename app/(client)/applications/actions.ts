@@ -24,6 +24,7 @@ export async function createApplications(formData: FormData) {
   const phone = formData.get("phone") as string
   const terminalType = (formData.get("terminal_type") as string) || null
   const operatorEmail = formData.get("operator_email") as string
+  const personType = (formData.get("person_type") as string) || null
 
   if (!products.length || !legalName || !taxId || !phone || !operatorEmail) {
     redirect(
@@ -41,6 +42,7 @@ export async function createApplications(formData: FormData) {
       phone,
       terminal_type: terminalType,
       operator_email: operatorEmail,
+      person_type: personType,
       created_by: user.id,
     })
     .select("id")
@@ -93,13 +95,22 @@ export async function createApplications(formData: FormData) {
 
     if (!firstAppId) firstAppId = app.id
 
-    // 5. Obtener templates del producto
-    const { data: templates, error: tmplErr } = await supabase
+    // 5. Obtener templates del producto y filtrar por tipo de persona (solo terminals)
+    const { data: allTemplates, error: tmplErr } = await supabase
       .from("document_templates")
-      .select("id")
+      .select("id, code")
       .eq("product_id", product.id)
 
-    console.log("[CREATE DEBUG] templates found:", templates?.length, "for product:", product.id, "error:", tmplErr?.message)
+    let templates = allTemplates ?? []
+    if (product.code === "terminals" && personType) {
+      if (personType === "persona_fisica") {
+        templates = templates.filter((t) => t.code.startsWith("pf_"))
+      } else {
+        templates = templates.filter((t) => !t.code.startsWith("pf_"))
+      }
+    }
+
+    console.log("[CREATE DEBUG] templates found:", templates.length, "for product:", product.id, "personType:", personType, "error:", tmplErr?.message)
 
     // 6. Crear un document record por template — usa service_role para bypass RLS
     // (la policy documents_insert_member usa is_company_member que puede fallar

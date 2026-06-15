@@ -28,6 +28,8 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
       "cif",
       "company_address_proof",
       "inscription_rpc",
+      // Persona Física (terminales)
+      "pf_address_proof",
     ],
   },
   {
@@ -38,14 +40,28 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
       "legal_rep_selfie",
       "shareholder_id",
       "administrator_id",
+      // Persona Física (terminales)
+      "pf_official_id",
     ],
   },
   {
     title: "Documentos fiscales",
-    codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance"],
+    codes: [
+      "tax_situation_certificate",
+      "tax_declaration",
+      "sat_compliance",
+      // Persona Física (terminales)
+      "pf_tax_situation",
+    ],
   },
-  { title: "Estado de cuenta", codes: ["bank_statement"] },
-  { title: "Adicionales", codes: ["business_photos", "website_url"] },
+  {
+    title: "Estado de cuenta",
+    codes: ["bank_statement", "pf_bank_statement"],
+  },
+  {
+    title: "Adicionales",
+    codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"],
+  },
 ]
 
 export default async function DocumentsPage({

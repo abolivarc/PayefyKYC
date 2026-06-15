@@ -159,6 +159,7 @@ export type Database = {
           legal_name: string
           operator_email: string | null
           operator_name: string | null
+          person_type: string | null
           phone: string | null
           status: Database["public"]["Enums"]["company_status"]
           tax_address: Json | null
@@ -176,6 +177,7 @@ export type Database = {
           legal_name: string
           operator_email?: string | null
           operator_name?: string | null
+          person_type?: string | null
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           tax_address?: Json | null
@@ -193,6 +195,7 @@ export type Database = {
           legal_name?: string
           operator_email?: string | null
           operator_name?: string | null
+          person_type?: string | null
           phone?: string | null
           status?: Database["public"]["Enums"]["company_status"]
           tax_address?: Json | null
