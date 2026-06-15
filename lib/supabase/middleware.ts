@@ -2,7 +2,13 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
 export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request })
+  // Inject pathname so server layouts can read it
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-pathname", request.nextUrl.pathname)
+
+  let supabaseResponse = NextResponse.next({
+    request: { headers: requestHeaders },
+  })
 
   if (
     !process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -23,7 +29,9 @@ export async function updateSession(request: NextRequest) {
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           )
-          supabaseResponse = NextResponse.next({ request })
+          supabaseResponse = NextResponse.next({
+            request: { headers: requestHeaders },
+          })
           cookiesToSet.forEach(({ name, value, options }) =>
             supabaseResponse.cookies.set(name, value, options)
           )
@@ -51,6 +59,7 @@ export async function updateSession(request: NextRequest) {
       pathname.startsWith("/dashboard") ||
       pathname.startsWith("/applications") ||
       pathname.startsWith("/profile") ||
+      pathname.startsWith("/terminos") ||
       pathname.startsWith("/admin") ||
       pathname === "/reset-password") &&
     pathname !== "/admin/login"

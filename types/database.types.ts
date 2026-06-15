@@ -39,6 +39,104 @@ export type Database = {
   }
   public: {
     Tables: {
+      application_comments: {
+        Row: {
+          application_id: string
+          author_id: string | null
+          body: string
+          created_at: string
+          id: string
+          kind: string
+          metadata: Json | null
+        }
+        Insert: {
+          application_id: string
+          author_id?: string | null
+          body: string
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json | null
+        }
+        Update: {
+          application_id?: string
+          author_id?: string | null
+          body?: string
+          created_at?: string
+          id?: string
+          kind?: string
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_comments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "application_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_contracts: {
+        Row: {
+          application_id: string
+          created_at: string
+          external_link: string | null
+          id: string
+          kind: string
+          note: string | null
+          sent_at: string | null
+          sign_method: string | null
+          signed_at: string | null
+          signed_doc_path: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          application_id: string
+          created_at?: string
+          external_link?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          sent_at?: string | null
+          sign_method?: string | null
+          signed_at?: string | null
+          signed_doc_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          application_id?: string
+          created_at?: string
+          external_link?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          sent_at?: string | null
+          sign_method?: string | null
+          signed_at?: string | null
+          signed_doc_path?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_contracts_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applications: {
         Row: {
           activated_at: string | null
@@ -53,6 +151,9 @@ export type Database = {
           rejection_reason: string | null
           status: Database["public"]["Enums"]["application_status"]
           submitted_at: string | null
+          transfer_recipient_email: string | null
+          transfer_sent_at: string | null
+          transfer_status: string | null
           updated_at: string
         }
         Insert: {
@@ -68,6 +169,9 @@ export type Database = {
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
+          transfer_recipient_email?: string | null
+          transfer_sent_at?: string | null
+          transfer_status?: string | null
           updated_at?: string
         }
         Update: {
@@ -83,6 +187,9 @@ export type Database = {
           rejection_reason?: string | null
           status?: Database["public"]["Enums"]["application_status"]
           submitted_at?: string | null
+          transfer_recipient_email?: string | null
+          transfer_sent_at?: string | null
+          transfer_status?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -169,6 +276,9 @@ export type Database = {
           tax_id: string | null
           tax_regime: string | null
           terminal_type: string | null
+          terms_accepted_at: string | null
+          terms_accepted_by: string | null
+          terms_version: string | null
           updated_at: string
           website: string | null
         }
@@ -190,6 +300,9 @@ export type Database = {
           tax_id?: string | null
           tax_regime?: string | null
           terminal_type?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -211,6 +324,9 @@ export type Database = {
           tax_id?: string | null
           tax_regime?: string | null
           terminal_type?: string | null
+          terms_accepted_at?: string | null
+          terms_accepted_by?: string | null
+          terms_version?: string | null
           updated_at?: string
           website?: string | null
         }
@@ -225,6 +341,13 @@ export type Database = {
           {
             foreignKeyName: "companies_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "companies_terms_accepted_by_fkey"
+            columns: ["terms_accepted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -279,6 +402,7 @@ export type Database = {
           created_at: string
           cross_validation_fields: Json | null
           description: string | null
+          field_type: string
           file_format: string
           id: string
           instructions: string | null
@@ -296,6 +420,7 @@ export type Database = {
           created_at?: string
           cross_validation_fields?: Json | null
           description?: string | null
+          field_type?: string
           file_format?: string
           id?: string
           instructions?: string | null
@@ -313,6 +438,7 @@ export type Database = {
           created_at?: string
           cross_validation_fields?: Json | null
           description?: string | null
+          field_type?: string
           file_format?: string
           id?: string
           instructions?: string | null
@@ -338,11 +464,13 @@ export type Database = {
       documents: {
         Row: {
           application_id: string
+          check_note: string | null
           created_at: string
           cross_validation_status: Database["public"]["Enums"]["cross_validation_status"]
           file_name: string | null
           file_size: number | null
           id: string
+          is_checked: boolean
           mime_type: string | null
           rejection_reasons: string[] | null
           reviewed_at: string | null
@@ -358,11 +486,13 @@ export type Database = {
         }
         Insert: {
           application_id: string
+          check_note?: string | null
           created_at?: string
           cross_validation_status?: Database["public"]["Enums"]["cross_validation_status"]
           file_name?: string | null
           file_size?: number | null
           id?: string
+          is_checked?: boolean
           mime_type?: string | null
           rejection_reasons?: string[] | null
           reviewed_at?: string | null
@@ -378,11 +508,13 @@ export type Database = {
         }
         Update: {
           application_id?: string
+          check_note?: string | null
           created_at?: string
           cross_validation_status?: Database["public"]["Enums"]["cross_validation_status"]
           file_name?: string | null
           file_size?: number | null
           id?: string
+          is_checked?: boolean
           mime_type?: string | null
           rejection_reasons?: string[] | null
           reviewed_at?: string | null

@@ -8,6 +8,7 @@ import {
   KanbanSquare,
   Building2,
   Users,
+  BarChart2,
   LogOut,
   Menu,
   X,
@@ -19,6 +20,7 @@ import { PayefyLogo } from "./payefy-logo"
 const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/kanban", label: "Kanban", icon: KanbanSquare },
+  { href: "/admin/tracking", label: "Seguimiento", icon: BarChart2 },
   { href: "/admin/clients", label: "Clientes", icon: Building2 },
   { href: "/admin/leads", label: "Leads", icon: Users },
 ]
