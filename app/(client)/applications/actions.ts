@@ -258,6 +258,32 @@ export async function recordDocumentUpload(
 }
 
 // ─────────────────────────────────────
+// Marcar casilla "está en el acta / no aplica" (check_or_upload)
+// ─────────────────────────────────────
+export async function setDocumentChecked(
+  documentId: string,
+  isChecked: boolean
+) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { error } = await supabase
+    .from("documents")
+    .update({
+      is_checked: isChecked,
+      status: isChecked ? "pending_review" : "pending_upload",
+    })
+    .eq("id", documentId)
+
+  if (error) return { error: error.message }
+  revalidatePath("/", "layout")
+  return { success: true }
+}
+
+// ─────────────────────────────────────
 // Agregar un documento extra (para templates múltiples)
 // ─────────────────────────────────────
 export async function addExtraDocument(
@@ -291,16 +317,20 @@ export async function submitApplication(applicationId: string) {
   if (!user) return { error: "No autenticado" }
 
   // Verificar que todos los requeridos están al menos en pending_review
+  // check_or_upload docs: satisfied if is_checked OR storage_path IS NOT NULL
   const { data: docs } = await supabase
     .from("documents")
-    .select("status, document_templates(is_required)")
+    .select("status, storage_path, is_checked, document_templates(is_required, field_type)")
     .eq("application_id", applicationId)
 
-  const requiredPending = (docs ?? []).filter(
-    (d) =>
-      ((d.document_templates as unknown as { is_required: boolean } | null)?.is_required ??
-        false) && d.status === "pending_upload"
-  )
+  const requiredPending = (docs ?? []).filter((d) => {
+    const tmpl = d.document_templates as unknown as { is_required: boolean; field_type: string } | null
+    if (!tmpl?.is_required) return false
+    if (tmpl.field_type === "check_or_upload") {
+      return !d.is_checked && !d.storage_path
+    }
+    return d.status === "pending_upload"
+  })
 
   if (requiredPending.length > 0) {
     return {

@@ -24,6 +24,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
     codes: [
       "incorporation_act",
       "incorporation_act_update",
+      "organigrama",
       "efirma",
       "cif",
       "company_address_proof",
@@ -127,8 +128,8 @@ export default async function DocumentsPage({
   const { data: allDocs, error: docsErr } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id,
-       document_templates(id, code, name, description, is_form, is_required, file_format, instructions, sort_order)`
+      `id, status, storage_path, file_name, application_id, template_id, is_checked,
+       document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
 
@@ -140,7 +141,7 @@ export default async function DocumentsPage({
 
   type TemplateMeta = {
     id: string; code: string; name: string; description: string | null;
-    is_form: boolean; is_required: boolean; file_format: string;
+    is_form: boolean; is_required: boolean; field_type: string; file_format: string;
     instructions: string | null; sort_order: number
   }
   // 4. Construir mapa de template.code → docs
@@ -180,6 +181,7 @@ export default async function DocumentsPage({
       storage_path: d.storage_path,
       file_name: d.file_name,
       application_id: d.application_id,
+      is_checked: (d as unknown as { is_checked: boolean }).is_checked ?? false,
       template: {
         id: tmpl.id,
         code: tmpl.code,
@@ -187,6 +189,7 @@ export default async function DocumentsPage({
         description: tmpl.description,
         is_form: tmpl.is_form,
         is_required: tmpl.is_required,
+        field_type: tmpl.field_type ?? "upload",
         file_format: tmpl.file_format,
         instructions: tmpl.instructions,
         sort_order: tmpl.sort_order,
@@ -200,6 +203,7 @@ export default async function DocumentsPage({
       templateName: tmpl.name,
       templateInstructions: tmpl.instructions,
       is_form: tmpl.is_form,
+      field_type: tmpl.field_type ?? "upload",
       file_format: tmpl.file_format,
       docs: docWithTemplate,
       isMulti,
@@ -218,9 +222,10 @@ export default async function DocumentsPage({
   // 7. Stats para progress bar
   const allGroupDocs = Array.from(groupMap.values()).flatMap((g) => g.docs)
   const total = allGroupDocs.length
-  const done = allGroupDocs.filter((d) =>
-    ["approved", "pending_review"].includes(d.status)
-  ).length
+  const done = allGroupDocs.filter((d) => {
+    if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+    return ["approved", "pending_review"].includes(d.status)
+  }).length
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
 
   // 8. Detectar si todos los required están listos para enviar
@@ -228,7 +233,10 @@ export default async function DocumentsPage({
     (g) => g.docs[0]?.template.is_required
   )
   const allRequiredReady = requiredGroups.every((g) =>
-    g.docs.every((d) => ["pending_review", "approved"].includes(d.status))
+    g.docs.every((d) => {
+      if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+      return ["pending_review", "approved"].includes(d.status)
+    })
   )
 
   const product = (app.products as unknown) as { name: string; code: string } | null

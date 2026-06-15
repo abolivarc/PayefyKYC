@@ -1,5 +1,6 @@
 import { DocumentUploadRow } from "./document-upload-row"
 import { MultiUploadRow } from "./multi-upload-row"
+import { CheckOrUploadRow } from "./check-or-upload-row"
 
 export interface DocWithTemplate {
   id: string
@@ -7,6 +8,7 @@ export interface DocWithTemplate {
   storage_path: string | null
   file_name: string | null
   application_id: string
+  is_checked: boolean
   template: {
     id: string
     code: string
@@ -14,6 +16,7 @@ export interface DocWithTemplate {
     description: string | null
     is_form: boolean
     is_required: boolean
+    field_type: string
     file_format: string
     instructions: string | null
     sort_order: number
@@ -27,6 +30,7 @@ export interface DocGroup {
   templateName: string
   templateInstructions: string | null
   is_form: boolean
+  field_type: string
   file_format: string
   docs: DocWithTemplate[]
   isMulti: boolean
@@ -76,6 +80,22 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
 
                   const doc = group.docs[0]
                   if (!doc) return null
+
+                  if (group.field_type === "check_or_upload") {
+                    return (
+                      <CheckOrUploadRow
+                        key={group.templateCode}
+                        documentId={doc.id}
+                        applicationId={applicationId}
+                        templateName={group.templateName}
+                        templateInstructions={group.templateInstructions}
+                        currentStatus={doc.status}
+                        fileFormat={group.file_format}
+                        fileName={doc.file_name}
+                        initialIsChecked={doc.is_checked}
+                      />
+                    )
+                  }
 
                   return (
                     <DocumentUploadRow
