@@ -11,6 +11,7 @@ import {
   Users,
   BarChart2,
   ShoppingBag,
+  PieChart,
   LogOut,
   Menu,
   X,
@@ -25,6 +26,7 @@ const NAV_LINKS = [
   { href: "/admin/clients", label: "Clientes", icon: Building2 },
   { href: "/admin/leads", label: "Leads", icon: Users },
   { href: "/admin/tracking/orders", label: "Pedidos", icon: ShoppingBag },
+  { href: "/admin/reportes", label: "Reportes", icon: PieChart },
 ]
 
 const ROLE_LABELS: Record<string, string> = {
