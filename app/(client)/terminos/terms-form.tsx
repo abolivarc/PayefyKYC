@@ -28,10 +28,15 @@ export function TermsAcceptanceForm() {
           <span className="text-sm text-slate-700 leading-snug">
             He leído y acepto los{" "}
             <strong className="font-semibold text-slate-900">
-              Términos y Condiciones de Payefy
-            </strong>
-            . Entiendo que esta aceptación aplica a toda mi empresa y que Payefy
-            podrá actualizar estos términos con previo aviso.
+              Términos y Condiciones
+            </strong>{" "}
+            y el{" "}
+            <a href="/aviso-de-privacidad" target="_blank" rel="noopener"
+              className="font-semibold text-emerald-700 hover:underline">
+              Aviso de Privacidad
+            </a>{" "}
+            de Payefy, S.A.P.I. de C.V. Entiendo que esta aceptación aplica a
+            toda mi empresa y que Payefy podrá actualizar estos términos con previo aviso.
           </span>
         </label>
       </div>
