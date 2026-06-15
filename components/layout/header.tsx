@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { PayefyLogo } from "./payefy-logo"
+import Image from "next/image"
 
 interface HeaderProps {
   userNav: ReactNode
@@ -11,12 +11,16 @@ export function Header({ userNav, variant = "client" }: HeaderProps) {
     return (
       <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
         <div className="flex h-14 items-center px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <PayefyLogo size={30} />
-            <div className="leading-none">
-              <p className="font-bold text-sm" style={{ color: "#004238", letterSpacing: "-.3px" }}>payefy</p>
-              <p className="text-xs text-gray-400 mt-0.5">Portal del Cliente</p>
-            </div>
+          <div className="flex items-center gap-2">
+            <Image
+              src="/payefy-logo-dark.png"
+              alt="Payefy"
+              width={120}
+              height={28}
+              style={{ height: 28, width: "auto" }}
+              priority
+            />
+            <span className="text-xs text-gray-400 border-l border-gray-200 pl-2 ml-1">Portal del Cliente</span>
           </div>
           <div className="ml-auto">{userNav}</div>
         </div>

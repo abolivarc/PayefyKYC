@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -15,7 +16,6 @@ import {
 } from "lucide-react"
 import { signOut } from "@/app/(auth)/actions"
 import { cn } from "@/lib/utils"
-import { PayefyLogo } from "./payefy-logo"
 
 const NAV_LINKS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -48,12 +48,16 @@ function SidebarContent({ fullName, email, role, onClose }: Props & { onClose?: 
     <div className="flex flex-col h-full w-64 text-white" style={{ background: "#004238" }}>
       {/* Logo + brand */}
       <div className="flex items-center justify-between px-4 h-14 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
-        <div className="flex items-center gap-2.5">
-          <PayefyLogo size={28} variant="light" />
-          <div className="leading-none">
-            <p className="font-bold text-white text-sm" style={{ letterSpacing: "-.3px" }}>payefy</p>
-            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>Panel interno</p>
-          </div>
+        <div className="flex items-center gap-2">
+          <Image
+            src="/payefy-logo-light.png"
+            alt="Payefy"
+            width={100}
+            height={22}
+            style={{ height: 22, width: "auto" }}
+            priority
+          />
+          <span className="text-xs border-l pl-2 ml-1" style={{ borderColor: "rgba(255,255,255,0.2)", color: "rgba(255,255,255,0.5)" }}>Panel interno</span>
         </div>
         {onClose && (
           <button onClick={onClose} className="p-1" style={{ color: "rgba(255,255,255,0.6)" }}>
@@ -131,10 +135,14 @@ export function AdminSidebar({ fullName, email, role }: Props) {
       {/* Mobile: header bar + overlay */}
       <div className="md:hidden">
         <header className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4" style={{ background: "#004238" }}>
-          <div className="flex items-center gap-2">
-            <PayefyLogo size={24} variant="light" />
-            <span className="font-bold text-white text-sm" style={{ letterSpacing: "-.3px" }}>payefy</span>
-          </div>
+          <Image
+            src="/payefy-logo-light.png"
+            alt="Payefy"
+            width={90}
+            height={20}
+            style={{ height: 20, width: "auto" }}
+            priority
+          />
           <button
             onClick={() => setMobileOpen(true)}
             className="p-1"
