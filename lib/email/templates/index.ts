@@ -1,3 +1,24 @@
+// ── Shared header/footer helpers ───────────────────────
+const G = "#004238" // verde principal Payefy
+const A = "#AEFF99" // verde acento
+
+function header(title?: string) {
+  return `
+  <div style="background:${G};padding:20px 24px;border-radius:8px 8px 0 0;display:flex;align-items:center;gap:12px;">
+    <span style="font-weight:800;font-size:18px;color:${A};letter-spacing:-.5px;font-family:Georgia,serif;">payefy</span>
+    ${title ? `<span style="color:rgba(255,255,255,.7);font-size:13px;margin-left:4px;">· ${title}</span>` : ""}
+  </div>`
+}
+function footer(note?: string) {
+  return `<p style="color:#9ca3af;font-size:11px;margin-bottom:0;">${note ?? "Payefy · Este correo es generado automáticamente."}</p>`
+}
+function btn(href: string, label: string) {
+  return `<a href="${href}" style="background:${G};color:${A};padding:13px 26px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">${label} &rarr;</a>`
+}
+function wrap(body: string) {
+  return `<!DOCTYPE html><html lang="es"><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111827;">${body}</body></html>`
+}
+
 export function emailCronReminder({
   companyName,
   clientName,
@@ -11,28 +32,17 @@ export function emailCronReminder({
   applicationUrl: string
   daysSinceUpdate: number
 }): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">Payefy</h1>
-  </div>
+  return wrap(`
+  ${header()}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:#065f2e;margin-top:0;">Tu expediente KYC está esperándote</h2>
+    <h2 style="color:${G};margin-top:0;">Tu expediente KYC está esperándote</h2>
     <p>Hola <strong>${clientName}</strong>,</p>
     <p>Notamos que tu expediente de <strong>${companyName}</strong> para el producto <strong>${productName}</strong> lleva <strong>${daysSinceUpdate} días</strong> sin actividad.</p>
     <p>Para no perder tu lugar en el proceso, ingresa y completa o actualiza tu información:</p>
-    <div style="margin:28px 0;">
-      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:15px;">
-        Continuar mi expediente &rarr;
-      </a>
-    </div>
+    <div style="margin:28px 0;">${btn(applicationUrl, "Continuar mi expediente")}</div>
     <p style="color:#6b7280;font-size:13px;">Si ya lo enviaste recientemente, ignora este mensaje. Si tienes dudas, responde este correo.</p>
-    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">Payefy · Este correo es generado automáticamente.</p>
-  </div>
-</body>
-</html>`
+    ${footer()}
+  </div>`)
 }
 
 export function emailCronInternalAlert({
@@ -48,13 +58,8 @@ export function emailCronInternalAlert({
   applicationUrl: string
   daysSinceUpdate: number
 }): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#1e293b;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">PayefyKYC — Alerta interna</h1>
-  </div>
+  return wrap(`
+  ${header("Alerta interna")}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
     <h2 style="color:#b45309;margin-top:0;">Solicitud sin avance — ${daysSinceUpdate} días</h2>
     <p>La siguiente solicitud lleva <strong>${daysSinceUpdate} días</strong> sin actualización:</p>
@@ -64,15 +69,9 @@ export function emailCronInternalAlert({
       <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Estado actual</td><td style="padding:8px;border:1px solid #e5e7eb;">${applicationStatus}</td></tr>
     </table>
     <p>Si no se registra actividad en los próximos 16 días, la solicitud será archivada automáticamente.</p>
-    <div style="margin:24px 0;">
-      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
-        Revisar expediente &rarr;
-      </a>
-    </div>
-    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">PayefyKYC · Alerta automática del sistema de recordatorios.</p>
-  </div>
-</body>
-</html>`
+    <div style="margin:24px 0;">${btn(applicationUrl, "Revisar expediente")}</div>
+    ${footer("PayefyKYC · Alerta automática del sistema de recordatorios.")}
+  </div>`)
 }
 
 export function emailLeadInvite({
@@ -86,28 +85,17 @@ export function emailLeadInvite({
   productName: string
   inviteUrl: string
 }): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">Payefy</h1>
-  </div>
+  return wrap(`
+  ${header()}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:#065f2e;margin-top:0;">Tu proceso KYC con Payefy está listo</h2>
+    <h2 style="color:${G};margin-top:0;">Tu proceso KYC con Payefy está listo</h2>
     <p>Hola,</p>
     <p>${agentName} de Payefy ha iniciado tu expediente para el producto <strong>${productName}</strong> a nombre de <strong>${companyName}</strong>.</p>
     <p>Para continuar, crea tu cuenta y completa tu información haciendo clic en el siguiente enlace:</p>
-    <div style="margin:28px 0;">
-      <a href="${inviteUrl}" style="background:#065f2e;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:15px;">
-        Completar mi registro &rarr;
-      </a>
-    </div>
+    <div style="margin:28px 0;">${btn(inviteUrl, "Completar mi registro")}</div>
     <p style="color:#6b7280;font-size:13px;">Este enlace es válido por 24 horas y es de uso único. Si no esperabas este correo, ignóralo.</p>
-    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">Payefy · onboarding@payefy.com.mx</p>
-  </div>
-</body>
-</html>`
+    ${footer("Payefy · onboarding@payefy.com.mx")}
+  </div>`)
 }
 
 export function emailDocsSubmitted({
@@ -121,26 +109,15 @@ export function emailDocsSubmitted({
   reviewerName: string
   applicationUrl: string
 }): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">PayefyKYC</h1>
-  </div>
+  return wrap(`
+  ${header("Revisión")}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:#065f2e;">Nueva solicitud lista para revisión</h2>
+    <h2 style="color:${G};">Nueva solicitud lista para revisión</h2>
     <p>Hola ${reviewerName},</p>
     <p>La empresa <strong>${companyName}</strong> ha enviado su expediente completo para el producto <strong>${productName}</strong> y está lista para revisión.</p>
-    <div style="margin:24px 0;">
-      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
-        Revisar expediente
-      </a>
-    </div>
-    <p style="color:#6b7280;font-size:12px;">PayefyKYC · Este correo es generado automáticamente.</p>
-  </div>
-</body>
-</html>`
+    <div style="margin:24px 0;">${btn(applicationUrl, "Revisar expediente")}</div>
+    ${footer()}
+  </div>`)
 }
 
 export function emailChangesRequested({
@@ -154,13 +131,8 @@ export function emailChangesRequested({
   notes: string
   applicationUrl: string
 }): string {
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">PayefyKYC</h1>
-  </div>
+  return wrap(`
+  ${header()}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
     <h2 style="color:#b45309;">Tu expediente requiere cambios</h2>
     <p>Hola ${clientName},</p>
@@ -168,15 +140,9 @@ export function emailChangesRequested({
     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
       <p style="margin:0;white-space:pre-wrap;">${notes}</p>
     </div>
-    <div style="margin:24px 0;">
-      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
-        Ver mi expediente
-      </a>
-    </div>
-    <p style="color:#6b7280;font-size:12px;">PayefyKYC · Este correo es generado automáticamente.</p>
-  </div>
-</body>
-</html>`
+    <div style="margin:24px 0;">${btn(applicationUrl, "Ver mi expediente")}</div>
+    ${footer()}
+  </div>`)
 }
 
 export function emailApproved({
@@ -194,37 +160,107 @@ export function emailApproved({
 }): string {
   const hasResources = manualUrl || videoUrl
 
-  return `
-<!DOCTYPE html>
-<html lang="es">
-<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
-  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
-    <h1 style="color:white;margin:0;font-size:20px;">PayefyKYC</h1>
-  </div>
+  return wrap(`
+  ${header()}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:#065f2e;margin-top:0;">¡Tu solicitud ha sido activada!</h2>
+    <h2 style="color:${G};margin-top:0;">¡Tu solicitud ha sido activada!</h2>
     <p>Hola <strong>${clientName}</strong>,</p>
     <p>Nos complace informarte que el proceso KYC de <strong>${companyName}</strong> para el producto <strong>${productName}</strong> ha sido completado exitosamente.</p>
     <p>Ya puedes comenzar a operar. A continuación encontrarás los recursos que necesitas para tu onboarding:</p>
 
     ${hasResources ? `
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:20px;margin:24px 0;">
-      <p style="margin:0 0 16px 0;font-weight:bold;color:#065f2e;font-size:15px;">Recursos de onboarding</p>
+      <p style="margin:0 0 16px 0;font-weight:bold;color:${G};font-size:15px;">Recursos de onboarding</p>
       <div style="display:flex;flex-direction:column;gap:12px;">
-        ${manualUrl ? `
-        <a href="${manualUrl}" target="_blank" style="display:inline-block;background:#065f2e;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px;">
-          Manual de onboarding &rarr;
-        </a>` : ""}
-        ${videoUrl ? `
-        <a href="${videoUrl}" target="_blank" style="display:inline-block;background:#0f766e;color:white;padding:12px 20px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:14px;">
-          Video tutorial &rarr;
-        </a>` : ""}
+        ${manualUrl ? btn(manualUrl, "Manual de onboarding") : ""}
+        ${videoUrl ? `<a href="${videoUrl}" target="_blank" style="background:#0f766e;color:white;padding:13px 26px;border-radius:6px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">Video tutorial &rarr;</a>` : ""}
       </div>
     </div>` : ""}
 
     <p>Si tienes alguna duda, responde este correo o contacta a tu ejecutivo Payefy.</p>
-    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">PayefyKYC · Este correo es generado automáticamente.</p>
-  </div>
-</body>
-</html>`
+    ${footer()}
+  </div>`)
+}
+
+// ── Nuevas plantillas P3 ────────────────────────────────
+
+export function emailExpedienteToTransfer({
+  companyName,
+  productName,
+  transferRecipientName,
+  customMessage,
+}: {
+  companyName: string
+  productName: string
+  transferRecipientName?: string
+  customMessage?: string
+}): string {
+  return wrap(`
+  ${header("Expediente KYC")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Expediente KYC adjunto</h2>
+    <p>Estimado${transferRecipientName ? ` ${transferRecipientName}` : ""},</p>
+    <p>Se adjunta el expediente KYC de <strong>${companyName}</strong> correspondiente al producto <strong>${productName}</strong>, listo para su revisión y alta en el sistema.</p>
+    ${customMessage ? `
+    <div style="background:#f8faf9;border-left:4px solid ${G};padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0;white-space:pre-wrap;font-size:13px;color:#374151;">${customMessage}</p>
+    </div>` : ""}
+    <p style="color:#6b7280;font-size:13px;">El expediente se incluye como archivo ZIP adjunto a este correo.</p>
+    ${footer("Payefy · a.santibanez@payefy.me")}
+  </div>`)
+}
+
+export function emailRequestDocsToClient({
+  companyName,
+  clientName,
+  notes,
+  applicationUrl,
+}: {
+  companyName: string
+  clientName: string
+  notes: string
+  applicationUrl: string
+}): string {
+  return wrap(`
+  ${header()}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Acción requerida en tu expediente</h2>
+    <p>Hola <strong>${clientName}</strong>,</p>
+    <p>Necesitamos que completes o actualices información en el expediente de <strong>${companyName}</strong>:</p>
+    <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0;white-space:pre-wrap;font-size:13px;">${notes}</p>
+    </div>
+    <div style="margin:28px 0;">${btn(applicationUrl, "Actualizar mi expediente")}</div>
+    <p style="color:#6b7280;font-size:13px;">Si tienes dudas sobre lo solicitado, responde este correo y con gusto te orientamos.</p>
+    ${footer()}
+  </div>`)
+}
+
+export function emailContractToClient({
+  companyName,
+  clientName,
+  contractName,
+  signingUrl,
+  customMessage,
+}: {
+  companyName: string
+  clientName: string
+  contractName: string
+  signingUrl?: string
+  customMessage?: string
+}): string {
+  return wrap(`
+  ${header("Firma de contrato")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Tu contrato está listo para firmar</h2>
+    <p>Hola <strong>${clientName}</strong>,</p>
+    <p>El contrato <strong>${contractName}</strong> para <strong>${companyName}</strong> está listo para tu firma electrónica.</p>
+    ${customMessage ? `
+    <div style="background:#f8faf9;border-left:4px solid ${G};padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
+      <p style="margin:0;white-space:pre-wrap;font-size:13px;color:#374151;">${customMessage}</p>
+    </div>` : ""}
+    ${signingUrl ? `<div style="margin:28px 0;">${btn(signingUrl, "Firmar contrato")}</div>` : ""}
+    <p style="color:#6b7280;font-size:13px;">Si tienes dudas sobre el contrato, responde este correo y con gusto te orientamos.</p>
+    ${footer()}
+  </div>`)
 }

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { ContractManager } from "./contract-manager"
+import { EmailComposer } from "./email-composer"
 
 // ── Types ──────────────────────────────────────────────
 type DocItem = {
@@ -224,6 +225,7 @@ function auditEntryLabel(entry: BitacoraEntry): string {
 // ── Detail panel ────────────────────────────────────────
 function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void }) {
   const pct = app.docs.total > 0 ? Math.round((app.docs.uploaded / app.docs.total) * 100) : 0
+  const [showEmailComposer, setShowEmailComposer] = useState(false)
 
   return (
     <section style={{ background:"#fff", border:"1px solid #d3dbd6", borderRadius:10,
@@ -245,6 +247,17 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
           </p>
         </div>
         <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+          <button
+            onClick={() => setShowEmailComposer(true)}
+            style={{ background:"#004238", color:"#AEFF99", border:"none",
+              borderRadius:7, fontSize:13, padding:"8px 14px", cursor:"pointer",
+              display:"inline-flex", alignItems:"center", gap:6, fontWeight:600 }}
+          >
+            <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2}>
+              <rect x={2} y={5} width={20} height={14} rx={2}/><path d="m22 7-10 5L2 7"/>
+            </svg>
+            Enviar correo
+          </button>
           <Link
             href={`/admin/applications/${app.id}/review`}
             style={{ background:"#065f2e", color:"#fff", border:"1px solid #065f2e",
@@ -258,6 +271,13 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
             Cerrar
           </button>
         </div>
+        {showEmailComposer && (
+          <EmailComposer
+            applicationId={app.id}
+            clientEmail={app.company.contactEmail ?? undefined}
+            onClose={() => setShowEmailComposer(false)}
+          />
+        )}
       </div>
 
       <p style={{ fontSize:11, color:"#8a948e", margin:"8px 0 18px",
