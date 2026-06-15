@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { generateBeneficialOwnerPdf } from "@/lib/pdf/beneficial-owner"
-import { generateComplementaryInfoZip } from "@/lib/excel/complementary-info"
+import { generateComplementaryInfoXlsx } from "@/lib/excel/complementary-info"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -88,10 +88,10 @@ export async function POST(request: Request) {
       mimeType = "application/pdf"
       bucket = "generated-pdfs"
     } else if (type === "complementary_info") {
-      const blob = await generateComplementaryInfoZip(formData)
+      const blob = generateComplementaryInfoXlsx(formData)
       fileBuffer = Buffer.from(await blob.arrayBuffer())
-      fileName = "informacion_complementaria.zip"
-      mimeType = "application/zip"
+      fileName = "informacion_complementaria.xlsx"
+      mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       bucket = "kyc-documents"
     } else {
       return NextResponse.json({ error: "Tipo desconocido" }, { status: 400 })

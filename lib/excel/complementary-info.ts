@@ -1,151 +1,97 @@
 import * as XLSX from "xlsx"
-import JSZip from "jszip"
 import type { ComplementaryInfoValues } from "@/lib/validations/complementary-info"
 
-export async function generateComplementaryInfoZip(
-  data: ComplementaryInfoValues
-): Promise<Blob> {
+const ROLE_LABELS: Record<string, string> = {
+  accionista: "Accionista (25%+)",
+  representante_legal: "Representante legal",
+  administrador: "Administrador / Consejero",
+  beneficiario_controlador: "Beneficiario controlador",
+}
+
+export function generateComplementaryInfoXlsx(
+  data: ComplementaryInfoValues,
+  companyName?: string
+): Blob {
   const wb = XLSX.utils.book_new()
 
-  // Hoja 1: Datos de la empresa
-  const empresaRows = [
-    ["DATOS DE LA EMPRESA"],
-    [],
-    ["Razón social", data.legal_name],
-    ["RFC", data.tax_id],
-    ["Régimen fiscal", data.tax_regime],
-    ["Actividad principal", data.business_activity],
-    ["Descripción del negocio", data.business_description],
-    [
-      "Domicilio",
-      `${data.address_street} ${data.address_number}, Col. ${data.address_colonia}`,
-    ],
-    ["Ciudad / Municipio", data.address_city],
-    ["Estado", data.address_state],
-    ["Código Postal", data.address_zip],
-    ["Teléfono", data.phone],
-    ["Correo electrónico", data.email],
-    ["Sitio web", data.website || "N/A"],
-  ]
-  const wsEmpresa = XLSX.utils.aoa_to_sheet(empresaRows)
-  wsEmpresa["!cols"] = [{ wch: 30 }, { wch: 50 }]
-  XLSX.utils.book_append_sheet(wb, wsEmpresa, "Empresa")
+  const rows: (string | number | boolean | null)[][] = []
 
-  // Hoja 2: Accionistas
-  const accionistasRows = data.shareholders.map((s, i) => [
-    i + 1,
-    s.full_name,
-    s.rfc,
-    s.curp,
-    s.percentage || "",
-    s.is_pep ? "Sí" : "No",
+  // ── Encabezado ──
+  rows.push(["INFORMACIÓN COMPLEMENTARIA KYC — Payefy"])
+  rows.push(["Empresa:", companyName ?? data.legal_name])
+  rows.push(["Fecha:", data.declaration_date])
+  rows.push([])
+
+  // ── Sección 1: Datos de la empresa ──
+  rows.push(["SECCIÓN 1: DATOS DE LA EMPRESA"])
+  rows.push(["Razón social", data.legal_name])
+  rows.push(["RFC", data.tax_id])
+  rows.push(["Régimen fiscal", data.tax_regime])
+  rows.push(["Actividad principal", data.business_activity])
+  rows.push(["Descripción del negocio", data.business_description])
+  rows.push([
+    "Domicilio",
+    `${data.address_street} ${data.address_number}, Col. ${data.address_colonia}`,
   ])
-  const wsAccionistas = XLSX.utils.aoa_to_sheet([
-    ["ACCIONISTAS CON 25% O MÁS DE PARTICIPACIÓN"],
-    [],
-    ["#", "Nombre completo", "RFC", "CURP", "% Participación", "¿Es PEP?"],
-    ...accionistasRows,
+  rows.push(["Ciudad / Municipio", data.address_city])
+  rows.push(["Estado", data.address_state])
+  rows.push(["Código Postal", data.address_zip])
+  rows.push(["Teléfono", data.phone])
+  rows.push(["Correo electrónico", data.email])
+  rows.push(["Sitio web", data.website || "—"])
+  rows.push([])
+
+  // ── Sección 2: Partes relacionadas ──
+  rows.push(["SECCIÓN 2: PARTES RELACIONADAS"])
+  rows.push([
+    "#",
+    "Nombre completo",
+    "Rol",
+    "RFC",
+    "CURP",
+    "% Participación",
+    "¿Es PEP?",
+    "Detalle PEP",
   ])
-  wsAccionistas["!cols"] = [
-    { wch: 5 },
-    { wch: 35 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 15 },
-    { wch: 10 },
-  ]
-  XLSX.utils.book_append_sheet(wb, wsAccionistas, "Accionistas")
+  data.parties.forEach((p, i) => {
+    rows.push([
+      i + 1,
+      p.full_name,
+      ROLE_LABELS[p.role] ?? p.role,
+      p.rfc,
+      p.curp,
+      p.percentage ?? "—",
+      p.is_pep ? "Sí" : "No",
+      p.pep_details ?? "—",
+    ])
+  })
+  rows.push([])
 
-  // Hoja 3: Representantes legales
-  const repRows = data.legal_representatives.map((r, i) => [
-    i + 1,
-    r.full_name,
-    r.rfc,
-    r.curp,
-    r.is_pep ? "Sí" : "No",
+  // ── Sección 3: Declaraciones ──
+  rows.push(["SECCIÓN 3: DECLARACIONES"])
+  rows.push([
+    "Sin sanciones internacionales (OFAC/ONU/UE):",
+    data.no_sanctions ? "CONFIRMO" : "PENDIENTE",
   ])
-  const wsReps = XLSX.utils.aoa_to_sheet([
-    ["REPRESENTANTES LEGALES"],
-    [],
-    ["#", "Nombre completo", "RFC", "CURP", "¿Es PEP?"],
-    ...repRows,
+  rows.push([
+    "Sin relación con financiamiento al terrorismo:",
+    data.no_terrorism ? "CONFIRMO" : "PENDIENTE",
   ])
-  wsReps["!cols"] = [
-    { wch: 5 },
-    { wch: 35 },
-    { wch: 15 },
-    { wch: 20 },
-    { wch: 10 },
-  ]
-  XLSX.utils.book_append_sheet(wb, wsReps, "Representantes Legales")
+  rows.push(["Lugar de firma", data.declaration_place])
+  rows.push(["Fecha de firma", data.declaration_date])
+  rows.push([])
+  rows.push(["Nombre del representante legal", ""])
+  rows.push(["Firma", ""])
 
-  // Hoja 4: Administradores
-  const adminRows = data.administrators.map((a, i) => [
-    i + 1,
-    a.full_name,
-    a.rfc,
-    a.position,
-  ])
-  const wsAdmins = XLSX.utils.aoa_to_sheet([
-    ["ADMINISTRADORES"],
-    [],
-    ["#", "Nombre completo", "RFC", "Cargo"],
-    ...adminRows,
-  ])
-  wsAdmins["!cols"] = [{ wch: 5 }, { wch: 35 }, { wch: 15 }, { wch: 25 }]
-  XLSX.utils.book_append_sheet(wb, wsAdmins, "Administradores")
+  const ws = XLSX.utils.aoa_to_sheet(rows)
+  ws["!cols"] = [{ wch: 50 }, { wch: 55 }, { wch: 30 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 10 }, { wch: 30 }]
+  XLSX.utils.book_append_sheet(wb, ws, "Información Complementaria")
 
-  // Hoja 5: Clientes y proveedores
-  const cpRows: unknown[][] = [
-    ["PRINCIPALES CLIENTES"],
-    ["Nombre / Razón social", "País", "% de ventas aprox."],
-    ...(data.main_clients ?? []).map((c) => [
-      c.name,
-      c.country,
-      c.sales_percentage,
-    ]),
-    [],
-    ["PRINCIPALES PROVEEDORES"],
-    ["Nombre / Razón social", "País", "% de compras aprox."],
-    ...(data.main_suppliers ?? []).map((s) => [
-      s.name,
-      s.country,
-      s.purchase_percentage,
-    ]),
-  ]
-  const wsCyP = XLSX.utils.aoa_to_sheet(cpRows)
-  wsCyP["!cols"] = [{ wch: 35 }, { wch: 20 }, { wch: 20 }]
-  XLSX.utils.book_append_sheet(wb, wsCyP, "Clientes y Proveedores")
-
-  // Hoja 6: Declaraciones
-  const declRows = [
-    ["DECLARACIONES"],
-    [],
-    [
-      "La empresa y sus accionistas/representantes NO están sujetos a sanciones internacionales:",
-      data.no_sanctions ? "CONFIRMO" : "PENDIENTE",
-    ],
-    [
-      "La empresa NO tiene relación con actividades de financiamiento al terrorismo:",
-      data.no_terrorism ? "CONFIRMO" : "PENDIENTE",
-    ],
-    [],
-    ["Lugar de firma", data.declaration_place],
-    ["Fecha de firma", data.declaration_date],
-    [],
-    ["Nombre del representante legal", ""],
-    ["Firma", ""],
-  ]
-  const wsDecl = XLSX.utils.aoa_to_sheet(declRows)
-  wsDecl["!cols"] = [{ wch: 70 }, { wch: 20 }]
-  XLSX.utils.book_append_sheet(wb, wsDecl, "Declaraciones")
-
-  const xlsxBuffer = XLSX.write(wb, {
-    bookType: "xlsx",
-    type: "array",
-  }) as Uint8Array
-
-  const zip = new JSZip()
-  zip.file("informacion_complementaria.xlsx", xlsxBuffer)
-  return zip.generateAsync({ type: "blob" })
+  const buf = XLSX.write(wb, { bookType: "xlsx", type: "base64" }) as string
+  const binary = atob(buf)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+  return new Blob([bytes.buffer as ArrayBuffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  })
 }
