@@ -1,3 +1,80 @@
+export function emailCronReminder({
+  companyName,
+  clientName,
+  productName,
+  applicationUrl,
+  daysSinceUpdate,
+}: {
+  companyName: string
+  clientName: string
+  productName: string
+  applicationUrl: string
+  daysSinceUpdate: number
+}): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
+  <div style="background:#065f2e;padding:20px;border-radius:8px 8px 0 0;">
+    <h1 style="color:white;margin:0;font-size:20px;">Payefy</h1>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:#065f2e;margin-top:0;">Tu expediente KYC está esperándote</h2>
+    <p>Hola <strong>${clientName}</strong>,</p>
+    <p>Notamos que tu expediente de <strong>${companyName}</strong> para el producto <strong>${productName}</strong> lleva <strong>${daysSinceUpdate} días</strong> sin actividad.</p>
+    <p>Para no perder tu lugar en el proceso, ingresa y completa o actualiza tu información:</p>
+    <div style="margin:28px 0;">
+      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:bold;font-size:15px;">
+        Continuar mi expediente &rarr;
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:13px;">Si ya lo enviaste recientemente, ignora este mensaje. Si tienes dudas, responde este correo.</p>
+    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">Payefy · Este correo es generado automáticamente.</p>
+  </div>
+</body>
+</html>`
+}
+
+export function emailCronInternalAlert({
+  companyName,
+  productName,
+  applicationStatus,
+  applicationUrl,
+  daysSinceUpdate,
+}: {
+  companyName: string
+  productName: string
+  applicationStatus: string
+  applicationUrl: string
+  daysSinceUpdate: number
+}): string {
+  return `
+<!DOCTYPE html>
+<html lang="es">
+<body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#1a1a1a;">
+  <div style="background:#1e293b;padding:20px;border-radius:8px 8px 0 0;">
+    <h1 style="color:white;margin:0;font-size:20px;">PayefyKYC — Alerta interna</h1>
+  </div>
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:#b45309;margin-top:0;">Solicitud sin avance — ${daysSinceUpdate} días</h2>
+    <p>La siguiente solicitud lleva <strong>${daysSinceUpdate} días</strong> sin actualización:</p>
+    <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:40%;">Empresa</td><td style="padding:8px;border:1px solid #e5e7eb;">${companyName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Producto</td><td style="padding:8px;border:1px solid #e5e7eb;">${productName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Estado actual</td><td style="padding:8px;border:1px solid #e5e7eb;">${applicationStatus}</td></tr>
+    </table>
+    <p>Si no se registra actividad en los próximos 16 días, la solicitud será archivada automáticamente.</p>
+    <div style="margin:24px 0;">
+      <a href="${applicationUrl}" style="background:#065f2e;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold;">
+        Revisar expediente &rarr;
+      </a>
+    </div>
+    <p style="color:#6b7280;font-size:12px;margin-bottom:0;">PayefyKYC · Alerta automática del sistema de recordatorios.</p>
+  </div>
+</body>
+</html>`
+}
+
 export function emailLeadInvite({
   companyName,
   agentName,
