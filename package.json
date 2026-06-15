@@ -23,6 +23,7 @@
     "lucide-react": "^1.14.0",
     "next": "15.5.18",
     "next-intl": "^4.11.2",
+    "nextjs-toploader": "^3.9.17",
     "pdf-lib": "^1.17.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",

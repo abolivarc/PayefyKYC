@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { submitApplication } from "@/app/(client)/applications/actions"
 
 interface Props {
@@ -46,6 +47,7 @@ export function SubmitApplicationButton({
         disabled={!allRequiredUploaded || loading}
         className="w-full sm:w-auto"
       >
+        {loading && <Spinner size={14} />}
         {loading ? "Enviando..." : "Enviar expediente para revisión"}
       </Button>
       {!allRequiredUploaded && (

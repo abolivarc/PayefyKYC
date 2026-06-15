@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { recordDocumentUpload } from "@/app/(client)/applications/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 type DocStatus =
   | "pending_upload"
@@ -144,7 +145,9 @@ export function DocumentUploadRow({
               variant={status === "pending_upload" ? "default" : "outline"}
               disabled={isPending}
               onClick={() => inputRef.current?.click()}
+              className="flex items-center gap-1.5"
             >
+              {isPending && <Spinner size={13} />}
               {isPending
                 ? "Subiendo..."
                 : status === "pending_upload"
