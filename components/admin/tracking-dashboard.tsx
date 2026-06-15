@@ -326,8 +326,8 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
         {app.company.contactEmail && ` · Cliente: ${app.company.contactEmail}`}
       </p>
 
-      {/* Two-column grid */}
-      <div style={{ display:"grid", gridTemplateColumns:"1.2fr 1fr", gap:"0 32px" }}>
+      {/* Two-column grid — stacks on mobile */}
+      <div className="grid grid-cols-1 sm:grid-cols-[1.2fr_1fr] gap-x-8">
         {/* Documentos */}
         <div>
           <p style={{ fontSize:11, textTransform:"uppercase", letterSpacing:".04em",

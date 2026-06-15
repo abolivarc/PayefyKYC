@@ -92,7 +92,7 @@ export function ReviewDocumentRow({
   }
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b last:border-0">
+    <div className="flex flex-wrap items-start gap-3 py-3 border-b last:border-0">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium">{templateName}</span>

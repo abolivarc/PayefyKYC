@@ -172,7 +172,7 @@ function WizardContent() {
           {hasTerminals && (
             <div className="space-y-2">
               <Label>Tipo de persona <span className="text-destructive">*</span></Label>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {(
                   [
                     { value: "persona_moral", label: "Persona Moral", sub: "Empresa / Sociedad" },
