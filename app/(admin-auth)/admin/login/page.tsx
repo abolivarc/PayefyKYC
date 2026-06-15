@@ -13,7 +13,7 @@ export default async function AdminLoginPage({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm text-center text-slate-400 mb-6">
+      <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
         Accede con tu cuenta institucional
       </p>
 
@@ -25,7 +25,7 @@ export default async function AdminLoginPage({
 
       <form action={signInEmployee} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-slate-200">
+          <Label htmlFor="email" className="text-white/80">
             Correo electrónico
           </Label>
           <Input
@@ -35,12 +35,13 @@ export default async function AdminLoginPage({
             placeholder="nombre@payefy.com"
             autoComplete="email"
             required
-            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-emerald-500"
+            style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
+            className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-slate-200">
+          <Label htmlFor="password" className="text-white/80">
             Contraseña
           </Label>
           <Input
@@ -51,13 +52,15 @@ export default async function AdminLoginPage({
             autoComplete="current-password"
             required
             minLength={8}
-            className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400 focus-visible:ring-emerald-500"
+            style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
+            className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
         </div>
 
         <Button
           type="submit"
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+          className="w-full font-semibold"
+          style={{ background: "#AEFF99", color: "#004238" }}
         >
           Acceder
         </Button>

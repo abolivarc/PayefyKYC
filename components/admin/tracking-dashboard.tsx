@@ -260,7 +260,7 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
           </button>
           <Link
             href={`/admin/applications/${app.id}/review`}
-            style={{ background:"#065f2e", color:"#fff", border:"1px solid #065f2e",
+            style={{ background:"#004238", color:"#fff", border:"1px solid #004238",
               borderRadius:7, fontSize:13, padding:"8px 14px", textDecoration:"none",
               display:"inline-flex", alignItems:"center", gap:6, fontWeight:500 }}
           >
@@ -410,7 +410,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
             <button key={tab} onClick={() => { setActiveTab(tab); setSelectedId(null); setFilter("all"); setSearch("") }}
               style={{ fontSize:13, padding:"6px 15px", borderRadius:999, border:"none", cursor:"pointer",
                 fontWeight: activeTab === tab ? 600 : 400,
-                background: activeTab === tab ? "#065f2e" : "transparent",
+                background: activeTab === tab ? "#004238" : "transparent",
                 color: activeTab === tab ? "#fff" : "#5f6b64" }}>
               {tab === "cards" ? "Tarjetas" : "Terminales"}
             </button>
@@ -451,9 +451,9 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
         {FILTERS.map((f) => (
           <button key={f.id} onClick={() => setFilter(f.id)}
             style={{ fontSize:12, padding:"7px 13px",
-              border: filter === f.id ? "1px solid #065f2e" : "1px solid #e3e8e5",
+              border: filter === f.id ? "1px solid #004238" : "1px solid #e3e8e5",
               background: filter === f.id ? "#e7f0ea" : "#fff",
-              borderRadius:7, color: filter === f.id ? "#065f2e" : "#5f6b64",
+              borderRadius:7, color: filter === f.id ? "#004238" : "#5f6b64",
               cursor:"pointer", whiteSpace:"nowrap", fontWeight: filter === f.id ? 600 : 400 }}>
             {f.label}
           </button>

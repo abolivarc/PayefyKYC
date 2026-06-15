@@ -3,13 +3,13 @@ import { PayefyLogo } from "@/components/layout/payefy-logo"
 
 export default function AdminAuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-[400px] bg-slate-800 rounded-xl border border-slate-700 shadow-lg p-8">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4" style={{ background: "#004238" }}>
+      <div className="w-full max-w-[400px] rounded-xl shadow-xl p-8" style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)" }}>
         <div className="flex flex-col items-center gap-2 mb-6">
-          <PayefyLogo size={40} />
+          <PayefyLogo size={40} variant="light" />
           <div className="text-center">
             <h1 className="text-2xl font-bold text-white">Portal interno Payefy</h1>
-            <p className="text-xs text-slate-400 mt-0.5">Acceso exclusivo para empleados</p>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>Acceso exclusivo para empleados</p>
           </div>
         </div>
         {children}

@@ -1,4 +1,7 @@
-export function PayefyLogo({ size = 32 }: { size?: number }) {
+export function PayefyLogo({ size = 32, variant = "dark" }: { size?: number; variant?: "dark" | "light" }) {
+  const bg = variant === "light" ? "#AEFF99" : "#004238"
+  const fg = variant === "light" ? "#004238" : "#AEFF99"
+
   return (
     <svg
       width={size}
@@ -7,13 +10,13 @@ export function PayefyLogo({ size = 32 }: { size?: number }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <circle cx="16" cy="16" r="16" fill="#065f2e" />
+      <circle cx="16" cy="16" r="16" fill={bg} />
       <text
         x="50%"
         y="50%"
         dominantBaseline="central"
         textAnchor="middle"
-        fill="white"
+        fill={fg}
         fontSize="16"
         fontWeight="700"
         fontFamily="Arial, sans-serif"

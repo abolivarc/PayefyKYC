@@ -9,13 +9,13 @@ interface HeaderProps {
 export function Header({ userNav, variant = "client" }: HeaderProps) {
   if (variant === "client") {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white">
+      <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
         <div className="flex h-14 items-center px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <PayefyLogo size={32} />
+            <PayefyLogo size={30} />
             <div className="leading-none">
-              <p className="font-semibold text-slate-900 text-sm">PayefyKYC</p>
-              <p className="text-xs text-slate-500 mt-0.5">Portal del Cliente</p>
+              <p className="font-bold text-sm" style={{ color: "#004238", letterSpacing: "-.3px" }}>payefy</p>
+              <p className="text-xs text-gray-400 mt-0.5">Portal del Cliente</p>
             </div>
           </div>
           <div className="ml-auto">{userNav}</div>
@@ -24,7 +24,6 @@ export function Header({ userNav, variant = "client" }: HeaderProps) {
     )
   }
 
-  // variant === "admin" — usado solo por layouts que no usen AdminSidebar directamente
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background">
       <div className="flex h-14 items-center px-4 sm:px-6">

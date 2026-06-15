@@ -45,32 +45,32 @@ function SidebarContent({ fullName, email, role, onClose }: Props & { onClose?: 
   const roleLabel = role ? (ROLE_LABELS[role] ?? role) : null
 
   return (
-    <div className="flex flex-col h-full w-64 bg-slate-900 text-white">
+    <div className="flex flex-col h-full w-64 text-white" style={{ background: "#004238" }}>
       {/* Logo + brand */}
-      <div className="flex items-center justify-between px-4 h-14 border-b border-slate-700 shrink-0">
+      <div className="flex items-center justify-between px-4 h-14 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
         <div className="flex items-center gap-2.5">
-          <PayefyLogo size={28} />
+          <PayefyLogo size={28} variant="light" />
           <div className="leading-none">
-            <p className="font-bold text-white text-sm">Payefy Equipo</p>
-            <p className="text-xs text-slate-400 mt-0.5">Panel interno</p>
+            <p className="font-bold text-white text-sm" style={{ letterSpacing: "-.3px" }}>payefy</p>
+            <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.55)" }}>Panel interno</p>
           </div>
         </div>
         {onClose && (
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
+          <button onClick={onClose} className="p-1" style={{ color: "rgba(255,255,255,0.6)" }}>
             <X className="h-5 w-5" />
           </button>
         )}
       </div>
 
       {/* User info + rol badge */}
-      <div className="px-4 py-3 border-b border-slate-700 shrink-0">
+      <div className="px-4 py-3 border-b shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
         {roleLabel && (
-          <span className="bg-slate-800 text-slate-300 text-xs px-2 py-0.5 rounded mb-1.5 inline-block">
+          <span className="text-xs px-2 py-0.5 rounded mb-1.5 inline-block" style={{ background: "rgba(174,255,153,0.15)", color: "#AEFF99" }}>
             {roleLabel}
           </span>
         )}
-        <p className="text-sm text-slate-300 truncate">{fullName || "Usuario"}</p>
-        <p className="text-xs text-slate-500 truncate">{email}</p>
+        <p className="text-sm truncate" style={{ color: "rgba(255,255,255,0.85)" }}>{fullName || "Usuario"}</p>
+        <p className="text-xs truncate" style={{ color: "rgba(255,255,255,0.45)" }}>{email}</p>
       </div>
 
       {/* Nav */}
@@ -85,10 +85,12 @@ function SidebarContent({ fullName, email, role, onClose }: Props & { onClose?: 
               onClick={onClose}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors",
-                isActive
-                  ? "bg-emerald-700 text-white font-medium"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
               )}
+              style={isActive
+                ? { background: "#AEFF99", color: "#004238", fontWeight: 600 }
+                : { color: "rgba(255,255,255,0.72)" }}
+              onMouseEnter={(e) => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.1)" }}
+              onMouseLeave={(e) => { if (!isActive) (e.currentTarget as HTMLAnchorElement).style.background = "" }}
             >
               <link.icon className="h-4 w-4 shrink-0" />
               {link.label}
@@ -98,11 +100,14 @@ function SidebarContent({ fullName, email, role, onClose }: Props & { onClose?: 
       </nav>
 
       {/* Sign out */}
-      <div className="p-3 border-t border-slate-700 shrink-0">
+      <div className="p-3 border-t shrink-0" style={{ borderColor: "rgba(255,255,255,0.12)" }}>
         <form action={signOut}>
           <button
             type="submit"
-            className="flex items-center gap-2 text-slate-400 hover:text-red-400 text-sm transition-colors px-3 py-2 w-full rounded-md hover:bg-slate-800"
+            className="flex items-center gap-2 text-sm transition-colors px-3 py-2 w-full rounded-md"
+            style={{ color: "rgba(255,255,255,0.5)" }}
+            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.08)"; (e.currentTarget as HTMLButtonElement).style.color = "#fff" }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.background = ""; (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.5)" }}
           >
             <LogOut className="h-4 w-4 shrink-0" />
             Cerrar sesión
@@ -125,14 +130,15 @@ export function AdminSidebar({ fullName, email, role }: Props) {
 
       {/* Mobile: header bar + overlay */}
       <div className="md:hidden">
-        <header className="fixed top-0 left-0 right-0 z-40 h-14 bg-slate-900 flex items-center justify-between px-4">
+        <header className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4" style={{ background: "#004238" }}>
           <div className="flex items-center gap-2">
-            <PayefyLogo size={24} />
-            <span className="font-bold text-white text-sm">Payefy Equipo</span>
+            <PayefyLogo size={24} variant="light" />
+            <span className="font-bold text-white text-sm" style={{ letterSpacing: "-.3px" }}>payefy</span>
           </div>
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-slate-300 hover:text-white p-1"
+            className="p-1"
+            style={{ color: "rgba(255,255,255,0.7)" }}
             aria-label="Abrir menú"
           >
             <Menu className="h-6 w-6" />

@@ -72,12 +72,7 @@ export default async function ClientLayout({ children }: { children: ReactNode }
   return (
     <div className="min-h-screen flex flex-col">
       <Header variant="client" userNav={<UserNav email={email} fullName={fullName} />} />
-      <div className="hidden sm:block bg-slate-50 border-b border-slate-100 py-1 px-6">
-        <p className="text-xs text-slate-500">
-          Bienvenido al portal de onboarding KYC de Payefy
-        </p>
-      </div>
-      <main className="flex-1 bg-slate-50">{children}</main>
+      <main className="flex-1 bg-gray-50">{children}</main>
     </div>
   )
 }

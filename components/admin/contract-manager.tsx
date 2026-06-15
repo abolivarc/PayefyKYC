@@ -136,9 +136,9 @@ function ContractRow({ applicationId, def, currentStatus }: RowProps) {
             <button
               disabled={pending || uploading}
               onClick={() => setShowLink((v) => !v)}
-              style={{ fontSize: 11, padding: "4px 10px", border: "1px solid #065f2e",
+              style={{ fontSize: 11, padding: "4px 10px", border: "1px solid #004238",
                 borderRadius: 6, background: "#e7f0ea", cursor: "pointer",
-                color: "#065f2e", fontWeight: 500, opacity: (pending || uploading) ? 0.5 : 1 }}
+                color: "#004238", fontWeight: 500, opacity: (pending || uploading) ? 0.5 : 1 }}
             >
               Firmado
             </button>
@@ -190,7 +190,7 @@ function ContractRow({ applicationId, def, currentStatus }: RowProps) {
           <button
             disabled={pending}
             onClick={() => handleStatus("signed")}
-            style={{ fontSize: 12, padding: "5px 12px", background: "#065f2e",
+            style={{ fontSize: 12, padding: "5px 12px", background: "#004238",
               color: "#fff", border: "none", borderRadius: 6, cursor: "pointer",
               fontWeight: 600, opacity: pending ? 0.5 : 1 }}
           >
