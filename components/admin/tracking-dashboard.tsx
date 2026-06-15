@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import { ContractManager } from "./contract-manager"
 import { EmailComposer } from "./email-composer"
 import { exportExpediente } from "@/app/(admin)/admin/tracking/export-action"
+import * as XLSX from "xlsx"
 
 // ── Types ──────────────────────────────────────────────
 type DocItem = {
@@ -429,6 +430,37 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
 
   const isCards = activeTab === "cards"
 
+  function handleExportExcel() {
+    const DOT_LABEL: Record<DotState, string> = { on: "Firmado", mid: "Enviado", off: "—" }
+    const rows = filtered.map((app) => {
+      const pct = app.docs.total > 0 ? Math.round((app.docs.uploaded / app.docs.total) * 100) : 0
+      const compliance = compliancePill(app.status)
+      const transfer = transferPill(app.transferStatus)
+      const dotP = contractDotState(app.contracts.payefy)
+      const dotA = contractDotState(app.contracts.transfer_increase)
+      const dotT = contractDotState(app.contracts.transfer_contract)
+      return {
+        Empresa: app.company.legalName,
+        RFC: app.company.taxId ?? "",
+        Producto: app.product.name,
+        "Avance%": pct,
+        Docs: `${app.docs.uploaded}/${app.docs.total}`,
+        Compliance: compliance?.label ?? "—",
+        Transfer: transfer?.label ?? "—",
+        "Contrato P": DOT_LABEL[dotP],
+        "Contrato A": DOT_LABEL[dotA],
+        "Contrato T": DOT_LABEL[dotT],
+        Estatus: STATUS_LABELS[app.status] ?? app.status,
+        "Última act.": format(new Date(app.updatedAt), "dd/MM/yyyy", { locale: es }),
+      }
+    })
+    const ws = XLSX.utils.json_to_sheet(rows)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, "Seguimiento")
+    const date = format(new Date(), "yyyyMMdd")
+    XLSX.writeFile(wb, `Seguimiento_${activeTab}_${date}.xlsx`)
+  }
+
   return (
     <div style={{ padding:"20px 24px 64px", maxWidth:1280, margin:"0 auto",
       fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -495,6 +527,20 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
             {f.label}
           </button>
         ))}
+        <button
+          onClick={handleExportExcel}
+          disabled={filtered.length === 0}
+          style={{ fontSize:12, padding:"7px 13px", border:"1px solid #e3e8e5",
+            background:"#fff", borderRadius:7, color:"#5f6b64", cursor:"pointer",
+            whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:5,
+            opacity: filtered.length === 0 ? 0.4 : 1 }}>
+          <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/>
+            <polyline points="9 15 12 18 15 15"/>
+          </svg>
+          Exportar Excel ({filtered.length})
+        </button>
       </div>
 
       {/* Table */}
