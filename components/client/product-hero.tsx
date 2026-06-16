@@ -6,13 +6,17 @@ const PRODUCT_META: Record<string, {
   sub: string
   img: string
   imgAlt: string
+  imgBg: string
+  imgPadding: number
 }> = {
   cards: {
     kicker: "Tarjetas Empresariales",
     title: "Tarjeta de Crédito Payefy",
     sub: "Líneas de crédito flexibles para financiar el crecimiento de tu empresa.",
-    img: "/products/tarjeta-stack.png",
-    imgAlt: "Tarjetas Payefy",
+    img: "/products/tarjeta-fisica.jpg",
+    imgAlt: "Tarjetas Payefy Visa Crédito",
+    imgBg: "#F4F8F6",
+    imgPadding: 8,
   },
   terminals: {
     kicker: "Terminales de Pago",
@@ -20,6 +24,8 @@ const PRODUCT_META: Record<string, {
     sub: "Acepta pagos con tarjeta en tu punto de venta o e-commerce.",
     img: "/products/terminal.png",
     imgAlt: "Terminal Payefy Ultra P2",
+    imgBg: "#0E1A26",
+    imgPadding: 16,
   },
 }
 
@@ -33,8 +39,10 @@ export function ProductHero({ productCode, productName }: ProductHeroProps) {
     kicker: "Solicitud KYC",
     title: productName ?? "Tu solicitud",
     sub: "Completa tu expediente para activar tu producto Payefy.",
-    img: "/products/tarjeta.png",
+    img: "/products/tarjeta-fisica.jpg",
     imgAlt: "Payefy",
+    imgBg: "#F4F8F6",
+    imgPadding: 8,
   }
 
   return (
@@ -77,8 +85,8 @@ export function ProductHero({ productCode, productName }: ProductHeroProps) {
         className="hidden sm:flex shrink-0 items-center justify-center rounded-xl overflow-hidden"
         style={{
           width: 220,
-          background: "#0E1A26",
-          padding: 16,
+          background: meta.imgBg,
+          padding: meta.imgPadding,
           borderRadius: 12,
         }}
       >
