@@ -8,9 +8,9 @@ import {
   type DocGroup,
   type ChecklistCategory,
 } from "@/components/documents/document-checklist"
-import { Progress } from "@/components/ui/progress"
-import { Badge } from "@/components/ui/badge"
 import { SubmitApplicationButton } from "@/components/documents/submit-application-button"
+import { ProductHero } from "@/components/client/product-hero"
+import { StageStepper } from "@/components/client/stage-stepper"
 
 const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal_rep_id"])
 
@@ -246,44 +246,84 @@ export default async function DocumentsPage({
   const product = (app.products as unknown) as { name: string; code: string } | null
 
   return (
-    <div className="p-6 sm:p-8 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
+    <div style={{ background: "#F4F8F6", minHeight: "100vh" }}>
+      <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 24px 64px" }}>
+
+        {/* Back link */}
+        <div className="mb-4">
           <Link
             href="/dashboard"
-            className="text-sm text-muted-foreground hover:text-foreground"
+            className="text-sm font-medium"
+            style={{ color: "#5A6B7B", textDecoration: "none" }}
           >
-            ← Dashboard
+            ← Inicio
           </Link>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <h1 className="text-2xl font-bold">Expediente</h1>
-          <Badge variant="outline">{product?.name ?? "Solicitud"}</Badge>
-        </div>
-      </div>
 
-      {/* Progress general */}
-      <div className="mb-6 space-y-1.5">
-        <div className="flex justify-between text-sm text-muted-foreground">
-          <span>Progreso general</span>
-          <span>
-            {done} / {total} documentos
-          </span>
-        </div>
-        <Progress value={pct} className="h-3" />
-      </div>
-
-      {/* Checklist */}
-      <DocumentChecklist categories={categories} applicationId={appId} />
-
-      {/* Botón enviar */}
-      <div className="mt-8 flex justify-end">
-        <SubmitApplicationButton
-          applicationId={appId}
-          allRequiredUploaded={allRequiredReady}
-          alreadySubmitted={app.status !== "draft"}
+        {/* ProductHero */}
+        <ProductHero
+          productCode={product?.code ?? null}
+          productName={product?.name ?? null}
         />
+
+        {/* StageStepper */}
+        <StageStepper status={app.status} />
+
+        {/* Progress card */}
+        <div
+          className="flex items-center gap-5 rounded-2xl mb-5 flex-wrap"
+          style={{
+            background: "#fff",
+            border: "1px solid #E7ECF1",
+            boxShadow: "0 1px 2px rgba(16,30,45,.05)",
+            padding: 20,
+          }}
+        >
+          {/* Circular ring */}
+          <div className="relative shrink-0" style={{ width: 62, height: 62 }}>
+            <svg width="62" height="62" style={{ transform: "rotate(-90deg)" }}>
+              <circle cx="31" cy="31" r="26" fill="none" stroke="#E7ECF1" strokeWidth="5"/>
+              <circle
+                cx="31" cy="31" r="26" fill="none"
+                stroke="#0B7A44" strokeWidth="5"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 26}`}
+                strokeDashoffset={`${2 * Math.PI * 26 * (1 - pct / 100)}`}
+                style={{ transition: "stroke-dashoffset .4s ease" }}
+              />
+            </svg>
+            <div
+              className="absolute inset-0 flex items-center justify-center font-extrabold"
+              style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "#0F1B2A" }}
+            >
+              {pct}%
+            </div>
+          </div>
+
+          {/* Text */}
+          <div className="flex-1" style={{ minWidth: 200 }}>
+            <h3
+              className="font-bold mb-0.5"
+              style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#0F1B2A", margin: "0 0 3px" }}
+            >
+              Progreso del expediente
+            </h3>
+            <p className="text-sm" style={{ color: "#5A6B7B", margin: 0 }}>
+              {done} de {total} documentos completados
+            </p>
+          </div>
+
+          {/* Submit button */}
+          <SubmitApplicationButton
+            applicationId={appId}
+            allRequiredUploaded={allRequiredReady}
+            alreadySubmitted={app.status !== "draft"}
+          />
+        </div>
+
+        {/* Checklist */}
+        <DocumentChecklist categories={categories} applicationId={appId} />
+
       </div>
     </div>
   )

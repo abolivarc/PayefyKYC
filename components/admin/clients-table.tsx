@@ -238,9 +238,9 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
               fontFamily: "var(--font-sans)",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#00B36A"
+              e.currentTarget.style.borderColor = "#0B7A44"
               e.currentTarget.style.boxShadow =
-                "0 0 0 3px rgba(0,179,106,0.12)"
+                "0 0 0 3px rgba(168,248,152,0.18)"
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = "#E7ECF1"
@@ -258,9 +258,9 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
             style={
               filter === tab.key
                 ? {
-                    background: "#E7FAF0",
+                    background: "#EDFBEA",
                     borderColor: "transparent",
-                    color: "#00B36A",
+                    color: "#0B7A44",
                     fontWeight: 600,
                   }
                 : {
@@ -433,7 +433,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                               className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
                               style={{
                                 background: "#fff",
-                                color: "#00B36A",
+                                color: "#0B7A44",
                                 borderColor: "#E7ECF1",
                               }}
                               onMouseEnter={(e) => {

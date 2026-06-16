@@ -62,15 +62,20 @@ export default async function StatusPage({
   const currentIdx = STATUS_ORDER.indexOf(currentStatus)
 
   return (
-    <div className="p-6 sm:p-8 max-w-2xl mx-auto">
+    <div style={{ background: "#F4F8F6", minHeight: "100vh" }}>
+    <div style={{ maxWidth: 720, margin: "0 auto", padding: "24px 24px 64px" }}>
       <div className="mb-6">
         <Link
           href="/dashboard"
-          className="text-sm text-muted-foreground hover:text-foreground"
+          className="text-sm font-medium"
+          style={{ color: "#5A6B7B", textDecoration: "none" }}
         >
-          ← Dashboard
+          ← Inicio
         </Link>
-        <h1 className="text-xl font-bold mt-1">
+        <h1
+          className="font-extrabold mt-2"
+          style={{ fontFamily: "var(--font-display)", fontSize: 22, letterSpacing: "-.02em", color: "#0F1B2A" }}
+        >
           Estado de tu solicitud —{" "}
           {((app.products as unknown) as { name: string } | null)?.name ?? "Producto"}
         </h1>
@@ -197,6 +202,7 @@ export default async function StatusPage({
           ) : null
         })()}
       </div>
+    </div>
     </div>
   )
 }

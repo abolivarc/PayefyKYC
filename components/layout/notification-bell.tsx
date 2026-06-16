@@ -64,9 +64,9 @@ export function NotificationBell({ variant = "dark" }: Props) {
     startTransition(() => { markAllRead() })
   }
 
-  const iconColor = variant === "light" ? "rgba(255,255,255,0.72)" : "#5f6b64"
-  const badgeBg = "#AEFF99"
-  const badgeColor = "#004238"
+  const iconColor = variant === "light" ? "rgba(255,255,255,0.72)" : "#5A6B7B"
+  const badgeBg = "#A8F898"
+  const badgeColor = "#08130C"
 
   return (
     <div ref={panelRef} style={{ position:"relative" }}>
@@ -111,7 +111,7 @@ export function NotificationBell({ variant = "dark" }: Props) {
             {unread > 0 && (
               <button
                 onClick={handleMarkAll}
-                style={{ fontSize:11, color:"#004238", background:"none", border:"none",
+                style={{ fontSize:11, color:"#0B7A44", background:"none", border:"none",
                   cursor:"pointer", padding:"2px 4px", borderRadius:4 }}
               >
                 Marcar todo como leído
@@ -136,14 +136,14 @@ export function NotificationBell({ variant = "dark" }: Props) {
                   onClick={() => { if (!n.is_read) handleMarkOne(n.id) }}
                   style={{ padding:"11px 14px", borderBottom:"1px solid #f0f4f2",
                     cursor: n.is_read ? "default" : "pointer",
-                    background: n.is_read ? "transparent" : "#f5faf6" }}
-                  onMouseEnter={(e) => { if (!n.is_read) (e.currentTarget as HTMLDivElement).style.background = "#edf6ef" }}
-                  onMouseLeave={(e) => { if (!n.is_read) (e.currentTarget as HTMLDivElement).style.background = "#f5faf6" }}
+                    background: n.is_read ? "transparent" : "#EDFBEA" }}
+                  onMouseEnter={(e) => { if (!n.is_read) (e.currentTarget as HTMLDivElement).style.background = "#E0F8D6" }}
+                  onMouseLeave={(e) => { if (!n.is_read) (e.currentTarget as HTMLDivElement).style.background = "#EDFBEA" }}
                 >
                   <div style={{ display:"flex", alignItems:"flex-start", gap:8 }}>
                     {!n.is_read && (
                       <span style={{ marginTop:5, width:7, height:7, borderRadius:"50%",
-                        background:"#004238", flexShrink:0 }} />
+                        background:"#0B7A44", flexShrink:0 }} />
                     )}
                     <div style={{ flex:1, minWidth:0 }}>
                       <p style={{ margin:0, fontSize:13, fontWeight: n.is_read ? 400 : 600,

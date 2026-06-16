@@ -9,19 +9,25 @@ interface HeaderProps {
 export function Header({ userNav, variant = "client" }: HeaderProps) {
   if (variant === "client") {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white">
-        <div className="flex h-14 items-center px-4 sm:px-6">
-          <div className="flex items-center gap-2">
-            <Image
-              src="/payefy-logo-dark.png"
-              alt="Payefy"
-              width={120}
-              height={28}
-              style={{ height: 28, width: "auto" }}
-              priority
-            />
-            <span className="text-xs text-gray-400 border-l border-gray-200 pl-2 ml-1">Portal del Cliente</span>
-          </div>
+      <header
+        className="sticky top-0 z-50 w-full"
+        style={{ background: "var(--header-bg, #0A1410)", borderBottom: "1px solid rgba(168,248,152,0.08)" }}
+      >
+        <div className="flex h-14 items-center px-4 sm:px-6 gap-3">
+          <Image
+            src="/brand/payefy-wordmark-mint.png"
+            alt="Payefy"
+            width={104}
+            height={28}
+            style={{ height: 28, width: "auto" }}
+            priority
+          />
+          <span
+            className="text-xs border-l pl-2.5 ml-0.5 hidden sm:block"
+            style={{ color: "rgba(168,248,152,0.45)", borderColor: "rgba(168,248,152,0.15)" }}
+          >
+            Portal del Cliente
+          </span>
           <div className="ml-auto">{userNav}</div>
         </div>
       </header>

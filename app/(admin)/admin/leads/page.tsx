@@ -144,7 +144,7 @@ export default async function LeadsPage() {
                           {firstApp && (
                             <Link
                               href={`/admin/applications/${firstApp.id}/review`}
-                              style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand, #00B36A)", textDecoration: "none" }}
+                              style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand-strong, #0B7A44)", textDecoration: "none" }}
                               onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
                               onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
                             >

@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable} antialiased`}>
-        <NextTopLoader color="#00B36A" showSpinner={false} height={3} />
+        <NextTopLoader color="#A8F898" showSpinner={false} height={3} />
         {children}
       </body>
     </html>

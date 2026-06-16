@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -79,30 +80,14 @@ function SidebarContent({
         style={{ borderColor: "var(--sb-border, rgba(255,255,255,0.07))" }}
       >
         <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded-lg flex items-center justify-center font-extrabold text-sm shrink-0"
-            style={{
-              background: "#00B36A",
-              color: "#04261B",
-              fontFamily: "var(--font-display)",
-            }}
-          >
-            P
-          </div>
-          <div>
-            <div
-              className="text-sm font-bold text-white leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Payefy
-            </div>
-            <div
-              className="text-[10px] uppercase tracking-widest"
-              style={{ color: "var(--sb-text-dim, #7E8FA0)" }}
-            >
-              Panel interno
-            </div>
-          </div>
+          <Image
+            src="/brand/payefy-wordmark-mint.png"
+            alt="Payefy"
+            width={96}
+            height={28}
+            className="object-contain"
+            priority
+          />
         </div>
         {onClose && (
           <button
@@ -124,8 +109,8 @@ function SidebarContent({
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
             style={{
-              background: "rgba(0,179,106,0.18)",
-              color: "#00B36A",
+              background: "rgba(168,248,152,0.18)",
+              color: "#A8F898",
               fontFamily: "var(--font-display)",
             }}
           >
@@ -136,11 +121,11 @@ function SidebarContent({
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span
                   className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: "#00B36A" }}
+                  style={{ background: "#A8F898" }}
                 />
                 <span
                   className="text-[10px] font-bold uppercase tracking-wider"
-                  style={{ color: "#00B36A" }}
+                  style={{ color: "#A8F898" }}
                 >
                   {roleLabel}
                 </span>
@@ -245,19 +230,15 @@ export function AdminSidebar({ fullName, email, role }: Props) {
               "linear-gradient(90deg, var(--sb-bg, #0E1A26), var(--sb-bg2, #0A141E))",
           }}
         >
-          <div className="flex items-center gap-2.5">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center font-extrabold text-sm"
-              style={{ background: "#00B36A", color: "#04261B" }}
-            >
-              P
-            </div>
-            <span
-              className="text-sm font-bold text-white"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Payefy
-            </span>
+          <div className="flex items-center">
+            <Image
+              src="/brand/payefy-wordmark-mint.png"
+              alt="Payefy"
+              width={80}
+              height={24}
+              className="object-contain"
+              priority
+            />
           </div>
           <button
             onClick={() => setMobileOpen(true)}

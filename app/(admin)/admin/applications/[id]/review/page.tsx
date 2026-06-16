@@ -83,8 +83,8 @@ function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked
   if (isCheckType) {
     return isChecked ? (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <rect x="1" y="1" width="16" height="16" rx="4" fill="#E7F8EF" stroke="#00B36A" strokeWidth="1.5"/>
-        <path d="M5 9l3 3 5-5" stroke="#00B36A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        <rect x="1" y="1" width="16" height="16" rx="4" fill="#EDFBEA" stroke="#0B7A44" strokeWidth="1.5"/>
+        <path d="M5 9l3 3 5-5" stroke="#0B7A44" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
     ) : (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -94,8 +94,8 @@ function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked
   }
   if (status === "approved") return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-      <circle cx="9" cy="9" r="8" fill="#E7F8EF" stroke="#00B36A" strokeWidth="1.5"/>
-      <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#00B36A" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="9" cy="9" r="8" fill="#EDFBEA" stroke="#0B7A44" strokeWidth="1.5"/>
+      <path d="M5.5 9l2.5 2.5 4.5-4.5" stroke="#0B7A44" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
   if (status === "pending_review") return (
@@ -127,8 +127,8 @@ function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked
 function contractIcon(status: string | null) {
   if (status === "signed") return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="#E7F8EF" stroke="#00B36A" strokeWidth="1"/>
-      <path d="M4 8l2.5 2.5 5.5-5" stroke="#00B36A" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="#EDFBEA" stroke="#0B7A44" strokeWidth="1"/>
+      <path d="M4 8l2.5 2.5 5.5-5" stroke="#0B7A44" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   )
   return (
@@ -300,7 +300,7 @@ export default async function ReviewPage({
                     )}
                     {doc.storage_path && (
                       <a href={`/api/documents/${doc.id}/view`} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: 11, color: "var(--admin-brand, #00B36A)", textDecoration: "none", whiteSpace: "nowrap" }}>
+                        style={{ fontSize: 11, color: "var(--admin-brand-strong, #0B7A44)", textDecoration: "none", whiteSpace: "nowrap" }}>
                         ver
                       </a>
                     )}

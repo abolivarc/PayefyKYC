@@ -229,7 +229,7 @@ export default async function AdminDashboardPage() {
               </div>
               <div style={{ padding: "12px 16px" }}>
                 {!pendingDocs?.length ? (
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand, #00B36A)", margin: 0 }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand-strong, #0B7A44)", margin: 0 }}>
                     ✓ Sin documentos pendientes
                   </p>
                 ) : (
