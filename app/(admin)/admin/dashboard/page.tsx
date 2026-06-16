@@ -241,9 +241,8 @@ export default async function AdminDashboardPage() {
                       <Link
                         key={doc.id}
                         href={`/admin/applications/${doc.application_id}/review`}
-                        style={{ display: "block", padding: "10px 8px", borderRadius: 8, textDecoration: "none", transition: "background .12s" }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--admin-bg, #F6F8FA)")}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                        className="block rounded-lg no-underline transition-colors hover:bg-[#F4F8F6]"
+                        style={{ padding: "10px 8px" }}
                       >
                         <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--admin-text, #0F1B2A)", lineHeight: 1.3 }}>
                           {template?.name ?? "Documento"}
@@ -275,9 +274,8 @@ export default async function AdminDashboardPage() {
                   <Link
                     key={href}
                     href={href}
-                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderRadius: 8, textDecoration: "none", transition: "background .12s" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--admin-bg, #F6F8FA)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                    className="flex items-center gap-3 rounded-lg no-underline transition-colors hover:bg-[#F4F8F6]"
+                    style={{ padding: "10px 8px" }}
                   >
                     <Icon size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)", flexShrink: 0 }} />
                     <span style={{ fontSize: 14, fontWeight: 500, color: "var(--admin-text, #0F1B2A)" }}>{label}</span>
