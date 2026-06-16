@@ -74,12 +74,10 @@ export default async function AdminDashboardPage() {
     .eq("id", user?.id ?? "")
     .single()
 
-  // 1. Métricas generales
   const { data: allApps } = await supabase
     .from("applications")
     .select("id, status, created_at, updated_at, products(code)")
 
-  // 2. Documentos pendientes de revisión
   const { data: pendingDocs } = await supabase
     .from("documents")
     .select(
@@ -89,7 +87,6 @@ export default async function AdminDashboardPage() {
     .order("uploaded_at", { ascending: true })
     .limit(8)
 
-  // 3. Solicitudes recientes
   const { data: recentApps } = await supabase
     .from("applications")
     .select("id, status, updated_at, companies(legal_name), products(name, code)")
@@ -111,208 +108,184 @@ export default async function AdminDashboardPage() {
   const today = formatDateEs(new Date())
 
   return (
-    <div className="p-6 sm:p-8 max-w-7xl mx-auto">
-      {/* Greeting */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">
-          {greeting}, {name}
-        </h1>
-        <p className="text-sm text-slate-500 mt-1 capitalize">{today}</p>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* ── Columna izquierda (2/3) ── */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Stat cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <StatCard
-              label="Total solicitudes"
-              value={total}
-              sub="desde el inicio"
-              icon={<FileText className="h-5 w-5 text-slate-400" />}
-            />
-            <StatCard
-              label="Pendientes de revisión"
-              value={pending}
-              sub="requieren atención"
-              icon={
-                <Clock
-                  className={`h-5 w-5 ${pending > 0 ? "text-amber-500" : "text-slate-400"}`}
-                />
-              }
-              highlight={pending > 0 ? "amber" : undefined}
-            />
-            <StatCard
-              label="Aprobadas"
-              value={approved}
-              sub="completadas"
-              icon={<CheckCircle className="h-5 w-5 text-emerald-500" />}
-              highlight={approved > 0 ? "emerald" : undefined}
-            />
-            <StatCard
-              label="Con cambios solicitados"
-              value={changesRequested}
-              sub="esperando al cliente"
-              icon={
-                <AlertCircle
-                  className={`h-5 w-5 ${changesRequested > 0 ? "text-red-500" : "text-slate-400"}`}
-                />
-              }
-              highlight={changesRequested > 0 ? "red" : undefined}
-            />
-          </div>
-
-          {/* Tabla solicitudes recientes */}
-          <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Solicitudes recientes</h2>
-            </div>
-            {!recentApps?.length ? (
-              <p className="p-5 text-sm text-slate-500">
-                Aún no hay solicitudes registradas.
-              </p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50">
-                      <th className="text-left px-5 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">
-                        Empresa
-                      </th>
-                      <th className="text-left px-3 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">
-                        Producto
-                      </th>
-                      <th className="text-left px-3 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">
-                        Estado
-                      </th>
-                      <th className="text-left px-3 py-3 font-medium text-slate-600 text-xs uppercase tracking-wide">
-                        Actualizado
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentApps.map((app) => {
-                      const company = (app.companies as unknown) as {
-                        legal_name: string
-                      } | null
-                      const product = (app.products as unknown) as {
-                        name: string
-                        code: string
-                      } | null
-                      const timeAgo = formatDistanceToNow(
-                        new Date(app.updated_at),
-                        { addSuffix: true, locale: es }
-                      )
-                      return (
-                        <tr
-                          key={app.id}
-                          className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors"
-                        >
-                          <td className="px-5 py-3">
-                            <Link
-                              href={`/admin/applications/${app.id}/review`}
-                              className="font-medium text-slate-800 hover:text-emerald-700 hover:underline"
-                            >
-                              {company?.legal_name ?? "—"}
-                            </Link>
-                          </td>
-                          <td className="px-3 py-3">
-                            <Badge
-                              variant={
-                                PRODUCT_VARIANT[product?.code ?? ""] ?? "outline"
-                              }
-                              className="text-xs"
-                            >
-                              {product?.name ?? "—"}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-3">
-                            <Badge
-                              variant={STATUS_VARIANT[app.status] ?? "pending"}
-                              className="text-xs"
-                            >
-                              {STATUS_LABELS[app.status] ?? app.status}
-                            </Badge>
-                          </td>
-                          <td className="px-3 py-3 text-xs text-slate-500">
-                            {timeAgo}
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      {/* ── Topbar ── */}
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, padding: "24px 32px 16px", flexWrap: "wrap" }}>
+        <div>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--admin-text, #0F1B2A)" }}>
+            {greeting}, {name.split(" ")[0]}
+          </h1>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", textTransform: "capitalize" }}>
+            {today}
+          </p>
         </div>
+      </header>
 
-        {/* ── Columna derecha (1/3) ── */}
-        <div className="space-y-6">
-          {/* Documentos por revisar */}
-          <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Documentos por revisar</h2>
+      {/* ── Content ── */}
+      <div style={{ padding: "0 32px 32px", flex: 1 }}>
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Left column */}
+          <div className="lg:col-span-2 space-y-5">
+            {/* Stat cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <StatCard
+                label="Total solicitudes"
+                value={total}
+                sub="desde el inicio"
+                icon={<FileText size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)" }} />}
+              />
+              <StatCard
+                label="En revisión"
+                value={pending}
+                sub="requieren atención"
+                icon={<Clock size={16} color={pending > 0 ? "#D97706" : "var(--admin-text-subtle, #8A99A8)"} />}
+                highlight={pending > 0 ? "amber" : undefined}
+              />
+              <StatCard
+                label="Activadas"
+                value={approved}
+                sub="completadas"
+                icon={<CheckCircle size={16} color="#059669" />}
+                highlight={approved > 0 ? "emerald" : undefined}
+              />
+              <StatCard
+                label="Cambios solicitados"
+                value={changesRequested}
+                sub="esperando al cliente"
+                icon={<AlertCircle size={16} color={changesRequested > 0 ? "#DC2626" : "var(--admin-text-subtle, #8A99A8)"} />}
+                highlight={changesRequested > 0 ? "red" : undefined}
+              />
             </div>
-            <div className="p-4 space-y-2">
-              {!pendingDocs?.length ? (
-                <p className="text-sm text-emerald-700 font-medium">
-                  ✓ No hay documentos pendientes de revisión
+
+            {/* Recent apps table */}
+            <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface-2, #FBFCFD)" }}>
+                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                  Solicitudes recientes
+                </h2>
+              </div>
+              {!recentApps?.length ? (
+                <p style={{ padding: "20px", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", margin: 0 }}>
+                  Aún no hay solicitudes registradas.
                 </p>
               ) : (
-                pendingDocs.map((doc) => {
-                  const template = (doc.document_templates as unknown) as {
-                    name: string
-                  } | null
-                  const appData = (doc.applications as unknown) as {
-                    companies: { legal_name: string } | null
-                  } | null
-                  const companyName = appData?.companies?.legal_name
-                  return (
-                    <Link
-                      key={doc.id}
-                      href={`/admin/applications/${doc.application_id}/review`}
-                      className="block rounded-lg p-3 hover:bg-slate-50 transition-colors"
-                    >
-                      <p className="text-sm font-medium text-slate-800 leading-snug">
-                        {template?.name ?? "Documento"}
-                      </p>
-                      {companyName && (
-                        <p className="text-xs text-slate-500 mt-0.5">{companyName}</p>
-                      )}
-                    </Link>
-                  )
-                })
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                      <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                        {[["Empresa", "20px"], ["Producto", "12px"], ["Estado", "12px"], ["Actualizado", "12px"]].map(([h, pl]) => (
+                          <th key={h} style={{ textAlign: "left", padding: `12px ${pl}`, fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}>
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(recentApps ?? []).map((app) => {
+                        const company = (app.companies as unknown) as { legal_name: string } | null
+                        const product = (app.products as unknown) as { name: string; code: string } | null
+                        const timeAgo = formatDistanceToNow(new Date(app.updated_at), { addSuffix: true, locale: es })
+                        return (
+                          <tr key={app.id} className="table-row-hover" style={{ borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                            <td style={{ padding: "14px 20px", verticalAlign: "middle" }}>
+                              <Link
+                                href={`/admin/applications/${app.id}/review`}
+                                style={{ fontWeight: 600, fontSize: 14, color: "var(--admin-text, #0F1B2A)", textDecoration: "none", letterSpacing: "-.01em" }}
+                              >
+                                {company?.legal_name ?? "—"}
+                              </Link>
+                            </td>
+                            <td style={{ padding: "14px 12px", verticalAlign: "middle" }}>
+                              <Badge variant={PRODUCT_VARIANT[product?.code ?? ""] ?? "outline"} className="text-xs">
+                                {product?.name ?? "—"}
+                              </Badge>
+                            </td>
+                            <td style={{ padding: "14px 12px", verticalAlign: "middle" }}>
+                              <Badge variant={STATUS_VARIANT[app.status] ?? "pending"} className="text-xs">
+                                {STATUS_LABELS[app.status] ?? app.status}
+                              </Badge>
+                            </td>
+                            <td style={{ padding: "14px 12px", verticalAlign: "middle", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                              {timeAgo}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
-          </section>
+          </div>
 
-          {/* Accesos rápidos */}
-          <section className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div className="px-5 py-4 border-b border-slate-100">
-              <h2 className="font-semibold text-slate-900">Accesos rápidos</h2>
+          {/* Right column */}
+          <div className="space-y-5">
+            {/* Pending docs */}
+            <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface-2, #FBFCFD)" }}>
+                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                  Documentos por revisar
+                </h2>
+              </div>
+              <div style={{ padding: "12px 16px" }}>
+                {!pendingDocs?.length ? (
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand, #00B36A)", margin: 0 }}>
+                    ✓ Sin documentos pendientes
+                  </p>
+                ) : (
+                  pendingDocs.map((doc) => {
+                    const template = (doc.document_templates as unknown) as { name: string } | null
+                    const appData = (doc.applications as unknown) as { companies: { legal_name: string } | null } | null
+                    const companyName = appData?.companies?.legal_name
+                    return (
+                      <Link
+                        key={doc.id}
+                        href={`/admin/applications/${doc.application_id}/review`}
+                        style={{ display: "block", padding: "10px 8px", borderRadius: 8, textDecoration: "none", transition: "background .12s" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "var(--admin-bg, #F6F8FA)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                      >
+                        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--admin-text, #0F1B2A)", lineHeight: 1.3 }}>
+                          {template?.name ?? "Documento"}
+                        </p>
+                        {companyName && (
+                          <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                            {companyName}
+                          </p>
+                        )}
+                      </Link>
+                    )
+                  })
+                )}
+              </div>
             </div>
-            <div className="p-3 space-y-1">
-              <Link
-                href="/admin/kanban"
-                className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-100 transition-colors group"
-              >
-                <KanbanSquare className="h-5 w-5 text-slate-400 group-hover:text-emerald-700" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                  Ver Kanban completo
-                </span>
-              </Link>
-              <Link
-                href="/admin/clients"
-                className="flex items-center gap-3 px-3 py-3 rounded-lg hover:bg-slate-100 transition-colors group"
-              >
-                <Building2 className="h-5 w-5 text-slate-400 group-hover:text-emerald-700" />
-                <span className="text-sm font-medium text-slate-700 group-hover:text-slate-900">
-                  Ver todos los clientes
-                </span>
-              </Link>
+
+            {/* Quick links */}
+            <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface-2, #FBFCFD)" }}>
+                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                  Accesos rápidos
+                </h2>
+              </div>
+              <div style={{ padding: "8px 12px" }}>
+                {[
+                  { href: "/admin/kanban", Icon: KanbanSquare, label: "Ver Kanban completo" },
+                  { href: "/admin/clients", Icon: Building2, label: "Ver todos los clientes" },
+                ].map(({ href, Icon, label }) => (
+                  <Link
+                    key={href}
+                    href={href}
+                    style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 8px", borderRadius: 8, textDecoration: "none", transition: "background .12s" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "var(--admin-bg, #F6F8FA)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                  >
+                    <Icon size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)", flexShrink: 0 }} />
+                    <span style={{ fontSize: 14, fontWeight: 500, color: "var(--admin-text, #0F1B2A)" }}>{label}</span>
+                  </Link>
+                ))}
+              </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>
@@ -333,22 +306,21 @@ function StatCard({
   highlight?: "amber" | "emerald" | "red"
 }) {
   const valueColor =
-    highlight === "amber"
-      ? "text-amber-600"
-      : highlight === "emerald"
-      ? "text-emerald-600"
-      : highlight === "red"
-      ? "text-red-600"
-      : "text-slate-900"
+    highlight === "amber" ? "#D97706"
+    : highlight === "emerald" ? "#059669"
+    : highlight === "red" ? "#DC2626"
+    : "var(--admin-text, #0F1B2A)"
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-600 leading-snug">{label}</p>
+    <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 11, boxShadow: "0 1px 2px rgba(16,30,45,.05)", padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 10 }}>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: "var(--admin-text-muted, #5A6B7B)", lineHeight: 1.3 }}>{label}</p>
         {icon}
       </div>
-      <p className={`text-3xl font-bold ${valueColor}`}>{value}</p>
-      <p className="text-xs text-slate-400">{sub}</p>
+      <p style={{ margin: "0 0 4px", fontSize: 28, fontWeight: 800, fontFamily: "var(--font-display)", color: valueColor, lineHeight: 1 }}>
+        {value}
+      </p>
+      <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>{sub}</p>
     </div>
   )
 }

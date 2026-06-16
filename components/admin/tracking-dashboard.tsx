@@ -462,16 +462,16 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
   }
 
   return (
-    <div style={{ padding:"20px 24px 64px", maxWidth:1280, margin:"0 auto",
+    <div style={{ padding:"24px 32px 64px", maxWidth:1280, margin:"0 auto",
       fontFamily:"var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif",
-      fontSize:14, color:"#16201b" }}>
+      fontSize:14, color:"var(--admin-text, #0F1B2A)" }}>
 
       {/* Header */}
-      <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between",
-        gap:16, marginBottom:22, flexWrap:"wrap" }}>
+      <header style={{ display:"flex", alignItems:"flex-end", justifyContent:"space-between",
+        gap:16, marginBottom:24, flexWrap:"wrap" }}>
         <div>
-          <h1 style={{ margin:0, fontSize:18, fontWeight:600 }}>Seguimiento de altas</h1>
-          <p style={{ margin:"3px 0 0", fontSize:12, color:"#5f6b64" }}>Panel interno · Payefy Equipo</p>
+          <h1 style={{ margin:0, fontFamily:"var(--font-display)", fontSize:26, fontWeight:800, letterSpacing:"-.02em", lineHeight:1.1, color:"var(--admin-text, #0F1B2A)" }}>Seguimiento de altas</h1>
+          <p style={{ margin:"4px 0 0", fontSize:13, color:"var(--admin-text-muted, #5A6B7B)" }}>Solicitudes activas por producto</p>
         </div>
         <div style={{ display:"flex", gap:4, background:"#fff", border:"1px solid #e3e8e5",
           borderRadius:999, padding:3 }}>

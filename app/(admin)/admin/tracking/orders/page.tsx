@@ -20,18 +20,26 @@ export default async function OrdersPage() {
     .order("created_at", { ascending: false })
 
   return (
-    <div className="p-6 max-w-5xl">
-      <div className="mb-6">
-        <Link href="/admin/tracking" className="text-sm text-muted-foreground hover:text-foreground">
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      <header style={{ padding: "24px 32px 16px" }}>
+        <Link
+          href="/admin/tracking"
+          style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 8 }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--admin-text, #0F1B2A)")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--admin-text-muted, #5A6B7B)")}
+        >
           ← Seguimiento
         </Link>
-        <h1 className="text-xl font-bold mt-1">Pedidos de plásticos / terminales</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          {orders?.length ?? 0} pedido(s) en total
+        <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--admin-text, #0F1B2A)" }}>
+          Pedidos
+        </h1>
+        <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+          <b style={{ color: "var(--admin-text, #0F1B2A)", fontWeight: 600 }}>{orders?.length ?? 0}</b> pedido(s) en total
         </p>
+      </header>
+      <div style={{ padding: "0 32px 32px" }}>
+        <OrdersTable orders={orders ?? []} />
       </div>
-
-      <OrdersTable orders={orders ?? []} />
     </div>
   )
 }

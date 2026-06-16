@@ -24,10 +24,7 @@ const LEAD_STATUS_LABELS: Record<LeadStatus, string> = {
   en_proceso: "En proceso",
 }
 
-const LEAD_STATUS_VARIANT: Record<
-  LeadStatus,
-  "pending" | "warning" | "success"
-> = {
+const LEAD_STATUS_VARIANT: Record<LeadStatus, "pending" | "warning" | "success"> = {
   invitado: "pending",
   registrado: "warning",
   en_proceso: "success",
@@ -38,7 +35,6 @@ export default async function LeadsPage() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const admin = createAdminClient(url, key)
 
-  // Leads: companies pre-creadas con lead_invited_at NOT NULL
   const { data: leads } = await admin
     .from("companies")
     .select(
@@ -51,7 +47,6 @@ export default async function LeadsPage() {
     .not("lead_invited_at", "is", null)
     .order("lead_invited_at", { ascending: false })
 
-  // Agentes: perfiles no-clientes para el selector del formulario
   const { data: agents } = await admin
     .from("profiles")
     .select("id, full_name")
@@ -62,105 +57,110 @@ export default async function LeadsPage() {
   const leadList = leads ?? []
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      {/* ── Topbar ── */}
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, padding: "24px 32px 16px", flexWrap: "wrap" }}>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Leads</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Empresas pre-creadas por el equipo comercial con invitación enviada al cliente.
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--admin-text, #0F1B2A)" }}>
+            Leads
+          </h1>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+            <b style={{ color: "var(--admin-text, #0F1B2A)", fontWeight: 600 }}>{leadList.length}</b>{" "}
+            empresas con invitación enviada
           </p>
         </div>
         <NewLeadForm agents={agents ?? []} />
-      </div>
+      </header>
 
-      {leadList.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          Aún no hay leads. Usa &ldquo;Nuevo lead&rdquo; para crear el primero.
-        </p>
-      ) : (
-        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50">
-                  {["Empresa", "Correo", "Producto", "Agente", "Estado", "Invitado", ""].map((h) => (
-                    <th
-                      key={h}
-                      className="text-left px-4 py-3 text-xs font-medium text-slate-600 uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {leadList.map((lead) => {
-                  const members = (lead.company_users as { user_id: string }[]) ?? []
-                  const apps = (lead.applications as { id: string; status: string }[]) ?? []
-                  const hasActiveApps = apps.some((a) => a.status !== "draft")
-                  const leadStatus = deriveLeadStatus(lead.status, members.length > 0, hasActiveApps)
-                  const agent = (lead.assigned_agent as unknown as { full_name: string } | null)
-                  const firstApp = apps[0]
+      {/* ── Content ── */}
+      <div style={{ padding: "0 32px 32px" }}>
+        {leadList.length === 0 ? (
+          <p style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", margin: 0 }}>
+            Aún no hay leads. Usa &ldquo;Nuevo lead&rdquo; para crear el primero.
+          </p>
+        ) : (
+          <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+            <div style={{ overflowX: "auto" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <thead>
+                  <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                    {["Empresa", "Correo", "Producto", "Agente", "Estado", "Invitado", ""].map((h) => (
+                      <th
+                        key={h}
+                        style={{ textAlign: "left", padding: "12px 20px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {leadList.map((lead) => {
+                    const members = (lead.company_users as { user_id: string }[]) ?? []
+                    const apps = (lead.applications as { id: string; status: string }[]) ?? []
+                    const hasActiveApps = apps.some((a) => a.status !== "draft")
+                    const leadStatus = deriveLeadStatus(lead.status, members.length > 0, hasActiveApps)
+                    const agent = (lead.assigned_agent as unknown as { full_name: string } | null)
+                    const firstApp = apps[0]
 
-                  return (
-                    <tr
-                      key={lead.id}
-                      className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 transition-colors"
-                    >
-                      <td className="px-4 py-3 font-medium text-slate-800">
-                        {lead.legal_name}
-                        {lead.tax_id && (
-                          <span className="block text-xs text-slate-400 font-mono mt-0.5">
-                            {lead.tax_id}
+                    return (
+                      <tr key={lead.id} className="table-row-hover" style={{ borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle" }}>
+                          <span style={{ fontWeight: 600, fontSize: 14, color: "var(--admin-text, #0F1B2A)", letterSpacing: "-.01em", display: "block" }}>
+                            {lead.legal_name}
                           </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">
-                        {lead.contact_email ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant="outline" className="text-xs">
-                          {lead.lead_product_code === "cards"
-                            ? "Tarjeta Payefy"
-                            : lead.lead_product_code === "terminals"
-                            ? "Terminal TPV"
-                            : (lead.lead_product_code ?? "—")}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-slate-600 text-xs">
-                        {agent?.full_name ?? "—"}
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={LEAD_STATUS_VARIANT[leadStatus]}>
-                          {LEAD_STATUS_LABELS[leadStatus]}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-500">
-                        {lead.lead_invited_at
-                          ? formatDistanceToNow(new Date(lead.lead_invited_at), {
-                              addSuffix: true,
-                              locale: es,
-                            })
-                          : "—"}
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        {firstApp && (
-                          <Link
-                            href={`/admin/applications/${firstApp.id}/review`}
-                            className="text-xs text-emerald-700 hover:underline font-medium"
-                          >
-                            Ver expediente
-                          </Link>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+                          {lead.tax_id && (
+                            <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)", fontFamily: "var(--font-mono)", letterSpacing: ".02em", display: "block", marginTop: 2 }}>
+                              {lead.tax_id}
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                          {lead.contact_email ?? "—"}
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle" }}>
+                          <Badge variant="outline" className="text-xs">
+                            {lead.lead_product_code === "cards"
+                              ? "Tarjeta Payefy"
+                              : lead.lead_product_code === "terminals"
+                              ? "Terminal TPV"
+                              : (lead.lead_product_code ?? "—")}
+                          </Badge>
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                          {agent?.full_name ?? "—"}
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle" }}>
+                          <Badge variant={LEAD_STATUS_VARIANT[leadStatus]}>
+                            {LEAD_STATUS_LABELS[leadStatus]}
+                          </Badge>
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                          {lead.lead_invited_at
+                            ? formatDistanceToNow(new Date(lead.lead_invited_at), { addSuffix: true, locale: es })
+                            : "—"}
+                        </td>
+                        <td style={{ padding: "14px 20px", verticalAlign: "middle", textAlign: "right" }}>
+                          {firstApp && (
+                            <Link
+                              href={`/admin/applications/${firstApp.id}/review`}
+                              style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand, #00B36A)", textDecoration: "none" }}
+                              onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                              onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                            >
+                              Ver expediente
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

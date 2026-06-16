@@ -32,14 +32,20 @@ export default async function KanbanPage() {
   })
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Kanban de solicitudes</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Arrastra las tarjetas para cambiar el estado de una solicitud.
-        </p>
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, padding: "24px 32px 16px" }}>
+        <div>
+          <h1 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1.1, color: "var(--admin-text, #0F1B2A)" }}>
+            Kanban
+          </h1>
+          <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+            Arrastra las tarjetas para cambiar el estado de una solicitud.
+          </p>
+        </div>
+      </header>
+      <div style={{ padding: "0 32px 32px", flex: 1 }}>
+        <KanbanBoard applications={kanbanApps} />
       </div>
-      <KanbanBoard applications={kanbanApps} />
     </div>
   )
 }

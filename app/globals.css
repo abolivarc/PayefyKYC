@@ -134,6 +134,7 @@
 .admin-shell {
   --admin-bg: #F6F8FA;
   --admin-surface: #FFFFFF;
+  --admin-surface-2: #FBFCFD;
   --admin-border: #E7ECF1;
   --admin-text: #0F1B2A;
   --admin-text-muted: #5A6B7B;
