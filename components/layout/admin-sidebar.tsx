@@ -118,18 +118,18 @@ function SidebarContent({
           </div>
           <div className="min-w-0 flex-1">
             {roleLabel && (
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span
-                  className="w-1.5 h-1.5 rounded-full shrink-0"
-                  style={{ background: "#A8F898" }}
-                />
-                <span
-                  className="text-[10px] font-bold uppercase tracking-wider"
-                  style={{ color: "#A8F898" }}
-                >
-                  {roleLabel}
-                </span>
-              </div>
+              <span
+                className="mb-0.5"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  fontSize: 11, fontWeight: 700, letterSpacing: ".03em", textTransform: "uppercase",
+                  color: "#0B7A44", background: "#EDFBEA",
+                  padding: "2px 8px", borderRadius: 999,
+                }}
+              >
+                <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#0B7A44", flexShrink: 0 }} />
+                {roleLabel}
+              </span>
             )}
             <p className="text-sm font-medium truncate text-white leading-tight">
               {fullName || "Usuario"}

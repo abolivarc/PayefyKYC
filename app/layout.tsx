@@ -7,12 +7,14 @@ const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
 });
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
+  weight: ["500", "600", "700", "800"],
 });
 
 const jetbrains = JetBrains_Mono({
