@@ -129,3 +129,60 @@
     @apply font-sans;
   }
 }
+
+/* ─── Admin panel design tokens ─────────────────────────────── */
+.admin-shell {
+  --admin-bg: #F6F8FA;
+  --admin-surface: #FFFFFF;
+  --admin-border: #E7ECF1;
+  --admin-text: #0F1B2A;
+  --admin-text-muted: #5A6B7B;
+  --admin-text-subtle: #8A99A8;
+  --admin-brand: #00B36A;
+  --admin-brand-soft: #E7FAF0;
+  /* sidebar */
+  --sb-bg: #0E1A26;
+  --sb-bg2: #0A141E;
+  --sb-text: #C4D0DB;
+  --sb-text-dim: #7E8FA0;
+  --sb-active-bg: rgba(0,179,106,0.12);
+  --sb-rail: #00B36A;
+  --sb-border: rgba(255,255,255,0.07);
+}
+
+/* Sidebar nav link — pure CSS hover/active, no JS style mutations */
+.admin-shell .sb-nav-link {
+  position: relative;
+  transition: background 0.14s, color 0.14s;
+}
+.admin-shell .sb-nav-link:hover {
+  background: rgba(0,179,106,0.08);
+  color: #fff;
+}
+.admin-shell .sb-nav-link.active {
+  background: rgba(0,179,106,0.12);
+  color: #fff;
+  font-weight: 600;
+}
+.admin-shell .sb-nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: #00B36A;
+}
+
+/* Table row hover accent */
+.admin-shell .table-row-hover {
+  transition: background 0.12s;
+}
+.admin-shell .table-row-hover:hover {
+  background: #F4FAF7;
+}
+.admin-shell .table-row-hover:hover td:first-child {
+  box-shadow: inset 3px 0 0 #00B36A;
+}
