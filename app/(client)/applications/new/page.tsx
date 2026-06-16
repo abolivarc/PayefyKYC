@@ -266,18 +266,6 @@ function WizardContent() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="phone">Teléfono</Label>
-              <Input
-                id="phone"
-                name="phone"
-                type="tel"
-                placeholder="5512345678"
-                required
-                minLength={10}
-              />
-            </div>
-
-            <div className="space-y-2">
               <Label htmlFor="operator_email">Correo empresarial</Label>
               <Input
                 id="operator_email"

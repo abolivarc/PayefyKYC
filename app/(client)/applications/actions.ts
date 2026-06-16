@@ -21,12 +21,11 @@ export async function createApplications(formData: FormData) {
   const products = formData.getAll("products") as string[]
   const legalName = formData.get("legal_name") as string
   const taxId = (formData.get("tax_id") as string).toUpperCase().trim()
-  const phone = formData.get("phone") as string
   const terminalType = (formData.get("terminal_type") as string) || null
   const operatorEmail = formData.get("operator_email") as string
   const personType = (formData.get("person_type") as string) || null
 
-  if (!products.length || !legalName || !taxId || !phone || !operatorEmail) {
+  if (!products.length || !legalName || !taxId || !operatorEmail) {
     redirect(
       "/applications/new?error=" +
         encodeURIComponent("Todos los campos son requeridos")
@@ -52,7 +51,6 @@ export async function createApplications(formData: FormData) {
     await adminClient.from("companies").update({
       legal_name: legalName,
       tax_id: taxId,
-      phone,
       terminal_type: terminalType,
       operator_email: operatorEmail,
       person_type: personType,
@@ -64,7 +62,6 @@ export async function createApplications(formData: FormData) {
       .insert({
         legal_name: legalName,
         tax_id: taxId,
-        phone,
         terminal_type: terminalType,
         operator_email: operatorEmail,
         person_type: personType,
