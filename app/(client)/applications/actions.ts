@@ -206,7 +206,12 @@ export async function addProductToCompany(
     .eq("product_id", product.id)
 
   if (templates?.length) {
-    await supabase.from("documents").insert(
+    // Service role para INSERT — is_company_member falla en server action context
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    await adminClient.from("documents").insert(
       templates.map((t) => ({
         application_id: app.id,
         template_id: t.id,
@@ -287,8 +292,35 @@ export async function addExtraDocument(
   applicationId: string,
   templateId: string
 ) {
+  // 1. Verificar sesión
   const supabase = await createClient()
-  const { data: doc, error } = await supabase
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  // 2. Verificar que la application existe y obtener company_id
+  const { data: app } = await supabase
+    .from("applications")
+    .select("company_id")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  // 3. Verificar que el usuario pertenece a esa company
+  const { data: membership } = await supabase
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) return { error: "Sin acceso" }
+
+  // 4. INSERT con service role — is_company_member falla en server action context
+  //    (mismo patrón que createApplications)
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: doc, error } = await adminClient
     .from("documents")
     .insert({
       application_id: applicationId,
