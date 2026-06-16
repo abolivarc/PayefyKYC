@@ -15,8 +15,8 @@ const PRODUCT_META: Record<string, {
     sub: "Líneas de crédito flexibles para financiar el crecimiento de tu empresa.",
     img: "/products/tarjeta-fisica.jpg",
     imgAlt: "Tarjetas Payefy Visa Crédito",
-    imgBg: "#F4F8F6",
-    imgPadding: 8,
+    imgBg: "transparent",
+    imgPadding: 0,
   },
   terminals: {
     kicker: "Terminales de Pago",
@@ -82,12 +82,12 @@ export function ProductHero({ productCode, productName }: ProductHeroProps) {
 
       {/* Product image */}
       <div
-        className="hidden sm:flex shrink-0 items-center justify-center rounded-xl overflow-hidden"
+        className={`hidden sm:flex shrink-0 items-center justify-center ${meta.imgBg === "transparent" ? "" : "rounded-xl overflow-hidden"}`}
         style={{
           width: 220,
           background: meta.imgBg,
           padding: meta.imgPadding,
-          borderRadius: 12,
+          borderRadius: meta.imgBg === "transparent" ? 0 : 12,
         }}
       >
         <Image
