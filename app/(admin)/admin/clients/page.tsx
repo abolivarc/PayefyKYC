@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
+import { DeleteClientButton } from "@/components/admin/delete-client-button"
 
 const STATUS_LABELS: Record<string, string> = {
   draft: "Borrador",
@@ -50,6 +51,12 @@ const STATUS_VARIANT: Record<
 
 export default async function ClientsPage() {
   const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: profile } = user
+    ? await supabase.from("profiles").select("role").eq("id", user.id).single()
+    : { data: null }
+  const isSuperAdmin = profile?.role === "super_admin"
 
   const { data: companies } = await supabase
     .from("companies")
@@ -130,14 +137,23 @@ export default async function ClientsPage() {
                     {timeAgo}
                   </TableCell>
                   <TableCell className="text-right">
-                    {apps[0] && (
-                      <Link
-                        href={`/admin/applications/${apps[0].id}/review`}
-                        className={buttonVariants({ size: "sm", variant: "outline" })}
-                      >
-                        Revisar
-                      </Link>
-                    )}
+                    <div className="flex items-center justify-end gap-2">
+                      {apps[0] && (
+                        <Link
+                          href={`/admin/applications/${apps[0].id}/review`}
+                          className={buttonVariants({ size: "sm", variant: "outline" })}
+                        >
+                          Revisar
+                        </Link>
+                      )}
+                      {isSuperAdmin && (
+                        <DeleteClientButton
+                          companyId={company.id}
+                          legalName={company.legal_name}
+                          taxId={company.tax_id ?? ""}
+                        />
+                      )}
+                    </div>
                   </TableCell>
                 </TableRow>
               )
