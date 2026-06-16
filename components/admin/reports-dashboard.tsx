@@ -142,7 +142,7 @@ export function ReportsDashboard({ apps, monthlyActivations }: Props) {
 
   return (
     <div style={{ padding:"20px 24px 64px", maxWidth:1280, margin:"0 auto",
-      fontFamily:"-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily:"var(--font-sans), -apple-system, BlinkMacSystemFont, sans-serif",
       fontSize:14, color:"#16201b" }}>
 
       {/* Header + filters */}
