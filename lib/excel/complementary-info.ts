@@ -1,97 +1,67 @@
 import * as XLSX from "xlsx"
-import type { ComplementaryInfoValues } from "@/lib/validations/complementary-info"
-
-const ROLE_LABELS: Record<string, string> = {
-  accionista: "Accionista (25%+)",
-  representante_legal: "Representante legal",
-  administrador: "Administrador / Consejero",
-  beneficiario_controlador: "Beneficiario controlador",
-}
+import type { ComplementaryInfoV2Values } from "@/lib/validations/complementary-info-v2"
+import { ROW_MAP } from "@/lib/validations/complementary-info-v2"
 
 export function generateComplementaryInfoXlsx(
-  data: ComplementaryInfoValues,
-  companyName?: string
-): Blob {
-  const wb = XLSX.utils.book_new()
+  templateBuffer: Buffer,
+  data: ComplementaryInfoV2Values,
+  legalName: string,
+  orgFileName?: string,
+  taxFileName?: string,
+): Buffer {
+  const wb = XLSX.read(templateBuffer, { type: "buffer" })
+  const originalName = wb.SheetNames[0]
+  const ws = wb.Sheets[originalName]
 
-  const rows: (string | number | boolean | null)[][] = []
+  function setB(row: number, value: string) {
+    const addr = XLSX.utils.encode_cell({ r: row - 1, c: 1 })
+    ws[addr] = { t: "s", v: value }
+  }
 
-  // ── Encabezado ──
-  rows.push(["INFORMACIÓN COMPLEMENTARIA KYC — Payefy"])
-  rows.push(["Empresa:", companyName ?? data.legal_name])
-  rows.push(["Fecha:", data.declaration_date])
-  rows.push([])
+  if (orgFileName) setB(ROW_MAP.organigrama, `Adjuntado: ${orgFileName}`)
+  setB(ROW_MAP.director_nombre, data.director_nombre)
+  setB(ROW_MAP.director_nacimiento, data.director_nacimiento)
+  setB(ROW_MAP.director_cargo, data.director_cargo)
+  setB(ROW_MAP.colaborador_nombre, data.colaborador_nombre)
+  setB(ROW_MAP.colaborador_puesto, data.colaborador_puesto)
+  setB(ROW_MAP.colaborador_nacimiento, data.colaborador_nacimiento)
+  if (data.pep_relacion) setB(ROW_MAP.pep_relacion, data.pep_relacion)
+  if (data.pep_residencia) setB(ROW_MAP.pep_residencia, data.pep_residencia)
+  if (data.pep_dependencia) setB(ROW_MAP.pep_dependencia, data.pep_dependencia)
+  if (data.pep_cargo) setB(ROW_MAP.pep_cargo, data.pep_cargo)
+  if (data.pep_sueldo) setB(ROW_MAP.pep_sueldo, data.pep_sueldo)
+  if (data.pep_inicio) setB(ROW_MAP.pep_inicio, data.pep_inicio)
+  if (data.pep_fin) setB(ROW_MAP.pep_fin, data.pep_fin)
+  if (data.pep_vigente) setB(ROW_MAP.pep_vigente, data.pep_vigente)
+  setB(ROW_MAP.anos_actividad, data.anos_actividad)
+  setB(ROW_MAP.ingresos_mensuales, data.ingresos_mensuales)
+  if (taxFileName) setB(ROW_MAP.declaracion_anual, `Adjuntado: ${taxFileName}`)
+  setB(ROW_MAP.ingresos_adicionales, data.ingresos_adicionales)
+  if (data.ingresos_adicionales === "Sí" && data.ingresos_adicionales_cuales)
+    setB(ROW_MAP.ingresos_adicionales_cuales, data.ingresos_adicionales_cuales)
+  setB(ROW_MAP.clientes_extranjero, data.clientes_extranjero)
+  setB(ROW_MAP.productos_servicios, data.productos_servicios)
+  setB(ROW_MAP.num_empleados, data.num_empleados)
+  setB(ROW_MAP.ingresos_empresa, data.ingresos_empresa)
+  setB(ROW_MAP.tiene_sucursales, data.tiene_sucursales)
+  if (data.tiene_sucursales === "Sí") {
+    if (data.num_sucursales) setB(ROW_MAP.num_sucursales, data.num_sucursales)
+    if (data.estados_sucursales) setB(ROW_MAP.estados_sucursales, data.estados_sucursales)
+  }
+  setB(ROW_MAP.principales_clientes, data.principales_clientes)
+  setB(ROW_MAP.principales_proveedores, data.principales_proveedores)
+  setB(ROW_MAP.tiene_participacion, data.tiene_participacion)
+  if (data.tiene_participacion === "Sí" && data.participacion_razon)
+    setB(ROW_MAP.participacion_razon, data.participacion_razon)
+  setB(ROW_MAP.parte_grupo, data.parte_grupo)
+  if (data.parte_grupo === "Sí" && data.grupo_detalle)
+    setB(ROW_MAP.grupo_detalle, data.grupo_detalle)
 
-  // ── Sección 1: Datos de la empresa ──
-  rows.push(["SECCIÓN 1: DATOS DE LA EMPRESA"])
-  rows.push(["Razón social", data.legal_name])
-  rows.push(["RFC", data.tax_id])
-  rows.push(["Régimen fiscal", data.tax_regime])
-  rows.push(["Actividad principal", data.business_activity])
-  rows.push(["Descripción del negocio", data.business_description])
-  rows.push([
-    "Domicilio",
-    `${data.address_street} ${data.address_number}, Col. ${data.address_colonia}`,
-  ])
-  rows.push(["Ciudad / Municipio", data.address_city])
-  rows.push(["Estado", data.address_state])
-  rows.push(["Código Postal", data.address_zip])
-  rows.push(["Teléfono", data.phone])
-  rows.push(["Correo electrónico", data.email])
-  rows.push(["Sitio web", data.website || "—"])
-  rows.push([])
+  // Rename sheet to company name
+  const safeName = legalName.slice(0, 31) // Excel sheet name max 31 chars
+  wb.Sheets[safeName] = ws
+  delete wb.Sheets[originalName]
+  wb.SheetNames[0] = safeName
 
-  // ── Sección 2: Partes relacionadas ──
-  rows.push(["SECCIÓN 2: PARTES RELACIONADAS"])
-  rows.push([
-    "#",
-    "Nombre completo",
-    "Rol",
-    "RFC",
-    "CURP",
-    "% Participación",
-    "¿Es PEP?",
-    "Detalle PEP",
-  ])
-  data.parties.forEach((p, i) => {
-    rows.push([
-      i + 1,
-      p.full_name,
-      ROLE_LABELS[p.role] ?? p.role,
-      p.rfc,
-      p.curp,
-      p.percentage ?? "—",
-      p.is_pep ? "Sí" : "No",
-      p.pep_details ?? "—",
-    ])
-  })
-  rows.push([])
-
-  // ── Sección 3: Declaraciones ──
-  rows.push(["SECCIÓN 3: DECLARACIONES"])
-  rows.push([
-    "Sin sanciones internacionales (OFAC/ONU/UE):",
-    data.no_sanctions ? "CONFIRMO" : "PENDIENTE",
-  ])
-  rows.push([
-    "Sin relación con financiamiento al terrorismo:",
-    data.no_terrorism ? "CONFIRMO" : "PENDIENTE",
-  ])
-  rows.push(["Lugar de firma", data.declaration_place])
-  rows.push(["Fecha de firma", data.declaration_date])
-  rows.push([])
-  rows.push(["Nombre del representante legal", ""])
-  rows.push(["Firma", ""])
-
-  const ws = XLSX.utils.aoa_to_sheet(rows)
-  ws["!cols"] = [{ wch: 50 }, { wch: 55 }, { wch: 30 }, { wch: 18 }, { wch: 20 }, { wch: 18 }, { wch: 10 }, { wch: 30 }]
-  XLSX.utils.book_append_sheet(wb, ws, "Información Complementaria")
-
-  const buf = XLSX.write(wb, { bookType: "xlsx", type: "base64" }) as string
-  const binary = atob(buf)
-  const bytes = new Uint8Array(binary.length)
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-  return new Blob([bytes.buffer as ArrayBuffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  })
+  return Buffer.from(XLSX.write(wb, { bookType: "xlsx", type: "buffer" }) as ArrayBuffer)
 }

@@ -3,7 +3,6 @@ import * as Sentry from "@sentry/nextjs"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { generateBeneficialOwnerPdf } from "@/lib/pdf/beneficial-owner"
-import { generateComplementaryInfoXlsx } from "@/lib/excel/complementary-info"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -88,12 +87,6 @@ export async function POST(request: Request) {
       fileName = "constancia_beneficiario_controlador.pdf"
       mimeType = "application/pdf"
       bucket = "generated-pdfs"
-    } else if (type === "complementary_info") {
-      const blob = generateComplementaryInfoXlsx(formData)
-      fileBuffer = Buffer.from(await blob.arrayBuffer())
-      fileName = "informacion_complementaria.xlsx"
-      mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-      bucket = "kyc-documents"
     } else {
       return NextResponse.json({ error: "Tipo desconocido" }, { status: 400 })
     }
