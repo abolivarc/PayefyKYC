@@ -87,7 +87,6 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                       <CheckOrUploadRow
                         key={group.templateCode}
                         documentId={doc.id}
-                        applicationId={applicationId}
                         templateName={group.templateName}
                         templateInstructions={group.templateInstructions}
                         currentStatus={doc.status}

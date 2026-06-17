@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { createClient as createServiceClient, type SupabaseClient } from "@supabase/supabase-js"
+import type { Database } from "@/types/database.types"
 import { createClient } from "@/lib/supabase/server"
 import { readFileSync } from "fs"
 import { join } from "path"
@@ -205,9 +205,8 @@ export async function POST(request: Request) {
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function uploadAttachment(
-  serviceClient: SupabaseClient<any>,
+  serviceClient: SupabaseClient<Database>,
   applicationId: string,
   file: File,
   templateCode: string,

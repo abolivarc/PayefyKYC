@@ -214,7 +214,6 @@ export default async function StatusPage({
                 if (!c) return null
                 const isSigned = c.status === "signed"
                 const isSent = c.status === "sent"
-                const isPending = !c || c.status === "pending"
 
                 return (
                   <div key={def.kind} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid #F0F4F2" }}>

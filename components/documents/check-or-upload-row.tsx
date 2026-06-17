@@ -25,7 +25,7 @@ const STATUS_BADGE: Record<
 
 interface Props {
   documentId: string
-  applicationId: string
+
   templateName: string
   templateInstructions: string | null
   currentStatus: DocStatus
@@ -36,7 +36,6 @@ interface Props {
 
 export function CheckOrUploadRow({
   documentId,
-  applicationId,
   templateName,
   templateInstructions,
   currentStatus,
