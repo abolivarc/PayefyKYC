@@ -81,17 +81,36 @@ export function BeneficialOwnerForm({ appId }: Props) {
   if (success) {
     return (
       <div className="space-y-5">
-        <Alert>
-          <AlertDescription>
-            ✅ Tu constancia ha sido generada y guardada en tu expediente.
-          </AlertDescription>
-        </Alert>
+
+        {/* Status banner — changes once signed copy is uploaded */}
+        {uploadedName ? (
+          <Alert>
+            <AlertDescription>
+              ✅ Constancia firmada subida correctamente. El documento está en revisión.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div
+            className="rounded-xl border-2 px-4 py-3 flex gap-3 items-start"
+            style={{ borderColor: "#F59E0B", background: "#FFFBEB" }}
+          >
+            <span style={{ fontSize: 20, lineHeight: 1.4 }}>⚠️</span>
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
+                Este documento aún NO está validado
+              </p>
+              <p className="text-sm" style={{ color: "#92400E" }}>
+                El documento se generó, pero debe ser <strong>impreso, firmado a mano, escaneado y subido aquí</strong> para que cuente como entregado. Mientras no lo hagas, el expediente seguirá marcando este campo como pendiente.
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Step 1 – Download */}
         <div className="rounded-xl border p-4 space-y-2">
-          <p className="text-sm font-semibold">Paso 1 — Descarga e imprime</p>
+          <p className="text-sm font-semibold">Paso 1 — Descarga, imprime y firma</p>
           <p className="text-sm text-muted-foreground">
-            Descárgala, imprímela y fírmala a mano.
+            Abre el archivo, imprímelo, fírmalo a mano con tinta y escanéalo o fótografialo.
           </p>
           {downloadUrl && (
             <a
@@ -106,18 +125,22 @@ export function BeneficialOwnerForm({ appId }: Props) {
         </div>
 
         {/* Step 2 – Upload signed */}
-        <div className="rounded-xl border p-4 space-y-2">
-          <p className="text-sm font-semibold">Paso 2 — Sube la versión firmada</p>
+        <div
+          className="rounded-xl border-2 p-4 space-y-2"
+          style={uploadedName ? {} : { borderColor: "#F59E0B" }}
+        >
+          <p className="text-sm font-semibold">
+            Paso 2 — Sube la versión firmada{" "}
+            {!uploadedName && (
+              <span style={{ color: "#B45309" }}>(requerido para completar)</span>
+            )}
+          </p>
           <p className="text-sm text-muted-foreground">
-            Escanéala o fotografíala y súbela aquí (PDF o imagen).
+            Sube el PDF o imagen del documento ya firmado.
           </p>
 
           {uploadedName ? (
-            <Alert>
-              <AlertDescription>
-                ✅ Subida correctamente: {uploadedName}
-              </AlertDescription>
-            </Alert>
+            <p className="text-sm text-green-700 font-medium">✅ {uploadedName}</p>
           ) : (
             <>
               <input
@@ -129,7 +152,6 @@ export function BeneficialOwnerForm({ appId }: Props) {
               />
               <Button
                 size="sm"
-                variant="default"
                 disabled={uploading || !documentId}
                 onClick={() => signedFileRef.current?.click()}
               >
