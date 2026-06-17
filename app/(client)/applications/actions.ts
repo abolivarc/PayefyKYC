@@ -240,7 +240,36 @@ export async function recordDocumentUpload(
   } = await supabase.auth.getUser()
   if (!user) return { error: "No autenticado" }
 
-  const { error } = await supabase
+  // Verify membership before updating — is_company_member unreliable in SSR context
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("application_id")
+    .eq("id", documentId)
+    .single()
+  if (!doc) return { error: "Documento no encontrado" }
+
+  const { data: app } = await supabase
+    .from("applications")
+    .select("company_id")
+    .eq("id", doc.application_id)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const { data: membership } = await supabase
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) return { error: "Sin acceso" }
+
+  // Use service role for UPDATE — documents_update_member_pending also uses
+  // is_company_member() which fails in server action SSR context
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { error } = await adminClient
     .from("documents")
     .update({
       storage_path: storagePath,
@@ -272,7 +301,35 @@ export async function setDocumentChecked(
   } = await supabase.auth.getUser()
   if (!user) return { error: "No autenticado" }
 
-  const { error } = await supabase
+  // Verify membership — documents_update_member_pending uses is_company_member
+  // which fails in server action SSR context; check explicitly then use service role
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("application_id")
+    .eq("id", documentId)
+    .single()
+  if (!doc) return { error: "Documento no encontrado" }
+
+  const { data: app } = await supabase
+    .from("applications")
+    .select("company_id")
+    .eq("id", doc.application_id)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const { data: membership } = await supabase
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) return { error: "Sin acceso" }
+
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { error } = await adminClient
     .from("documents")
     .update({
       is_checked: isChecked,

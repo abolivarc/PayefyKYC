@@ -1,8 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { recordDocumentUpload, setDocumentChecked } from "@/app/(client)/applications/actions"
+import { setDocumentChecked } from "@/app/(client)/applications/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -76,22 +75,18 @@ export function CheckOrUploadRow({
     if (!file) return
     setError(null)
 
-    const supabase = createClient()
-    const path = `${applicationId}/${documentId}/${file.name}`
-
-    const { error: uploadErr } = await supabase.storage
-      .from("kyc-documents")
-      .upload(path, file, { upsert: true })
-
-    if (uploadErr) {
-      setError("Error al subir el archivo: " + uploadErr.message)
-      return
-    }
-
     startTransition(async () => {
-      const result = await recordDocumentUpload(documentId, path, file.name, file.size, file.type)
-      if (result?.error) {
-        setError(result.error)
+      const fd = new FormData()
+      fd.append("file", file)
+
+      const res = await fetch(`/api/documents/${documentId}/upload`, {
+        method: "POST",
+        body: fd,
+      })
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        setError(data.error ?? "Error al subir el archivo")
       } else {
         setStatus("pending_review")
         setUploadedName(file.name)

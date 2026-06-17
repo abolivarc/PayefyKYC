@@ -1,11 +1,7 @@
 "use client"
 
 import { useRef, useState, useTransition } from "react"
-import { createClient } from "@/lib/supabase/client"
-import {
-  recordDocumentUpload,
-  addExtraDocument,
-} from "@/app/(client)/applications/actions"
+import { addExtraDocument } from "@/app/(client)/applications/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -63,32 +59,23 @@ export function MultiUploadRow({
     if (!file || !activeDocId) return
     setError(null)
 
-    const supabase = createClient()
-    const path = `${applicationId}/${activeDocId}/${file.name}`
-
-    const { error: uploadErr } = await supabase.storage
-      .from("kyc-documents")
-      .upload(path, file, { upsert: true })
-
-    if (uploadErr) {
-      setError("Error al subir el archivo: " + uploadErr.message)
-      return
-    }
-
+    const docId = activeDocId
     startTransition(async () => {
-      const result = await recordDocumentUpload(
-        activeDocId,
-        path,
-        file.name,
-        file.size,
-        file.type
-      )
-      if (result?.error) {
-        setError(result.error)
+      const fd = new FormData()
+      fd.append("file", file)
+
+      const res = await fetch(`/api/documents/${docId}/upload`, {
+        method: "POST",
+        body: fd,
+      })
+      const data = await res.json()
+
+      if (!res.ok || data.error) {
+        setError(data.error ?? "Error al subir el archivo")
       } else {
         setDocs((prev) =>
           prev.map((d) =>
-            d.id === activeDocId
+            d.id === docId
               ? { ...d, status: "pending_review", fileName: file.name }
               : d
           )
