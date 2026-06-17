@@ -19,8 +19,8 @@ function p(
   return new Paragraph({ alignment: align, children })
 }
 
-function empty(): Paragraph {
-  return new Paragraph({ children: [r("")] })
+function empty(align?: (typeof AlignmentType)[keyof typeof AlignmentType]): Paragraph {
+  return new Paragraph({ alignment: align, children: [r("")] })
 }
 
 function section(title: string, center = false): Paragraph {
@@ -156,12 +156,13 @@ export async function generateTermsOpmDocx(data: TermsOpmValues): Promise<Buffer
           empty(),
 
           // ── Firma ─────────────────────────────────────────────────────────────
-          p([r("FIRMA DE CONFORMIDAD Y ACEPTACIÓN")], AlignmentType.CENTER),
-          empty(),
+          p([r("FIRMA DE CONFORMIDAD Y ACEPTACIÓN ")], AlignmentType.CENTER),
           p([r(data.signing_date)], AlignmentType.CENTER),
-          empty(),
           p([r(data.company_legal_name)], AlignmentType.CENTER),
-          empty(),
+          empty(AlignmentType.CENTER),
+          empty(AlignmentType.CENTER),
+          empty(AlignmentType.CENTER),
+          empty(AlignmentType.CENTER),
           p([r("____________________________________________")], AlignmentType.CENTER),
           p([r(data.signer_full_name)], AlignmentType.CENTER),
         ],
