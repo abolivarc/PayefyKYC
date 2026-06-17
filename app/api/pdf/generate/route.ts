@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import { generateBeneficialOwnerDocx } from "@/lib/docx/beneficial-owner"
+import { generateTermsOpmDocx } from "@/lib/docx/terms-opm"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -85,6 +86,11 @@ export async function POST(request: Request) {
     if (type === "beneficial_owner") {
       fileBuffer = await generateBeneficialOwnerDocx(formData)
       fileName = "constancia_beneficiario_controlador.docx"
+      mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      bucket = "generated-pdfs"
+    } else if (type === "terms_opm") {
+      fileBuffer = await generateTermsOpmDocx(formData)
+      fileName = "terminos_condiciones_opm.docx"
       mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       bucket = "generated-pdfs"
     } else {
