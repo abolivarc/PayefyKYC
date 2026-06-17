@@ -1,7 +1,10 @@
+import fs from "fs"
+import path from "path"
 import {
   AlignmentType,
   BorderStyle,
   Document,
+  ImageRun,
   Packer,
   Paragraph,
   ShadingType,
@@ -13,6 +16,12 @@ import {
   convertMillimetersToTwip,
 } from "docx"
 import type { BeneficialOwnerValues } from "@/lib/validations/beneficial-owner"
+
+// Logo path — served from public/images/payefy-logo.png (copied at build time)
+const LOGO_PATH = path.join(process.cwd(), "public", "images", "payefy-logo.png")
+// Original dimensions: 826 × 440 px — render at 40 mm wide
+const LOGO_W_MM = 40
+const LOGO_H_MM = Math.round(LOGO_W_MM * (440 / 826))
 
 // Fill value or underscores when blank
 function v(value: string | undefined, len = 20): string {
@@ -90,6 +99,25 @@ function sectionTable(header: string, bodyParagraphs: Paragraph[]): Table {
 export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): Promise<Buffer> {
   const hasBc = data.has_beneficial_owner
 
+  // Load logo — fall back gracefully if file is missing in some envs
+  let logoParagraph: Paragraph | null = null
+  if (fs.existsSync(LOGO_PATH)) {
+    const logoData = fs.readFileSync(LOGO_PATH)
+    logoParagraph = new Paragraph({
+      alignment: AlignmentType.CENTER,
+      children: [
+        new ImageRun({
+          data: logoData,
+          transformation: {
+            width: convertMillimetersToTwip(LOGO_W_MM),
+            height: convertMillimetersToTwip(LOGO_H_MM),
+          },
+          type: "png",
+        }),
+      ],
+    })
+  }
+
   const doc = new Document({
     sections: [
       {
@@ -108,6 +136,9 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           },
         },
         children: [
+          // ── Logo ─────────────────────────────────────────────────────────────
+          ...(logoParagraph ? [logoParagraph, emptyLine()] : []),
+
           // ── Título ──────────────────────────────────────────────────────────
           para([run("CONSTANCIA DE BENEFICIARIO CONTROLADOR", true)], AlignmentType.CENTER),
 
