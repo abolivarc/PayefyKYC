@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
   complementaryInfoSchemaV2,
+  ROW_MAP,
   type ComplementaryInfoV2Values,
 } from "@/lib/validations/complementary-info-v2"
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -220,8 +221,67 @@ function PortalForm({ appId, onBack }: { appId: string; onBack: () => void }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [orgFile, setOrgFile] = useState<File | null>(null)
   const [taxFile, setTaxFile] = useState<File | null>(null)
+  const [importInfo, setImportInfo] = useState<{ filled: number } | null>(null)
+  const [importError, setImportError] = useState<string | null>(null)
   const orgRef = useRef<HTMLInputElement>(null)
   const taxRef = useRef<HTMLInputElement>(null)
+  const importRef = useRef<HTMLInputElement>(null)
+
+  const DATE_FIELDS = new Set(["director_nacimiento", "colaborador_nacimiento", "pep_inicio", "pep_fin"])
+  const YESNO_FIELDS = new Set(["ingresos_adicionales", "tiene_sucursales", "tiene_participacion", "parte_grupo", "pep_vigente"])
+
+  async function handleImport(file: File) {
+    setImportError(null)
+    setImportInfo(null)
+    try {
+      const { read, utils } = await import("xlsx")
+      const buf = await file.arrayBuffer()
+      const wb = read(buf, { cellDates: true })
+      const ws = wb.Sheets[wb.SheetNames[0]]
+      const rows = utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: "" })
+
+      let filled = 0
+      const values: Partial<ComplementaryInfoV2Values> = {}
+
+      for (const [field, rowNum] of Object.entries(ROW_MAP) as [keyof ComplementaryInfoV2Values, number][]) {
+        const raw = (rows[rowNum - 1] as unknown[])?.[1]
+
+        let val: string
+        if (raw instanceof Date) {
+          val = raw.toISOString().slice(0, 10)
+        } else {
+          val = String(raw ?? "").trim()
+        }
+
+        if (!val || val.toLowerCase() === "n/a" || val.toLowerCase() === "na") continue
+
+        // Normalize date strings DD/MM/YY(YY) → YYYY-MM-DD
+        if (DATE_FIELDS.has(field as string) && /^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(val)) {
+          const [d, m, y] = val.split("/")
+          const year = y.length === 2 ? (parseInt(y) <= 30 ? `20${y.padStart(2,"0")}` : `19${y.padStart(2,"0")}`) : y
+          val = `${year}-${m.padStart(2,"0")}-${d.padStart(2,"0")}`
+        }
+
+        // Normalize yes/no
+        if (YESNO_FIELDS.has(field as string)) {
+          const lower = val.toLowerCase()
+          if (lower === "si" || lower === "sí" || lower === "yes") val = "Sí"
+          else if (lower === "no") val = "No"
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(values as Record<string, string>)[field as string] = val
+        filled++
+      }
+
+      form.reset({ ...form.getValues(), ...values })
+      setImportInfo({ filled })
+    } catch {
+      setImportError("No se pudo leer el archivo. Verifica que sea una plantilla válida.")
+    } finally {
+      if (importRef.current) importRef.current.value = ""
+    }
+  }
 
   const form = useForm<ComplementaryInfoV2Values>({
     resolver: zodResolver(complementaryInfoSchemaV2),
@@ -323,6 +383,46 @@ function PortalForm({ appId, onBack }: { appId: string; onBack: () => void }) {
         <Alert variant="destructive">
           <AlertDescription style={{ whiteSpace: "pre-line" }}>{serverError}</AlertDescription>
         </Alert>
+      )}
+
+      {/* ── Excel import banner ───────────────────────────────────── */}
+      <div style={{ background: "#f0faf5", border: "1px solid #b6e8cc", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 20 }}>📊</span>
+          <div>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#16201b" }}>
+              ¿Ya tienes la plantilla llenada?
+            </p>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: "#5f6b64" }}>
+              Importa el Excel y pre-llenamos el formulario por ti.
+            </p>
+          </div>
+        </div>
+        <input
+          ref={importRef}
+          type="file"
+          accept=".xlsx"
+          style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImport(f) }}
+        />
+        <button
+          type="button"
+          onClick={() => importRef.current?.click()}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 600, padding: "7px 14px", background: "#004238", color: "#AEFF99", border: "none", borderRadius: 6, cursor: "pointer", whiteSpace: "nowrap" }}
+        >
+          Importar desde Excel
+        </button>
+      </div>
+
+      {importInfo && (
+        <div style={{ background: "#EDFBEA", border: "1px solid #b6e8cc", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#047857" }}>
+          ✓ {importInfo.filled} campos importados. Revisa y ajusta lo que necesites antes de guardar.
+        </div>
+      )}
+      {importError && (
+        <div style={{ background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "#B91C1C" }}>
+          {importError}
+        </div>
       )}
 
       {/* ── Sección 1: Información complementaria ────────────────── */}
