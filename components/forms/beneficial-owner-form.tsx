@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -8,6 +8,7 @@ import {
   beneficialOwnerSchema,
   type BeneficialOwnerValues,
 } from "@/lib/validations/beneficial-owner"
+import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,7 +22,12 @@ export function BeneficialOwnerForm({ appId }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [success, setSuccess] = useState(false)
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
+  const [documentId, setDocumentId] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadedName, setUploadedName] = useState<string | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const signedFileRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<BeneficialOwnerValues>({
     resolver: zodResolver(beneficialOwnerSchema),
@@ -49,6 +55,7 @@ export function BeneficialOwnerForm({ appId }: Props) {
       } else {
         setSuccess(true)
         setDownloadUrl(json.downloadUrl ?? null)
+        setDocumentId(json.documentId ?? null)
       }
     } catch {
       setServerError("Error de conexión")
@@ -57,36 +64,91 @@ export function BeneficialOwnerForm({ appId }: Props) {
     }
   }
 
+  async function handleSignedUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !documentId) return
+    setUploadError(null)
+    setUploading(true)
+    const result = await uploadDocumentFile(documentId, file)
+    setUploading(false)
+    if (!result.success) {
+      setUploadError(result.error ?? "Error al subir el archivo")
+    } else {
+      setUploadedName(file.name)
+    }
+  }
+
   if (success) {
     return (
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Alert>
           <AlertDescription>
             ✅ Tu constancia ha sido generada y guardada en tu expediente.
           </AlertDescription>
         </Alert>
-        <p className="text-sm text-muted-foreground">
-          Descárgala, imprímela, fírmala a mano, escanéala y súbela firmada en
-          el expediente.
-        </p>
-        <div className="flex gap-3">
+
+        {/* Step 1 – Download */}
+        <div className="rounded-xl border p-4 space-y-2">
+          <p className="text-sm font-semibold">Paso 1 — Descarga e imprime</p>
+          <p className="text-sm text-muted-foreground">
+            Descárgala, imprímela y fírmala a mano.
+          </p>
           {downloadUrl && (
             <a
               href={downloadUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline" })}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
             >
               Descargar constancia (.docx)
             </a>
           )}
-          <Link
-            href={`/applications/${appId}/documents`}
-            className={buttonVariants({ variant: "default" })}
-          >
-            Regresar al expediente
-          </Link>
         </div>
+
+        {/* Step 2 – Upload signed */}
+        <div className="rounded-xl border p-4 space-y-2">
+          <p className="text-sm font-semibold">Paso 2 — Sube la versión firmada</p>
+          <p className="text-sm text-muted-foreground">
+            Escanéala o fotografíala y súbela aquí (PDF o imagen).
+          </p>
+
+          {uploadedName ? (
+            <Alert>
+              <AlertDescription>
+                ✅ Subida correctamente: {uploadedName}
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <>
+              <input
+                ref={signedFileRef}
+                type="file"
+                accept="application/pdf,image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleSignedUpload}
+              />
+              <Button
+                size="sm"
+                variant="default"
+                disabled={uploading || !documentId}
+                onClick={() => signedFileRef.current?.click()}
+              >
+                {uploading ? "Subiendo…" : "Subir constancia firmada"}
+              </Button>
+            </>
+          )}
+
+          {uploadError && (
+            <p className="text-xs text-destructive">{uploadError}</p>
+          )}
+        </div>
+
+        <Link
+          href={`/applications/${appId}/documents`}
+          className={buttonVariants({ variant: "outline" })}
+        >
+          Regresar al expediente
+        </Link>
       </div>
     )
   }
