@@ -145,3 +145,51 @@ export async function sendOrderInvoice({
   revalidatePath("/admin/tracking/orders")
   return { success: true }
 }
+
+export async function updateOrderStatus(
+  orderId: string,
+  newStatus: "shipped" | "closed"
+): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: order } = await admin
+    .from("product_orders")
+    .select("id, status, application_id")
+    .eq("id", orderId)
+    .single()
+
+  if (!order) return { error: "Pedido no encontrado" }
+
+  const allowed: Record<string, string> = { invoiced: "shipped", shipped: "closed" }
+  if (allowed[order.status] !== newStatus) {
+    return { error: `Transición no válida: ${order.status} → ${newStatus}` }
+  }
+
+  const { error } = await admin
+    .from("product_orders")
+    .update({ status: newStatus, updated_at: new Date().toISOString() })
+    .eq("id", orderId)
+
+  if (error) return { error: error.message }
+
+  if (order.application_id) {
+    const labels: Record<string, string> = { shipped: "Pedido marcado como enviado", closed: "Pedido cerrado" }
+    await admin.from("application_comments").insert({
+      application_id: order.application_id,
+      author_id: user.id,
+      body: labels[newStatus] ?? newStatus,
+      kind: "status",
+      metadata: { order_id: orderId, new_status: newStatus },
+    })
+  }
+
+  revalidatePath("/admin/tracking/orders")
+  return { success: true }
+}

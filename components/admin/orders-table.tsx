@@ -6,7 +6,7 @@ import { es } from "date-fns/locale"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
-import { sendOrderInvoice } from "@/app/(admin)/admin/tracking/actions"
+import { sendOrderInvoice, updateOrderStatus } from "@/app/(admin)/admin/tracking/actions"
 
 const STATUS_LABELS: Record<string, string> = {
   requested: "Solicitado",
@@ -43,6 +43,18 @@ function OrderRow({ order }: { order: Order }) {
 
   const company = (order.companies as { legal_name: string; operator_email: string | null } | null)
   const clientEmail = company?.operator_email ?? ""
+
+  function handleStatusChange(newStatus: "shipped" | "closed") {
+    setError(null)
+    startTransition(async () => {
+      const result = await updateOrderStatus(order.id, newStatus)
+      if (result.error) {
+        setError(result.error)
+      } else {
+        setStatus(newStatus)
+      }
+    })
+  }
 
   function handleSendInvoice(file?: File) {
     setError(null)
@@ -91,43 +103,81 @@ function OrderRow({ order }: { order: Order }) {
         <Badge variant={STATUS_VARIANT[status] ?? "pending"}>{STATUS_LABELS[status] ?? status}</Badge>
       </td>
       <td className="py-3 px-4">
-        {sent ? (
-          <span className="text-xs text-green-700 font-medium">Factura enviada ✓</span>
-        ) : (
-          <div className="flex flex-col gap-1">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/pdf"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) handleSendInvoice(file)
-              }}
-            />
+        <div className="flex flex-col gap-1">
+          {/* requested → invoiced: enviar factura */}
+          {status === "requested" && !sent && (
+            <>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleSendInvoice(file)
+                }}
+              />
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={isPending || !clientEmail}
+                onClick={() => fileRef.current?.click()}
+                className="flex items-center gap-1.5 text-xs"
+                title={!clientEmail ? "Sin email de contacto" : "Adjuntar PDF y enviar"}
+              >
+                {isPending && <Spinner size={12} />}
+                {isPending ? "Enviando..." : "Enviar factura (PDF)"}
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={isPending || !clientEmail}
+                onClick={() => handleSendInvoice()}
+                className="text-xs text-muted-foreground"
+              >
+                Enviar sin adjunto
+              </Button>
+            </>
+          )}
+
+          {/* invoiced → shipped */}
+          {status === "invoiced" && (
             <Button
               size="sm"
               variant="outline"
-              disabled={isPending || !clientEmail}
-              onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-1.5 text-xs"
-              title={!clientEmail ? "Sin email de contacto" : "Adjuntar PDF de factura y enviar"}
+              disabled={isPending}
+              onClick={() => handleStatusChange("shipped")}
+              className="text-xs"
             >
               {isPending && <Spinner size={12} />}
-              {isPending ? "Enviando..." : "Enviar factura (PDF)"}
+              {isPending ? "Guardando…" : "Marcar enviado"}
             </Button>
+          )}
+
+          {/* shipped → closed */}
+          {status === "shipped" && (
             <Button
               size="sm"
               variant="ghost"
-              disabled={isPending || !clientEmail}
-              onClick={() => handleSendInvoice()}
+              disabled={isPending}
+              onClick={() => handleStatusChange("closed")}
               className="text-xs text-muted-foreground"
             >
-              Enviar sin adjunto
+              {isPending && <Spinner size={12} />}
+              {isPending ? "Guardando…" : "Cerrar pedido"}
             </Button>
-            {error && <p className="text-xs text-destructive mt-1">{error}</p>}
-          </div>
-        )}
+          )}
+
+          {status === "closed" && (
+            <span className="text-xs text-muted-foreground">Completado</span>
+          )}
+
+          {sent && status === "requested" && (
+            <span className="text-xs text-green-700 font-medium">Factura enviada ✓</span>
+          )}
+
+          {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+        </div>
       </td>
     </tr>
   )

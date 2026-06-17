@@ -39,13 +39,21 @@ export default async function StatusPage({
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const { data: app } = await admin
-    .from("applications")
-    .select("id, status, rejection_reason, products(name, code), company_id, companies(legal_name)")
-    .eq("id", appId)
-    .single()
+  const [{ data: app }, { data: contracts }] = await Promise.all([
+    admin
+      .from("applications")
+      .select("id, status, rejection_reason, products(name, code), company_id, companies(legal_name)")
+      .eq("id", appId)
+      .single(),
+    admin
+      .from("application_contracts")
+      .select("kind, status, external_link, signed_at")
+      .eq("application_id", appId),
+  ])
 
   if (!app) return notFound()
+
+  const contractMap = new Map((contracts ?? []).map((c) => [c.kind, c]))
 
   // Verificar membresía manualmente
   const { data: membership } = await admin
@@ -178,6 +186,83 @@ export default async function StatusPage({
           })}
         </div>
       )}
+
+      {/* ── Contracts section ── */}
+      {(() => {
+        const CONTRACT_STAGES = ["contracts_pending", "contracts_signed", "activation_pending", "activated"]
+        if (!CONTRACT_STAGES.includes(currentStatus) && currentIdx < STATUS_ORDER.indexOf("contracts_pending")) return null
+
+        const CONTRACT_DEFS = [
+          { kind: "payefy_service", label: "Contrato de servicios Payefy", method: "DocuSign" },
+          { kind: "transfer_increase_letter", label: "Carta de aumento Transfer", method: "" },
+          { kind: "transfer_contract", label: "Contrato Transfer", method: "Weetrust" },
+        ]
+
+        const hasAnyContract = CONTRACT_DEFS.some((d) => contractMap.has(d.kind))
+        if (!hasAnyContract) return null
+
+        return (
+          <div style={{ marginTop: 32, background: "#fff", border: "1px solid #E7ECF1", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.05)" }}>
+            <div style={{ padding: "14px 20px", borderBottom: "1px solid #E7ECF1", background: "#FBFCFD" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#8A99A8" }}>
+                Contratos y firmas
+              </p>
+            </div>
+            <div style={{ padding: "4px 0" }}>
+              {CONTRACT_DEFS.map((def) => {
+                const c = contractMap.get(def.kind)
+                if (!c) return null
+                const isSigned = c.status === "signed"
+                const isSent = c.status === "sent"
+                const isPending = !c || c.status === "pending"
+
+                return (
+                  <div key={def.kind} style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", borderBottom: "1px solid #F0F4F2" }}>
+                    {/* Icon */}
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                      background: isSigned ? "#EDFBEA" : isSent ? "#FFF7ED" : "#F4F8F6",
+                      border: `1.5px solid ${isSigned ? "#0B7A44" : isSent ? "#F59E0B" : "#D1D9E0"}`,
+                      display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      {isSigned ? (
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                          <path d="M2 5l2.5 2.5 3.5-4" stroke="#0B7A44" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      ) : isSent ? (
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="#F59E0B"><circle cx="4" cy="4" r="3"/></svg>
+                      ) : (
+                        <svg width="8" height="8" viewBox="0 0 8 8" fill="#CBD5E1"><circle cx="4" cy="4" r="3"/></svg>
+                      )}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "#0F1B2A" }}>
+                        {def.label}
+                        {def.method && <span style={{ fontSize: 11, color: "#8A99A8", marginLeft: 5 }}>({def.method})</span>}
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: isSigned ? "#047857" : isSent ? "#92400E" : "#8A99A8" }}>
+                        {isSigned ? "Firmado" : isSent ? "Pendiente de tu firma" : "Pendiente"}
+                      </p>
+                    </div>
+
+                    {/* Action link for sent contracts */}
+                    {isSent && c.external_link && (
+                      <a
+                        href={c.external_link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ fontSize: 13, fontWeight: 600, color: "#0B7A44", textDecoration: "none",
+                          padding: "6px 14px", border: "1px solid #0B7A44", borderRadius: 8, whiteSpace: "nowrap" }}
+                      >
+                        Firmar →
+                      </a>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="mt-8 space-y-4">
         <Link

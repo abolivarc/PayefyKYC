@@ -119,8 +119,17 @@ export function NotificationBell({ variant = "dark" }: Props) {
             )}
           </div>
 
+          {/* Ver todas */}
+          <a
+            href="/notifications"
+            style={{ display:"block", padding:"8px 14px", fontSize:12, color:"#0B7A44", fontWeight:500,
+              textDecoration:"none", borderBottom:"1px solid #e3e8e5", textAlign:"right" }}
+          >
+            Ver todas →
+          </a>
+
           {/* List */}
-          <div style={{ maxHeight:360, overflowY:"auto" }}>
+          <div style={{ maxHeight:320, overflowY:"auto" }}>
             {loading ? (
               <p style={{ padding:"20px 14px", fontSize:13, color:"#8a948e", textAlign:"center" }}>
                 Cargando…
