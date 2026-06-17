@@ -24,9 +24,8 @@ export default async function OrdersPage() {
       <header style={{ padding: "24px 32px 16px" }}>
         <Link
           href="/admin/tracking"
+          className="hover:text-[#0F1B2A] transition-colors"
           style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 8 }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--admin-text, #0F1B2A)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--admin-text-muted, #5A6B7B)")}
         >
           ← Seguimiento
         </Link>

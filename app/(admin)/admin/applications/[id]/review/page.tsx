@@ -220,9 +220,8 @@ export default async function ReviewPage({
       <header style={{ padding: "20px 32px 16px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface, #fff)" }}>
         <Link
           href="/admin/clients"
+          className="hover:text-[#0F1B2A] transition-colors"
           style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, marginBottom: 10 }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--admin-text, #0F1B2A)")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--admin-text-muted, #5A6B7B)")}
         >
           ← Clientes
         </Link>
@@ -256,10 +255,9 @@ export default async function ReviewPage({
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
             <Link
               href={`/admin/applications/${appId}/audit`}
+              className="hover:bg-[#F6F8FA] hover:text-[#0F1B2A] transition-all"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, fontWeight: 600, borderRadius: 9,
-                background: "transparent", border: "1px solid var(--admin-border, #E7ECF1)", color: "var(--admin-text-muted, #5A6B7B)", textDecoration: "none", transition: "all .14s" }}
-              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--admin-bg, #F6F8FA)"; (e.currentTarget as HTMLElement).style.color = "var(--admin-text, #0F1B2A)"; }}
-              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = "var(--admin-text-muted, #5A6B7B)"; }}
+                background: "transparent", border: "1px solid var(--admin-border, #E7ECF1)", color: "var(--admin-text-muted, #5A6B7B)", textDecoration: "none" }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
