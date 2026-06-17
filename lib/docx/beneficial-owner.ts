@@ -80,7 +80,7 @@ function sectionTable(header: string, bodyParagraphs: Paragraph[]): Table {
             children: [
               new Paragraph({
                 alignment: AlignmentType.CENTER,
-                children: [run(header, true)],
+                children: [run(header)],
               }),
             ],
           }),
@@ -142,7 +142,7 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           ...(logoParagraph ? [logoParagraph, emptyLine()] : []),
 
           // ── Título ──────────────────────────────────────────────────────────
-          para([run("CONSTANCIA DE BENEFICIARIO CONTROLADOR", true)], AlignmentType.CENTER),
+          para([run("CONSTANCIA DE BENEFICIARIO CONTROLADOR")], AlignmentType.CENTER),
 
           emptyLine(),
 
@@ -158,8 +158,7 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           // ── Pregunta 1 ───────────────────────────────────────────────────────
           para([
             run(
-              `¿Existe un Beneficiario Controlador?  Sí ${checkbox(hasBc)}      No ${checkbox(!hasBc)}`,
-              true
+              `¿Existe un Beneficiario Controlador?  Sí ${checkbox(hasBc)}      No ${checkbox(!hasBc)}`
             ),
           ]),
 
@@ -174,8 +173,7 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           // ── Pregunta 2 ───────────────────────────────────────────────────────
           para([
             run(
-              `¿Cuenta con información y documentación que permita identificar al Beneficiario Controlador?  Sí ${checkbox(hasBc)}      No ${checkbox(!hasBc)}`,
-              true
+              `¿Cuenta con información y documentación que permita identificar al Beneficiario Controlador?  Sí ${checkbox(hasBc)}      No ${checkbox(!hasBc)}`
             ),
           ]),
 
@@ -211,8 +209,7 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           sectionTable("Datos de la identificación", [
             para([
               run(
-                `Documento:    Credencial para votar ${idCheckbox(data.id_type, "credencial")}        Pasaporte ${idCheckbox(data.id_type, "pasaporte")}       Forma Migratoria ${idCheckbox(data.id_type, "migratorio")}`,
-                true
+                `Documento:    Credencial para votar ${idCheckbox(data.id_type, "credencial")}        Pasaporte ${idCheckbox(data.id_type, "pasaporte")}       Forma Migratoria ${idCheckbox(data.id_type, "migratorio")}`
               ),
             ]),
             para([run(`Autoridad que la emite: ${v(data.id_authority, 25)}`)]),
@@ -223,10 +220,10 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
 
           // ── Tabla 3: Documentos ──────────────────────────────────────────────
           sectionTable("Documentos Beneficiario Controlador", [
-            para([run("Identificación.", true)]),
-            para([run("CURP.", true)]),
-            para([run("Constancia Situación Fiscal.", true)]),
-            para([run("Comprobante de domicilio con antigüedad menor a 3 meses.", true)]),
+            para([run("Identificación.")]),
+            para([run("CURP.")]),
+            para([run("Constancia Situación Fiscal.")]),
+            para([run("Comprobante de domicilio con antigüedad menor a 3 meses.")]),
           ]),
 
           emptyLine(),
@@ -242,11 +239,11 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
           // ── Firma ────────────────────────────────────────────────────────────
           para([run("_____________________________")], AlignmentType.CENTER),
           para(
-            [run(`Nombre: ${v(data.signer_full_name, 30)}`, true)],
+            [run(`Nombre: ${v(data.signer_full_name, 30)}`)],
             AlignmentType.CENTER
           ),
           para(
-            [run(`Fecha: ${v(data.signing_date, 20)}`, true)],
+            [run(`Fecha: ${v(data.signing_date, 20)}`)],
             AlignmentType.CENTER
           ),
         ],
