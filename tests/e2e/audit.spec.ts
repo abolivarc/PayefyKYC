@@ -182,17 +182,17 @@ test.describe("Auditoría IDOR: cliente no puede ver otras apps", () => {
   test.use({ storageState: "tests/e2e/.auth/client.json" })
 
   test("cliente NO puede acceder a /admin/applications/", async ({ page }) => {
-    const resp = await page.goto(`/admin/applications/${APP_ID}/review`, {
+    await page.goto(`/admin/applications/${APP_ID}/review`, {
       waitUntil: "domcontentloaded",
     })
-    // Should be redirected to login OR return 403/404 — not render the review page
-    const isRedirectedOrBlocked =
-      page.url().includes("/login") ||
-      page.url().includes("/admin/login") ||
-      (resp?.status() ?? 0) >= 400
+    // Middleware redirects clients away from /admin/* to /dashboard (not /login)
+    const finalUrl = page.url()
+    const isBlocked =
+      !finalUrl.includes("/admin/") ||
+      finalUrl.includes("/login")
     expect(
-      isRedirectedOrBlocked,
-      "cliente no debe acceder a review page del admin"
+      isBlocked,
+      `cliente fue redirigido fuera del admin: ${finalUrl}`
     ).toBe(true)
   })
 })
