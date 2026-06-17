@@ -7,7 +7,6 @@ export function generateComplementaryInfoXlsx(
   data: ComplementaryInfoV2Values,
   legalName: string,
   orgFileName?: string,
-  taxFileName?: string,
 ): Buffer {
   const wb = XLSX.read(templateBuffer, { type: "buffer" })
   const originalName = wb.SheetNames[0]
@@ -35,8 +34,7 @@ export function generateComplementaryInfoXlsx(
   if (data.pep_vigente) setB(ROW_MAP.pep_vigente, data.pep_vigente)
   setB(ROW_MAP.anos_actividad, data.anos_actividad)
   setB(ROW_MAP.ingresos_mensuales, data.ingresos_mensuales)
-  if (taxFileName) setB(ROW_MAP.declaracion_anual, `Adjuntado: ${taxFileName}`)
-  setB(ROW_MAP.ingresos_adicionales, data.ingresos_adicionales)
+setB(ROW_MAP.ingresos_adicionales, data.ingresos_adicionales)
   if (data.ingresos_adicionales === "Sí" && data.ingresos_adicionales_cuales)
     setB(ROW_MAP.ingresos_adicionales_cuales, data.ingresos_adicionales_cuales)
   setB(ROW_MAP.clientes_extranjero, data.clientes_extranjero)

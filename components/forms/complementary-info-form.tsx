@@ -220,11 +220,9 @@ function PortalForm({ appId, onBack }: { appId: string; onBack: () => void }) {
   const [success, setSuccess] = useState(false)
   const [serverError, setServerError] = useState<string | null>(null)
   const [orgFile, setOrgFile] = useState<File | null>(null)
-  const [taxFile, setTaxFile] = useState<File | null>(null)
   const [importInfo, setImportInfo] = useState<{ filled: number } | null>(null)
   const [importError, setImportError] = useState<string | null>(null)
   const orgRef = useRef<HTMLInputElement>(null)
-  const taxRef = useRef<HTMLInputElement>(null)
   const importRef = useRef<HTMLInputElement>(null)
 
   const DATE_FIELDS = new Set(["director_nacimiento", "colaborador_nacimiento", "pep_inicio", "pep_fin"])
@@ -339,7 +337,6 @@ function PortalForm({ appId, onBack }: { appId: string; onBack: () => void }) {
         if (typeof v === "string") fd.append(k, v)
       }
       if (orgFile) fd.append("orgFile", orgFile)
-      if (taxFile) fd.append("taxFile", taxFile)
 
       const res = await fetch("/api/forms/complementary-info", {
         method: "POST",
@@ -764,18 +761,6 @@ function PortalForm({ appId, onBack }: { appId: string; onBack: () => void }) {
           )}
         </div>
 
-        {/* Optional tax file */}
-        <div className="mt-4">
-          <FilePicker
-            label="Adjuntar última declaración anual (opcional)"
-            hint="Acuse completo del SAT en PDF."
-            accept=".pdf"
-            file={taxFile}
-            onChange={setTaxFile}
-            onClear={() => setTaxFile(null)}
-            inputRef={taxRef}
-          />
-        </div>
       </section>
 
       {/* ── Actions ────────────────────────────────────────── */}
@@ -823,10 +808,8 @@ function UploadForm({ appId, onBack }: { appId: string; onBack: () => void }) {
   const [fieldErrors, setFieldErrors] = useState<string[]>([])
   const [xlsxFile, setXlsxFile] = useState<File | null>(null)
   const [orgFile, setOrgFile] = useState<File | null>(null)
-  const [taxFile, setTaxFile] = useState<File | null>(null)
   const xlsxRef = useRef<HTMLInputElement>(null)
   const orgRef = useRef<HTMLInputElement>(null)
-  const taxRef = useRef<HTMLInputElement>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -838,14 +821,6 @@ function UploadForm({ appId, onBack }: { appId: string; onBack: () => void }) {
       setServerError("Debes seleccionar el archivo Excel de la plantilla.")
       return
     }
-    if (!orgFile) {
-      setServerError("Debes adjuntar el organigrama empresarial.")
-      return
-    }
-    if (!taxFile) {
-      setServerError("Debes adjuntar la última declaración anual.")
-      return
-    }
 
     setSubmitting(true)
     try {
@@ -853,8 +828,7 @@ function UploadForm({ appId, onBack }: { appId: string; onBack: () => void }) {
       fd.append("mode", "upload")
       fd.append("applicationId", appId)
       fd.append("xlsxFile", xlsxFile)
-      fd.append("orgFile", orgFile)
-      fd.append("taxFile", taxFile)
+      if (orgFile) fd.append("orgFile", orgFile)
 
       const res = await fetch("/api/forms/complementary-info", {
         method: "POST",
@@ -952,22 +926,13 @@ function UploadForm({ appId, onBack }: { appId: string; onBack: () => void }) {
             inputRef={xlsxRef}
           />
           <FilePicker
-            label="Organigrama empresarial (requerido)"
+            label="Organigrama empresarial (opcional)"
             hint="Diagrama de estructura corporativa en PDF o imagen."
             accept=".pdf,.jpg,.jpeg,.png"
             file={orgFile}
             onChange={setOrgFile}
             onClear={() => setOrgFile(null)}
             inputRef={orgRef}
-          />
-          <FilePicker
-            label="Última declaración anual (requerido)"
-            hint="Acuse completo del SAT en PDF."
-            accept=".pdf"
-            file={taxFile}
-            onChange={setTaxFile}
-            onClear={() => setTaxFile(null)}
-            inputRef={taxRef}
           />
         </div>
       </div>

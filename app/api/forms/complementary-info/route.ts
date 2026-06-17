@@ -90,7 +90,6 @@ export async function POST(request: Request) {
       }
 
       const orgFile = fd.get("orgFile") as File | null
-      const taxFile = fd.get("taxFile") as File | null
 
       const templateBuffer = readFileSync(
         join(process.cwd(), "public/templates/informacion_complementaria.xlsx")
@@ -100,7 +99,6 @@ export async function POST(request: Request) {
         parsed.data,
         legalName,
         orgFile?.name,
-        taxFile?.name,
       )
 
       const { error: upErr } = await serviceClient.storage
@@ -133,7 +131,6 @@ export async function POST(request: Request) {
       )
 
       if (orgFile) await uploadAttachment(serviceClient, applicationId, orgFile, "organigrama", user.id)
-      if (taxFile) await uploadAttachment(serviceClient, applicationId, taxFile, "tax_declaration", user.id)
 
       return NextResponse.json({ success: true })
     } else if (mode === "upload") {
@@ -144,7 +141,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "El archivo supera el límite de 10 MB" }, { status: 400 })
 
       const orgFile = fd.get("orgFile") as File | null
-      const taxFile = fd.get("taxFile") as File | null
 
       const xlsxBuffer = Buffer.from(await xlsxFile.arrayBuffer())
       const validation = validateComplementaryInfoXlsx(xlsxBuffer)
@@ -193,7 +189,6 @@ export async function POST(request: Request) {
         .eq("id", doc.id)
 
       if (orgFile) await uploadAttachment(serviceClient, applicationId, orgFile, "organigrama", user.id)
-      if (taxFile) await uploadAttachment(serviceClient, applicationId, taxFile, "tax_declaration", user.id)
 
       return NextResponse.json({ success: true })
     }
