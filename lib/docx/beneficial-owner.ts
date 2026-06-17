@@ -17,11 +17,13 @@ import {
 } from "docx"
 import type { BeneficialOwnerValues } from "@/lib/validations/beneficial-owner"
 
-// Logo path — served from public/images/payefy-logo.png (copied at build time)
+// Logo path
 const LOGO_PATH = path.join(process.cwd(), "public", "images", "payefy-logo.png")
-// Original dimensions: 826 × 440 px — render at 40 mm wide
-const LOGO_W_MM = 40
-const LOGO_H_MM = Math.round(LOGO_W_MM * (440 / 826))
+// ImageRun transformation expects pixels at 96 dpi (1mm = 96/25.4 ≈ 3.78 px)
+// Render logo at 30 mm wide, proportional height (original: 826 × 440 px)
+const mmToPx = (mm: number) => Math.round(mm * 96 / 25.4)
+const LOGO_W_PX = mmToPx(30)
+const LOGO_H_PX = Math.round(LOGO_W_PX * (440 / 826))
 
 // Fill value or underscores when blank
 function v(value: string | undefined, len = 20): string {
@@ -104,13 +106,13 @@ export async function generateBeneficialOwnerDocx(data: BeneficialOwnerValues): 
   if (fs.existsSync(LOGO_PATH)) {
     const logoData = fs.readFileSync(LOGO_PATH)
     logoParagraph = new Paragraph({
-      alignment: AlignmentType.CENTER,
+      alignment: AlignmentType.LEFT,
       children: [
         new ImageRun({
           data: logoData,
           transformation: {
-            width: convertMillimetersToTwip(LOGO_W_MM),
-            height: convertMillimetersToTwip(LOGO_H_MM),
+            width: LOGO_W_PX,
+            height: LOGO_H_PX,
           },
           type: "png",
         }),
