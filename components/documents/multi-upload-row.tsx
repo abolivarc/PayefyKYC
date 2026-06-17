@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react"
 import { addExtraDocument } from "@/app/(client)/applications/actions"
+import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 
@@ -61,17 +62,9 @@ export function MultiUploadRow({
 
     const docId = activeDocId
     startTransition(async () => {
-      const fd = new FormData()
-      fd.append("file", file)
-
-      const res = await fetch(`/api/documents/${docId}/upload`, {
-        method: "POST",
-        body: fd,
-      })
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        setError(data.error ?? "Error al subir el archivo")
+      const result = await uploadDocumentFile(docId, file)
+      if (!result.success) {
+        setError(result.error ?? "Error al subir el archivo")
       } else {
         setDocs((prev) =>
           prev.map((d) =>

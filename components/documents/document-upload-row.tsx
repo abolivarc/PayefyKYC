@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { isDocumentExpired } from "@/lib/documents/expiry"
+import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Badge } from "@/components/ui/badge"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -68,17 +69,9 @@ export function DocumentUploadRow({
     setError(null)
 
     startTransition(async () => {
-      const fd = new FormData()
-      fd.append("file", file)
-
-      const res = await fetch(`/api/documents/${documentId}/upload`, {
-        method: "POST",
-        body: fd,
-      })
-      const data = await res.json()
-
-      if (!res.ok || data.error) {
-        setError(data.error ?? "Error al subir el archivo")
+      const result = await uploadDocumentFile(documentId, file)
+      if (!result.success) {
+        setError(result.error ?? "Error al subir el archivo")
       } else {
         setStatus("pending_review")
         setUploadedName(file.name)
