@@ -45,7 +45,7 @@ export function BeneficialOwnerForm({ appId }: Props) {
       })
       const json = await res.json()
       if (!res.ok || json.error) {
-        setServerError(json.error ?? "Error al generar el PDF")
+        setServerError(json.error ?? "Error al generar el documento")
       } else {
         setSuccess(true)
         setDownloadUrl(json.downloadUrl ?? null)
@@ -62,11 +62,11 @@ export function BeneficialOwnerForm({ appId }: Props) {
       <div className="space-y-4">
         <Alert>
           <AlertDescription>
-            ✅ Tu PDF ha sido generado y guardado en tu expediente.
+            ✅ Tu constancia ha sido generada y guardada en tu expediente.
           </AlertDescription>
         </Alert>
         <p className="text-sm text-muted-foreground">
-          Descárgalo, imprímelo, fírmalo a mano, escanéalo y súbelo firmado en
+          Descárgala, imprímela, fírmala a mano, escanéala y súbela firmada en
           el expediente.
         </p>
         <div className="flex gap-3">
@@ -77,7 +77,7 @@ export function BeneficialOwnerForm({ appId }: Props) {
               rel="noopener noreferrer"
               className={buttonVariants({ variant: "outline" })}
             >
-              Descargar PDF
+              Descargar constancia (.docx)
             </a>
           )}
           <Link
@@ -117,21 +117,28 @@ export function BeneficialOwnerForm({ appId }: Props) {
             </p>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="company_tax_id">RFC</Label>
-          <Input
-            id="company_tax_id"
-            {...form.register("company_tax_id")}
-            placeholder="EJE900101ABC"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="company_address">Domicilio fiscal</Label>
-          <Input
-            id="company_address"
-            {...form.register("company_address")}
-            placeholder="Av. Principal 123, Col. Centro, CDMX"
-          />
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="company_tax_id">RFC de la empresa</Label>
+            <Input
+              id="company_tax_id"
+              {...form.register("company_tax_id")}
+              placeholder="EJE900101ABC"
+            />
+            {form.formState.errors.company_tax_id && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.company_tax_id.message}
+              </p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="company_address">Domicilio fiscal</Label>
+            <Input
+              id="company_address"
+              {...form.register("company_address")}
+              placeholder="Av. Principal 123, Col. Centro, CDMX"
+            />
+          </div>
         </div>
       </section>
 
@@ -159,36 +166,100 @@ export function BeneficialOwnerForm({ appId }: Props) {
         )}
 
         {hasBeneficialOwner && (
-          <div className="space-y-3 pl-2 border-l-2 border-primary/20">
+          <div className="space-y-4 pl-2 border-l-2 border-primary/20">
+            {/* Nombre */}
             <div className="space-y-2">
-              <Label htmlFor="owner_full_name">Nombre completo del beneficiario</Label>
+              <Label htmlFor="owner_full_name">Nombre completo</Label>
               <Input id="owner_full_name" {...form.register("owner_full_name")} />
             </div>
+
+            {/* Nacimiento */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="owner_rfc">RFC</Label>
-                <Input id="owner_rfc" {...form.register("owner_rfc")} />
+                <Label htmlFor="owner_birth_date">Fecha de nacimiento</Label>
+                <Input
+                  id="owner_birth_date"
+                  type="date"
+                  {...form.register("owner_birth_date")}
+                />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="owner_curp">CURP</Label>
-                <Input id="owner_curp" {...form.register("owner_curp")} />
+                <Label htmlFor="owner_birth_country">País de nacimiento</Label>
+                <Input
+                  id="owner_birth_country"
+                  {...form.register("owner_birth_country")}
+                  placeholder="México"
+                />
               </div>
             </div>
+
+            {/* Nacionalidad y ocupación */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="owner_country">País de residencia</Label>
+                <Label htmlFor="owner_nationality">País de nacionalidad</Label>
                 <Input
-                  id="owner_country"
-                  {...form.register("owner_country")}
+                  id="owner_nationality"
+                  {...form.register("owner_nationality")}
                   placeholder="México"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="owner_control_percentage">% de control</Label>
+                <Label htmlFor="owner_occupation">Ocupación</Label>
                 <Input
-                  id="owner_control_percentage"
-                  {...form.register("owner_control_percentage")}
-                  placeholder="51"
+                  id="owner_occupation"
+                  {...form.register("owner_occupation")}
+                  placeholder="Empresario"
+                />
+              </div>
+            </div>
+
+            {/* Domicilio */}
+            <div className="space-y-2">
+              <Label htmlFor="owner_address">Domicilio completo</Label>
+              <Input
+                id="owner_address"
+                {...form.register("owner_address")}
+                placeholder="Calle, número, colonia, ciudad, estado, C.P."
+              />
+            </div>
+
+            {/* Teléfono y email */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="owner_phone">Número telefónico</Label>
+                <Input
+                  id="owner_phone"
+                  {...form.register("owner_phone")}
+                  placeholder="+52 55 1234 5678"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="owner_email">Correo electrónico</Label>
+                <Input
+                  id="owner_email"
+                  type="email"
+                  {...form.register("owner_email")}
+                  placeholder="nombre@ejemplo.com"
+                />
+              </div>
+            </div>
+
+            {/* CURP y RFC */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="owner_curp">CURP</Label>
+                <Input
+                  id="owner_curp"
+                  {...form.register("owner_curp")}
+                  placeholder="AAAA000000HXXXXXX00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="owner_rfc">RFC</Label>
+                <Input
+                  id="owner_rfc"
+                  {...form.register("owner_rfc")}
+                  placeholder="AAAA000000XXX"
                 />
               </div>
             </div>
@@ -196,36 +267,71 @@ export function BeneficialOwnerForm({ appId }: Props) {
         )}
       </section>
 
+      {/* Datos de la identificación — solo si hay beneficiario */}
+      {hasBeneficialOwner && (
+        <section className="space-y-3">
+          <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
+            Datos de la identificación
+          </h3>
+
+          {/* Tipo de documento */}
+          <div className="space-y-2">
+            <Label>Tipo de documento</Label>
+            <div className="flex flex-wrap gap-4">
+              {(
+                [
+                  { value: "credencial", label: "Credencial para votar" },
+                  { value: "pasaporte", label: "Pasaporte" },
+                  { value: "migratorio", label: "Forma Migratoria" },
+                ] as const
+              ).map(({ value, label }) => (
+                <label key={value} className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    value={value}
+                    {...form.register("id_type")}
+                    className="h-4 w-4"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label htmlFor="id_authority">Autoridad que la emite</Label>
+              <Input
+                id="id_authority"
+                {...form.register("id_authority")}
+                placeholder="INE, SRE, INM…"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="id_number">Número de identificación</Label>
+              <Input
+                id="id_number"
+                {...form.register("id_number")}
+              />
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Firmante */}
       <section className="space-y-3">
         <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
           Representante legal firmante
         </h3>
-        <div className="space-y-2">
-          <Label htmlFor="signer_full_name">Nombre completo</Label>
-          <Input id="signer_full_name" {...form.register("signer_full_name")} />
-          {form.formState.errors.signer_full_name && (
-            <p className="text-xs text-destructive">
-              {form.formState.errors.signer_full_name.message}
-            </p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="signer_position">Cargo</Label>
-          <Input
-            id="signer_position"
-            {...form.register("signer_position")}
-            placeholder="Representante Legal"
-          />
-        </div>
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label htmlFor="signing_place">Lugar de firma</Label>
-            <Input
-              id="signing_place"
-              {...form.register("signing_place")}
-              placeholder="Ciudad de México"
-            />
+            <Label htmlFor="signer_full_name">Nombre completo</Label>
+            <Input id="signer_full_name" {...form.register("signer_full_name")} />
+            {form.formState.errors.signer_full_name && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.signer_full_name.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="signing_date">Fecha de firma</Label>
@@ -234,6 +340,11 @@ export function BeneficialOwnerForm({ appId }: Props) {
               type="date"
               {...form.register("signing_date")}
             />
+            {form.formState.errors.signing_date && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.signing_date.message}
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -246,7 +357,7 @@ export function BeneficialOwnerForm({ appId }: Props) {
           Cancelar
         </Link>
         <Button type="submit" disabled={submitting}>
-          {submitting ? "Generando PDF..." : "Generar constancia"}
+          {submitting ? "Generando constancia…" : "Generar constancia"}
         </Button>
       </div>
     </form>

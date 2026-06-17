@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import * as Sentry from "@sentry/nextjs"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
-import { generateBeneficialOwnerPdf } from "@/lib/pdf/beneficial-owner"
+import { generateBeneficialOwnerDocx } from "@/lib/docx/beneficial-owner"
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -83,9 +83,9 @@ export async function POST(request: Request) {
     let bucket: string
 
     if (type === "beneficial_owner") {
-      fileBuffer = await generateBeneficialOwnerPdf(formData)
-      fileName = "constancia_beneficiario_controlador.pdf"
-      mimeType = "application/pdf"
+      fileBuffer = await generateBeneficialOwnerDocx(formData)
+      fileName = "constancia_beneficiario_controlador.docx"
+      mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       bucket = "generated-pdfs"
     } else {
       return NextResponse.json({ error: "Tipo desconocido" }, { status: 400 })
@@ -128,14 +128,13 @@ export async function POST(request: Request) {
         template_id: template.id,
         document_id: doc.id,
         form_data: formData,
-        generated_pdf_path:
-          type === "beneficial_owner" ? storagePath : null,
+        generated_pdf_path: type === "beneficial_owner" ? storagePath : null,
         submitted_at: new Date().toISOString(),
       },
       { onConflict: "application_id,template_id" }
     )
 
-    // URL firmada para descarga (solo beneficial_owner PDF)
+    // URL firmada para descarga
     let downloadUrl: string | null = null
     if (type === "beneficial_owner") {
       const { data: signed } = await serviceClient.storage

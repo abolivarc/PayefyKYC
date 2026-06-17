@@ -129,8 +129,8 @@ export async function generateBeneficialOwnerPdf(
 
   y -= 20
   writeField("Nombre del representante legal", data.signer_full_name)
-  writeField("Cargo", data.signer_position)
-  writeField("Lugar", data.signing_place)
+  writeField("Cargo", data.signer_position ?? "")
+  writeField("Lugar", data.signing_place ?? "")
   writeField("Fecha", data.signing_date)
 
   y -= 20
