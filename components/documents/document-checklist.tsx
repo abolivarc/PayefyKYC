@@ -31,6 +31,7 @@ export interface DocGroup {
   templateName: string
   templateInstructions: string | null
   is_form: boolean
+  is_required: boolean
   field_type: string
   file_format: string
   docs: DocWithTemplate[]
@@ -93,6 +94,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                         fileFormat={group.file_format}
                         fileName={doc.file_name}
                         initialIsChecked={doc.is_checked}
+                        isRequired={group.is_required}
                       />
                     )
                   }
@@ -111,6 +113,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                       fileName={doc.file_name}
                       uploadedAt={doc.uploaded_at}
                       isShared={group.isShared}
+                      isRequired={group.is_required}
                     />
                   )
                 })}

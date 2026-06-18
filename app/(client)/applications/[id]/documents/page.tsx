@@ -205,6 +205,7 @@ export default async function DocumentsPage({
       templateName: tmpl.name,
       templateInstructions: tmpl.instructions,
       is_form: tmpl.is_form,
+      is_required: tmpl.is_required,
       field_type: tmpl.field_type ?? "upload",
       file_format: tmpl.file_format,
       docs: docWithTemplate,

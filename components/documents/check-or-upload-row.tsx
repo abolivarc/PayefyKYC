@@ -26,13 +26,13 @@ const STATUS_BADGE: Record<
 
 interface Props {
   documentId: string
-
   templateName: string
   templateInstructions: string | null
   currentStatus: DocStatus
   fileFormat: string
   fileName: string | null
   initialIsChecked: boolean
+  isRequired?: boolean
 }
 
 export function CheckOrUploadRow({
@@ -43,6 +43,7 @@ export function CheckOrUploadRow({
   fileFormat,
   fileName,
   initialIsChecked,
+  isRequired = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<DocStatus>(currentStatus)
@@ -92,6 +93,12 @@ export function CheckOrUploadRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium">{templateName}</span>
+          {!isRequired && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+              style={{ background: "#F1F5F9", color: "#64748B" }}>
+              Opcional
+            </span>
+          )}
           <Badge variant={badge.variant}>{badge.label}</Badge>
         </div>
         {templateInstructions && (

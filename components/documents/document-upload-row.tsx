@@ -38,6 +38,7 @@ interface Props {
   fileName: string | null
   uploadedAt?: string | null
   isShared?: boolean
+  isRequired?: boolean
 }
 
 export function DocumentUploadRow({
@@ -52,6 +53,7 @@ export function DocumentUploadRow({
   fileName,
   uploadedAt,
   isShared,
+  isRequired = true,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<DocStatus>(currentStatus)
@@ -87,6 +89,12 @@ export function DocumentUploadRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-sm font-medium">{templateName}</span>
+          {!isRequired && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+              style={{ background: "#F1F5F9", color: "#64748B" }}>
+              Opcional
+            </span>
+          )}
           {isShared && (
             <Badge variant="outline" className="text-xs">
               Compartido
