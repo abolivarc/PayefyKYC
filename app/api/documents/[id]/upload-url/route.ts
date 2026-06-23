@@ -11,6 +11,19 @@ const ALLOWED_MIME = new Set([
 ])
 const MAX_BYTES = 100 * 1024 * 1024 // 100 MB
 
+// macOS filenames are NFD (e.g. "E" + combining acute accent U+0301).
+// Supabase Storage normalizes paths to NFC internally, so a signed URL generated
+// for an NFD path fails token validation on PUT. Convert to NFC and remove
+// invisible/special-space Unicode codepoints that also cause mismatches.
+function sanitizeFileName(name: string): string {
+  return (
+    name
+      .normalize("NFC")
+      .replace(/[   ​‌‍﻿]/gu, " ")
+      .trim() || "documento"
+  )
+}
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -68,7 +81,8 @@ export async function POST(
     .single()
   if (!membership) return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
 
-  const storagePath = `${app.company_id}/${doc.application_id}/${documentId}/${fileName}`
+  const safeFileName = sanitizeFileName(fileName)
+  const storagePath = `${app.company_id}/${doc.application_id}/${documentId}/${safeFileName}`
 
   const { data: signed, error: signErr } = await serviceClient.storage
     .from("kyc-documents")
