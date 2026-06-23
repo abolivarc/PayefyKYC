@@ -19,7 +19,7 @@ const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   {
     title: "Formularios digitales",
-    codes: ["complementary_info", "beneficial_owner", "terms_opm"],
+    codes: ["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions"],
   },
   {
     title: "Documentos de la empresa",

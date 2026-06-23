@@ -3,14 +3,16 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ComplementaryInfoForm } from "@/components/forms/complementary-info-form"
 import { BeneficialOwnerForm } from "@/components/forms/beneficial-owner-form"
 import { TermsOpmForm } from "@/components/forms/terms-opm-form"
+import { TermsAndConditionsForm } from "@/components/forms/terms-and-conditions-form"
 
 const FORM_TITLES: Record<string, string> = {
   complementary_info: "Información complementaria",
   beneficial_owner: "Constancia de Beneficiario Controlador",
   terms_opm: "Términos y Condiciones OPM",
+  terms_and_conditions: "Términos y condiciones firmados",
 }
 
-const VALID_CODES = new Set(["complementary_info", "beneficial_owner", "terms_opm"])
+const VALID_CODES = new Set(["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions"])
 
 export default async function FormPage({
   params,
@@ -23,13 +25,14 @@ export default async function FormPage({
 
   const title = FORM_TITLES[code]
 
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
   // Pre-fetch company name for terms_opm form
   let companyName: string | undefined
   if (code === "terms_opm") {
-    const admin = createAdminClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
     const { data: app } = await admin
       .from("applications")
       .select("companies(legal_name)")
@@ -37,6 +40,28 @@ export default async function FormPage({
       .single()
     const company = (app?.companies as unknown) as { legal_name?: string } | null
     companyName = company?.legal_name ?? undefined
+  }
+
+  // Pre-fetch documentId for terms_and_conditions (no PDF generation step)
+  let tycDocumentId: string | null = null
+  let tycFileName: string | null = null
+  if (code === "terms_and_conditions") {
+    const { data: tmpl } = await admin
+      .from("document_templates")
+      .select("id")
+      .eq("code", "terms_and_conditions")
+      .single()
+    if (tmpl) {
+      const { data: doc } = await admin
+        .from("documents")
+        .select("id, file_name")
+        .eq("application_id", appId)
+        .eq("template_id", tmpl.id)
+        .single()
+      tycDocumentId = doc?.id ?? null
+      tycFileName = doc?.file_name ?? null
+    }
+    if (!tycDocumentId) return notFound()
   }
 
   return (
@@ -52,6 +77,14 @@ export default async function FormPage({
       )}
       {code === "terms_opm" && (
         <TermsOpmForm appId={appId} defaultCompanyName={companyName} />
+      )}
+      {code === "terms_and_conditions" && tycDocumentId && (
+        <TermsAndConditionsForm
+          appId={appId}
+          documentId={tycDocumentId}
+          templateUrl={process.env.NEXT_PUBLIC_TYC_TEMPLATE_URL ?? null}
+          initialFileName={tycFileName}
+        />
       )}
     </div>
   )
