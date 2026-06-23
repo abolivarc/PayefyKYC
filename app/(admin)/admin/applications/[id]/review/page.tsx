@@ -3,26 +3,14 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ReviewDocumentRow } from "@/components/documents/review-document-row"
-import { StatusChangeForm } from "@/components/admin/status-change-form"
+import { AdminFullStatusSelector } from "@/components/admin/admin-full-status-selector"
+import { AdminCheckRow } from "@/components/admin/admin-check-row"
+import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Borrador",
-  documents_pending: "Pendiente de documentos",
-  in_compliance_review: "En revisión de compliance",
-  changes_requested: "Cambios solicitados",
-  approved_compliance: "Aprobado por compliance",
-  in_provider_review: "En revisión del proveedor",
-  provider_changes_requested: "Cambios solicitados por proveedor",
-  approved_provider: "Aprobado por proveedor",
-  contracts_pending: "Contratos pendientes",
-  contracts_signed: "Contratos firmados",
-  activation_pending: "Activación pendiente",
-  activated: "Activo ✓",
-  rejected: "Rechazado",
-  archived: "Archivado",
-}
+// Template codes that belong to the Anexos / Contratos section (not KYC)
+const ANNEX_SECTION_CODES = new Set(["annex", "bank_statement", "inscription_rpc", "terms_opm"])
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   draft:                     { bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" },
@@ -41,22 +29,26 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; border: string 
   archived:                  { bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" },
 }
 
-const VALID_TRANSITIONS: Record<string, string[]> = {
-  documents_pending: ["in_compliance_review"],
-  in_compliance_review: ["changes_requested", "approved_compliance", "rejected"],
-  changes_requested: ["in_compliance_review"],
-  approved_compliance: ["in_provider_review"],
-  in_provider_review: ["provider_changes_requested", "approved_provider", "rejected"],
-  provider_changes_requested: ["in_provider_review"],
-  approved_provider: ["contracts_pending"],
-  contracts_pending: ["contracts_signed"],
-  contracts_signed: ["activation_pending"],
-  activation_pending: ["activated"],
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Borrador",
+  documents_pending: "Documentos pendientes",
+  in_compliance_review: "En revisión de compliance",
+  changes_requested: "Cambios solicitados",
+  approved_compliance: "Aprobado por compliance",
+  in_provider_review: "En revisión del proveedor",
+  provider_changes_requested: "Cambios solicitados (proveedor)",
+  approved_provider: "Aprobado por proveedor",
+  contracts_pending: "Contratos por firmar",
+  contracts_signed: "Contratos firmados",
+  activation_pending: "Por activar",
+  activated: "Activado ✓",
+  rejected: "Rechazado",
+  archived: "Archivado",
 }
 
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
-  { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner"] },
-  { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "efirma", "cif", "company_address_proof", "inscription_rpc", "pf_address_proof"] },
+  { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner", "terms_opm"] },
+  { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "organigrama", "efirma", "cif", "company_address_proof", "inscription_rpc", "pf_address_proof"] },
   { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
   { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
   { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
@@ -70,15 +62,29 @@ const CONTRACT_DEFS = [
 ]
 
 const BITACORA_LABELS: Record<string, string> = {
-  application_submitted:      "Expediente enviado a revisión",
-  status_changed:             "Estado actualizado",
-  document_approved:          "Documento aprobado",
-  document_changes_requested: "Cambios solicitados en documento",
-  document_rejected:          "Documento rechazado",
-  application_activated:      "Solicitud activada",
+  application_submitted:        "Expediente enviado a revisión",
+  status_changed:               "Estado actualizado",
+  document_approved:            "Documento aprobado",
+  document_changes_requested:   "Cambios solicitados en documento",
+  document_rejected:            "Documento rechazado",
+  document_checked:             "Casilla marcada/desmarcada",
+  completion_override_enabled:  "Avance forzado a 100%",
+  completion_override_disabled: "Forzado 100% desactivado",
+  application_activated:        "Solicitud activada",
 }
 
-// ── Status icon ──────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+type DocStatus = "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"
+
+function worstStatus(statuses: string[]): string {
+  if (statuses.includes("rejected")) return "rejected"
+  if (statuses.includes("pending_upload")) return "pending_upload"
+  if (statuses.includes("changes_requested")) return "changes_requested"
+  if (statuses.includes("pending_review")) return "pending_review"
+  return "approved"
+}
+
 function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked?: boolean; isCheckType?: boolean }) {
   if (isCheckType) {
     return isChecked ? (
@@ -116,7 +122,6 @@ function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked
       <path d="M6.5 6.5l5 5M11.5 6.5l-5 5" stroke="#EF4444" strokeWidth="1.8" strokeLinecap="round"/>
     </svg>
   )
-  // pending_upload
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <circle cx="9" cy="9" r="8" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1.5"/>
@@ -138,6 +143,8 @@ function contractIcon(status: string | null) {
   )
 }
 
+// ── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function ReviewPage({
   params,
 }: {
@@ -150,16 +157,15 @@ export default async function ReviewPage({
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Parallel data fetching
   const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, company_id, companies(legal_name, tax_id, contact_email, person_type), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, company_id, companies(legal_name, tax_id, contact_email, person_type), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
       .from("documents")
-      .select(`id, status, storage_path, reviewer_notes, template_id, uploaded_at, is_checked,
+      .select(`id, status, storage_path, file_name, reviewer_notes, template_id, uploaded_at, is_checked,
                document_templates(id, code, name, is_form, is_required, sort_order, field_type)`)
       .eq("application_id", appId),
     admin
@@ -172,7 +178,7 @@ export default async function ReviewPage({
       .eq("entity_id", appId)
       .not("action", "like", "cron_%")
       .order("created_at", { ascending: false })
-      .limit(6),
+      .limit(8),
   ])
 
   if (!appResult.data) return notFound()
@@ -180,16 +186,53 @@ export default async function ReviewPage({
   const app = appResult.data
   const company = (app.companies as unknown) as { legal_name: string; tax_id: string; contact_email?: string; person_type?: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
+  const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
 
-  const docs = (docsResult.data ?? []).map((d) => ({
-    ...d,
+  type DocTemplate = {
+    id: string; code: string; name: string; is_form: boolean;
+    is_required: boolean; sort_order: number; field_type?: string
+  }
+  type Doc = {
+    id: string; status: string; storage_path: string | null; file_name: string | null;
+    reviewer_notes: string | null; template_id: string; uploaded_at: string | null;
+    is_checked: boolean; template: DocTemplate | null
+  }
+
+  const docs: Doc[] = (docsResult.data ?? []).map((d) => ({
+    id: d.id,
+    status: d.status,
+    storage_path: d.storage_path,
+    file_name: (d as unknown as { file_name?: string | null }).file_name ?? null,
+    reviewer_notes: (d as unknown as { reviewer_notes?: string | null }).reviewer_notes ?? null,
+    template_id: d.template_id,
     uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
     is_checked: (d as unknown as { is_checked?: boolean }).is_checked ?? false,
-    template: (d.document_templates as unknown) as {
-      id: string; code: string; name: string; is_form: boolean;
-      is_required: boolean; sort_order: number; field_type?: string
-    } | null,
+    template: (d.document_templates as unknown) as DocTemplate | null,
   }))
+
+  // ── Group docs by template code ───────────────────────────────────────────
+  const docsByCode = new Map<string, Doc[]>()
+  for (const d of docs) {
+    if (!d.template) continue
+    const arr = docsByCode.get(d.template.code) ?? []
+    arr.push(d)
+    docsByCode.set(d.template.code, arr)
+  }
+
+  // ── Completion % (per template, with override) ───────────────────────────
+  const requiredTemplateCodes = new Set<string>()
+  const satisfiedTemplateCodes = new Set<string>()
+  for (const [code, codeDocs] of docsByCode.entries()) {
+    const tmpl = codeDocs[0]?.template
+    if (!tmpl?.is_required) continue
+    requiredTemplateCodes.add(code)
+    const satisfied = codeDocs.some((d) => d.status === "approved" || d.is_checked)
+    if (satisfied) satisfiedTemplateCodes.add(code)
+  }
+  const rawPct = requiredTemplateCodes.size > 0
+    ? Math.round((satisfiedTemplateCodes.size / requiredTemplateCodes.size) * 100)
+    : 0
+  const pct = completionOverride ? 100 : rawPct
 
   const contractMap = new Map<string, string>()
   for (const c of contractsResult.data ?? []) contractMap.set(c.kind, c.status)
@@ -199,20 +242,39 @@ export default async function ReviewPage({
     actor: (l.profiles as unknown) as { full_name: string } | null,
   }))
 
-  // Stats
-  const uploadDocs = docs.filter((d) => d.template && !d.template.is_form && d.template.field_type !== "check_or_upload")
-  const checkDocs  = docs.filter((d) => d.template && d.template.field_type === "check_or_upload")
-  const requiredDocs = docs.filter((d) => d.template?.is_required)
-  const satisfiedDocs = requiredDocs.filter((d) => d.status === "approved" || d.is_checked)
-  const pct = requiredDocs.length > 0 ? Math.round((satisfiedDocs.length / requiredDocs.length) * 100) : 0
+  const personTypeLabel = company?.person_type === "persona_fisica" ? "Persona Física"
+    : company?.person_type === "persona_moral" ? "Persona Moral" : null
 
-  const personTypeLabel = company?.person_type === "fisica" ? "Persona Física" : company?.person_type === "moral" ? "Persona Moral" : null
-
-  const nextStatuses = VALID_TRANSITIONS[app.status] ?? []
   const statusStyle = STATUS_COLORS[app.status] ?? STATUS_COLORS.draft
 
-  // For detailed review sections
-  const docByCode = new Map(docs.filter((d) => d.template).map((d) => [d.template!.code, d]))
+  // ── Overview: one row per template (deduplicated) ─────────────────────────
+  const overviewGroups = Array.from(docsByCode.entries())
+    .filter(([, ds]) => ds[0]?.template && !ds[0].template.is_form)
+    .map(([code, ds]) => {
+      const tmpl = ds[0].template!
+      const isCheckType = tmpl.field_type === "check_or_upload"
+      const displayStatus = isCheckType
+        ? (ds.some((d) => d.is_checked) ? "approved" : "pending_upload")
+        : worstStatus(ds.map((d) => d.status))
+      return {
+        code,
+        name: tmpl.name,
+        fieldType: tmpl.field_type ?? "upload",
+        sortOrder: tmpl.sort_order,
+        isCheckType,
+        isRequired: tmpl.is_required,
+        displayStatus,
+        isChecked: ds.some((d) => d.is_checked),
+        primaryDocId: ds.find((d) => d.storage_path)?.id ?? ds[0].id,
+        storagePath: ds.find((d) => d.storage_path)?.storage_path ?? null,
+      }
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+
+  const overviewUpload = overviewGroups.filter(
+    (g) => !g.isCheckType && !ANNEX_SECTION_CODES.has(g.code)
+  )
+  const overviewCheck = overviewGroups.filter((g) => g.isCheckType)
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
@@ -232,15 +294,21 @@ export default async function ReviewPage({
                 {company?.legal_name ?? "Empresa"}
               </h1>
               {/* Completion badge */}
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700, padding: "3px 10px", borderRadius: 999,
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 700,
+                padding: "3px 10px", borderRadius: 999,
                 background: pct >= 80 ? "#E7F8EF" : pct >= 50 ? "#FFF7ED" : "#FEF2F2",
                 color: pct >= 80 ? "#047857" : pct >= 50 ? "#92400E" : "#B91C1C",
-                border: `1px solid ${pct >= 80 ? "#CBEFDB" : pct >= 50 ? "#FCEBD2" : "#FBDADA"}` }}>
-                {pct}% completo
+                border: `1px solid ${pct >= 80 ? "#CBEFDB" : pct >= 50 ? "#FCEBD2" : "#FBDADA"}`,
+              }}>
+                {pct}%{completionOverride ? " (forzado)" : ` · ${satisfiedTemplateCodes.size}/${requiredTemplateCodes.size}`}
               </span>
               {/* App status */}
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, padding: "3px 10px", borderRadius: 999,
-                background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}` }}>
+              <span style={{
+                display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600,
+                padding: "3px 10px", borderRadius: 999,
+                background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`,
+              }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusStyle.color, flexShrink: 0 }} />
                 {STATUS_LABELS[app.status] ?? app.status}
               </span>
@@ -253,6 +321,8 @@ export default async function ReviewPage({
           </div>
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            {/* Feature 4: completion override toggle */}
+            <CompletionOverrideButton applicationId={appId} initialValue={completionOverride} />
             <Link
               href={`/admin/applications/${appId}/audit`}
               className="hover:bg-[#F6F8FA] hover:text-[#0F1B2A] transition-all"
@@ -275,29 +345,34 @@ export default async function ReviewPage({
         <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 3px rgba(16,30,45,.06)", overflow: "hidden", marginBottom: 20 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1px 1fr", minHeight: 200 }}>
 
-            {/* Left: upload documents checklist */}
+            {/* Left: upload documents (one per template) */}
             <div style={{ padding: "20px 24px" }}>
               <p style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
-                Documentos · {uploadDocs.length}
+                Documentos · {overviewUpload.length} plantillas
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                {uploadDocs.length === 0 ? (
-                  <p style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", margin: 0 }}>Sin documentos de tipo archivo.</p>
-                ) : uploadDocs.sort((a, b) => (a.template?.sort_order ?? 99) - (b.template?.sort_order ?? 99)).map((doc) => (
-                  <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
-                    <DocIcon status={doc.status} />
-                    <span style={{ fontSize: 13, color: doc.status === "approved" ? "var(--admin-text, #0F1B2A)" : doc.status === "pending_upload" ? "var(--admin-text-subtle, #8A99A8)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
-                      {doc.template?.name ?? "Documento"}
-                      {doc.template?.field_type === "check_or_upload" && <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 5 }}>· casilla</span>}
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {overviewUpload.length === 0 ? (
+                  <p style={{ fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", margin: 0 }}>Sin documentos.</p>
+                ) : overviewUpload.map((g) => (
+                  <div key={g.code} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                    <DocIcon status={g.displayStatus} />
+                    <span style={{ fontSize: 13, color: g.displayStatus === "approved" ? "var(--admin-text, #0F1B2A)" : g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #8A99A8)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
+                      {g.name}
+                      {!g.isRequired && <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 4 }}>opcional</span>}
+                      {(docsByCode.get(g.code)?.length ?? 0) > 1 && (
+                        <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 4 }}>
+                          · {docsByCode.get(g.code)!.length} arch.
+                        </span>
+                      )}
                     </span>
-                    {doc.status === "changes_requested" && (
+                    {g.displayStatus === "changes_requested" && (
                       <span style={{ fontSize: 11, color: "#92400E", background: "#FFF7ED", border: "1px solid #FCEBD2", borderRadius: 4, padding: "1px 6px" }}>cambios</span>
                     )}
-                    {doc.status === "pending_review" && (
+                    {g.displayStatus === "pending_review" && (
                       <span style={{ fontSize: 11, color: "#1D4ED8", background: "#EFF4FF", border: "1px solid #DBE5FF", borderRadius: 4, padding: "1px 6px" }}>revisión</span>
                     )}
-                    {doc.storage_path && (
-                      <a href={`/api/documents/${doc.id}/view`} target="_blank" rel="noopener noreferrer"
+                    {g.storagePath && (
+                      <a href={`/api/documents/${g.primaryDocId}/view`} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: 11, color: "var(--admin-brand-strong, #0B7A44)", textDecoration: "none", whiteSpace: "nowrap" }}>
                         ver
                       </a>
@@ -313,22 +388,26 @@ export default async function ReviewPage({
             {/* Right: check items + contracts + bitácora */}
             <div style={{ padding: "20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
 
-              {/* Check-type items */}
-              {checkDocs.length > 0 && (
+              {/* Feature 2: interactive check items */}
+              {overviewCheck.length > 0 && (
                 <div>
-                  <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
-                    Datos sin documento
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                    Casillas Sí/No
                   </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
-                    {checkDocs.sort((a, b) => (a.template?.sort_order ?? 99) - (b.template?.sort_order ?? 99)).map((doc) => (
-                      <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
-                        <DocIcon status={doc.status} isChecked={doc.is_checked} isCheckType />
-                        <span style={{ fontSize: 13, color: "var(--admin-text, #0F1B2A)", flex: 1 }}>
-                          {doc.template?.name ?? "Campo"}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  {overviewCheck.map((g) => {
+                    const primaryDoc = docsByCode.get(g.code)![0]
+                    return (
+                      <AdminCheckRow
+                        key={g.code}
+                        documentId={primaryDoc.id}
+                        applicationId={appId}
+                        templateName={g.name}
+                        initialIsChecked={g.isChecked}
+                        isRequired={g.isRequired}
+                        storageDocId={g.storagePath ? g.primaryDocId : undefined}
+                      />
+                    )
+                  })}
                 </div>
               )}
 
@@ -337,7 +416,7 @@ export default async function ReviewPage({
                 <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
                   Contratos y firmas
                 </p>
-                <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <div style={{ display: "flex", flexDirection: "column" }}>
                   {CONTRACT_DEFS.map((def) => {
                     const s = contractMap.get(def.kind) ?? null
                     const isSigned = s === "signed"
@@ -381,25 +460,24 @@ export default async function ReviewPage({
           </div>
         </div>
 
-        {/* ── Status change ── */}
-        {nextStatuses.length > 0 && (
-          <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, padding: "16px 20px", marginBottom: 20, boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-            <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
-              Cambiar estado de la solicitud
-            </p>
-            <StatusChangeForm
-              applicationId={appId}
-              currentStatus={app.status}
-              nextStatuses={nextStatuses}
-            />
-          </div>
-        )}
+        {/* ── Feature 1a: Full status selector (always visible) ── */}
+        <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, padding: "16px 20px", marginBottom: 20, boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
+          <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+            Etapa de la solicitud
+          </p>
+          <AdminFullStatusSelector applicationId={appId} currentStatus={app.status} />
+        </div>
 
-        {/* ── Detailed document review ── */}
+        {/* ── Feature 3: KYC sections (grouped by template) ── */}
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {CATEGORY_CODES.map(({ title, codes }) => {
-            const catDocs = codes.map((code) => docByCode.get(code)).filter(Boolean) as typeof docs
-            if (catDocs.length === 0) return null
+            // Filter out annex-section codes from KYC categories
+            const kycCodes = codes.filter((c) => !ANNEX_SECTION_CODES.has(c))
+            const catGroups = kycCodes
+              .filter((code) => docsByCode.has(code))
+              .map((code) => ({ code, docs: docsByCode.get(code)! }))
+            if (catGroups.length === 0) return null
+
             return (
               <section key={title}>
                 <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
@@ -407,24 +485,118 @@ export default async function ReviewPage({
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
                   <div style={{ padding: "0 20px" }}>
-                    {catDocs.map((doc) => (
-                      <ReviewDocumentRow
-                        key={doc.id}
-                        documentId={doc.id}
-                        applicationId={appId}
-                        templateName={doc.template?.name ?? "Documento"}
-                        isRequired={doc.template?.is_required ?? false}
-                        currentStatus={doc.status as "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"}
-                        storageAvailable={!!doc.storage_path}
-                        reviewerNotes={doc.reviewer_notes}
-                        uploadedAt={doc.uploaded_at}
-                      />
-                    ))}
+                    {catGroups.map(({ code, docs: codeDocs }) => {
+                      const tmpl = codeDocs[0].template!
+                      const isCheckType = tmpl.field_type === "check_or_upload"
+
+                      if (isCheckType) {
+                        return (
+                          <AdminCheckRow
+                            key={code}
+                            documentId={codeDocs[0].id}
+                            applicationId={appId}
+                            templateName={tmpl.name}
+                            initialIsChecked={codeDocs[0].is_checked}
+                            isRequired={tmpl.is_required}
+                            storageDocId={codeDocs[0].storage_path ? codeDocs[0].id : undefined}
+                          />
+                        )
+                      }
+
+                      // Upload-type: show template header if multiple files, then each file
+                      const isMulti = codeDocs.length > 1
+                      return (
+                        <div key={code}>
+                          {isMulti && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0 4px", borderBottom: "none" }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                                {tmpl.name}
+                              </span>
+                              {!tmpl.is_required && (
+                                <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: "#F1F5F9", color: "#64748B" }}>
+                                  opcional
+                                </span>
+                              )}
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                                {codeDocs.length} archivos
+                              </span>
+                            </div>
+                          )}
+                          {codeDocs.map((doc, idx) => (
+                            <ReviewDocumentRow
+                              key={doc.id}
+                              documentId={doc.id}
+                              applicationId={appId}
+                              templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
+                              isRequired={!isMulti && tmpl.is_required}
+                              currentStatus={doc.status as DocStatus}
+                              storageAvailable={!!doc.storage_path}
+                              reviewerNotes={doc.reviewer_notes}
+                              uploadedAt={doc.uploaded_at}
+                            />
+                          ))}
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               </section>
             )
           })}
+
+          {/* ── Feature 3: Anexos / Contratos section ── */}
+          {(() => {
+            const annexGroups = Array.from(ANNEX_SECTION_CODES)
+              .filter((code) => docsByCode.has(code))
+              .map((code) => ({ code, docs: docsByCode.get(code)! }))
+            if (annexGroups.length === 0) return null
+
+            return (
+              <section>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  Anexos / Contratos
+                </p>
+                <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
+                  <div style={{ padding: "0 20px" }}>
+                    {annexGroups.map(({ code, docs: codeDocs }) => {
+                      const tmpl = codeDocs[0].template!
+                      const isMulti = codeDocs.length > 1
+                      return (
+                        <div key={code}>
+                          {isMulti && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0 4px" }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                                {tmpl.name}
+                              </span>
+                              <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: "#F1F5F9", color: "#64748B" }}>
+                                opcional
+                              </span>
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                                {codeDocs.length} archivos
+                              </span>
+                            </div>
+                          )}
+                          {codeDocs.map((doc, idx) => (
+                            <ReviewDocumentRow
+                              key={doc.id}
+                              documentId={doc.id}
+                              applicationId={appId}
+                              templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
+                              isRequired={false}
+                              currentStatus={doc.status as DocStatus}
+                              storageAvailable={!!doc.storage_path}
+                              reviewerNotes={doc.reviewer_notes}
+                              uploadedAt={doc.uploaded_at}
+                            />
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </section>
+            )
+          })()}
         </div>
       </div>
     </div>

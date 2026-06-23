@@ -2,9 +2,17 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
 import { emailChangesRequested, emailApproved } from "@/lib/email/templates"
+
+function adminDb() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // ─────────────────────────────────────
 // Aprobar un documento
@@ -208,6 +216,71 @@ export async function updateApplicationStatus(
   })
 
   revalidatePath("/admin/kanban")
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
+// Marcar/desmarcar is_checked en un documento (admin)
+// ─────────────────────────────────────
+export async function adminSetDocumentChecked(
+  documentId: string,
+  checked: boolean,
+  applicationId: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { error } = await adminDb()
+    .from("documents")
+    .update({
+      is_checked: checked,
+      status: checked ? "pending_review" : "pending_upload",
+    })
+    .eq("id", documentId)
+
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: user.id,
+    action: "document_checked",
+    entityType: "document",
+    entityId: documentId,
+    changes: { is_checked: checked },
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
+// Toggle completion_override en una application
+// ─────────────────────────────────────
+export async function toggleCompletionOverride(
+  applicationId: string,
+  newValue: boolean
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { error } = await adminDb()
+    .from("applications")
+    .update({ completion_override: newValue })
+    .eq("id", applicationId)
+
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: user.id,
+    action: newValue ? "completion_override_enabled" : "completion_override_disabled",
+    entityType: "application",
+    entityId: applicationId,
+    changes: { completion_override: newValue },
+  })
+
   revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
