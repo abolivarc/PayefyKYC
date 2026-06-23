@@ -11,6 +11,7 @@ import {
 import { SubmitApplicationButton } from "@/components/documents/submit-application-button"
 import { ProductHero } from "@/components/client/product-hero"
 import { StageStepper } from "@/components/client/stage-stepper"
+import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
 
 const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal_rep_id"])
 
@@ -321,6 +322,9 @@ export default async function DocumentsPage({
             alreadySubmitted={app.status !== "draft"}
           />
         </div>
+
+        {/* KYC Summary */}
+        <KycSummaryPanel categories={categories} />
 
         {/* Checklist */}
         <DocumentChecklist categories={categories} applicationId={appId} />
