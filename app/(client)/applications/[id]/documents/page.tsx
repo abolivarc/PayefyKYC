@@ -223,8 +223,8 @@ export default async function DocumentsPage({
       .filter((g): g is DocGroup => g !== undefined),
   }))
 
-  // 7. Stats para progress bar
-  const allGroupDocs = Array.from(groupMap.values()).flatMap((g) => g.docs)
+  // 7. Stats para progress bar — solo los docs visibles en categorías
+  const allGroupDocs = categories.flatMap((c) => c.groups).flatMap((g) => g.docs)
   const total = allGroupDocs.length
   const done = allGroupDocs.filter((d) => {
     if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
@@ -234,9 +234,9 @@ export default async function DocumentsPage({
   const pct = total > 0 ? Math.round((done / total) * 100) : 0
 
   // 8. Detectar si todos los required están listos para enviar
-  const requiredGroups = Array.from(groupMap.values()).filter(
-    (g) => g.docs[0]?.template.is_required
-  )
+  const requiredGroups = categories
+    .flatMap((c) => c.groups)
+    .filter((g) => g.is_required)
   const allRequiredReady = requiredGroups.every((g) =>
     g.docs.every((d) => {
       if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
