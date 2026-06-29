@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 
+// Matches kyc-documents bucket allowed_mime_types exactly.
+// image/webp and image/gif are intentionally excluded — the bucket rejects them
+// and would cause a 400 at the PUT step if we issued a signed URL for them.
 const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
-  "image/webp",
-  "image/gif",
 ])
 const MAX_BYTES = 100 * 1024 * 1024 // 100 MB
 
@@ -82,7 +83,9 @@ export async function POST(
   if (!membership) return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
 
   const safeFileName = sanitizeFileName(fileName)
-  const storagePath = `${app.company_id}/${doc.application_id}/${documentId}/${safeFileName}`
+  // Unique prefix prevents 400 "Object already exists" on retry: Supabase's signed
+  // upload endpoint does not upsert by default, so a re-upload to the same path fails.
+  const storagePath = `${app.company_id}/${doc.application_id}/${documentId}/${Date.now()}-${safeFileName}`
 
   const { data: signed, error: signErr } = await serviceClient.storage
     .from("kyc-documents")

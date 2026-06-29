@@ -30,7 +30,9 @@ export async function uploadDocumentFile(
       headers: { "Content-Type": file.type },
     })
     if (!uploadRes.ok) {
-      return { success: false, error: "Error al subir el archivo al almacenamiento" }
+      const errBody = await uploadRes.text().catch(() => "")
+      const detail = errBody ? `: ${errBody}` : ""
+      return { success: false, error: `Error al subir (HTTP ${uploadRes.status})${detail}` }
     }
   } catch {
     return { success: false, error: "Error al subir el archivo" }

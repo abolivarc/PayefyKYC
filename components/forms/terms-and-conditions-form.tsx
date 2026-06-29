@@ -22,6 +22,15 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    // HEIC/HEIF (fotos de iPhone en formato nativo) — el bucket no las acepta.
+    if (
+      file.type === "image/heic" ||
+      file.type === "image/heif" ||
+      /\.(heic|heif)$/i.test(file.name)
+    ) {
+      setUploadError("Las fotos en formato HEIC (iPhone) no están soportadas. Ábrelas en Fotos → exportar como JPEG y sube el JPG.")
+      return
+    }
     setUploadError(null)
     setUploading(true)
     const result = await uploadDocumentFile(documentId, file)
@@ -102,7 +111,7 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
             <input
               ref={fileRef}
               type="file"
-              accept="application/pdf,image/jpeg,image/png,image/webp"
+              accept="application/pdf,image/jpeg,image/png"
               className="hidden"
               onChange={handleUpload}
             />
