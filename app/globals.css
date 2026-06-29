@@ -4,10 +4,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ── shadcn semantic token aliases (keys son los mismos de siempre) ── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   --font-heading: var(--font-display);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -38,50 +39,97 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* ── Payefy extended tokens — nuevas utilidades semánticas ──────────
+     Generan: bg-*, text-*, border-*, ring-*, etc. automáticamente.    */
+  --color-border-strong: var(--border-strong);   /* hairline más visible */
+  --color-tertiary: var(--tertiary);             /* texto más tenue      */
+  --color-brand-hover: var(--brand-hover);       /* brand oscurecido     */
+  --color-brand-tint: var(--brand-tint);         /* fondo seleccionado   */
+  --color-mint-tint: var(--mint-tint);           /* fondo éxito suave    */
+  --color-success: var(--success);
+  --color-success-tint: var(--success-tint);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-danger: var(--danger);
+  --color-danger-tint: var(--danger-tint);
+  --color-info: var(--info);
+  --color-info-tint: var(--info-tint);
+
+  /* ── Radios  6 / 8 / 12 / 16 ────────────────────────────────────── */
+  --radius-sm: 0.375rem;   /*  6px */
+  --radius-md: 0.5rem;     /*  8px — rounded-md = botones, inputs       */
+  --radius-lg: 0.75rem;    /* 12px — rounded-lg = tarjetas              */
+  --radius-xl: 1rem;       /* 16px */
+  --radius-2xl: 1.25rem;   /* 20px */
+  --radius-3xl: 1.5rem;    /* 24px */
+  --radius-4xl: 2rem;      /* 32px */
+
+  /* ── Sombras (verde-tintadas, muy sutiles) ───────────────────────── */
+  --shadow-sm: 0 1px 2px oklch(0.132 0.022 155 / 0.06);
+  --shadow: 0 4px 16px oklch(0.132 0.022 155 / 0.08);
 }
 
 :root {
-  /* Payefy brand: #004238 verde principal, #AEFF99 verde acento */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* ╔══════════════════════════════════════════════════════════════════╗
+     ║  Payefy palette                                                  ║
+     ║    brand  #004238  →  oklch(0.277 0.056 169)                    ║
+     ║    mint   #A8F898  →  oklch(0.924 0.145 142)                    ║
+     ╚══════════════════════════════════════════════════════════════════╝ */
+
+  /* ── shadcn core tokens (actualizados a tintes verdes Payefy) ───── */
+  --background: oklch(1 0 0);                       /* #FFFFFF           */
+  --foreground: oklch(0.132 0.022 155);             /* #0D1A16           */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.132 0.022 155);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.277 0.056 169);       /* #004238 */
-  --primary-foreground: oklch(1 0 0);      /* white */
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.924 0.145 142);        /* #AEFF99 */
-  --accent-foreground: oklch(0.277 0.056 169); /* #004238 on accent */
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.277 0.056 169);          /* focus ring = brand green */
+  --popover-foreground: oklch(0.132 0.022 155);
+  --primary: oklch(0.277 0.056 169);                /* #004238           */
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.973 0.005 155);              /* #F6F8F7  hover bg */
+  --secondary-foreground: oklch(0.132 0.022 155);
+  --muted: oklch(0.99 0.003 155);                   /* #FBFCFB  página   */
+  --muted-foreground: oklch(0.435 0.018 155);       /* #56655E  2° texto */
+  --accent: oklch(0.924 0.145 142);                 /* #A8F898  mint     */
+  --accent-foreground: oklch(0.277 0.056 169);
+  --destructive: oklch(0.54 0.19 28);               /* #C0392B           */
+  --border: oklch(0.939 0.005 155);                 /* #ECEFED  hairline */
+  --input: oklch(0.939 0.005 155);
+  --ring: oklch(0.277 0.056 169);                   /* focus ring brand  */
+  --radius: 0.5rem;                                 /* 8px               */
   --chart-1: oklch(0.277 0.056 169);
   --chart-2: oklch(0.924 0.145 142);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  /* Sidebar — dark green brand panel */
-  --sidebar: oklch(0.277 0.056 169);           /* #004238 */
-  --sidebar-foreground: oklch(1 0 0);          /* white */
-  --sidebar-primary: oklch(0.924 0.145 142);   /* #AEFF99 accent */
-  --sidebar-primary-foreground: oklch(0.277 0.056 169); /* dark green on accent */
-  --sidebar-accent: oklch(0.33 0.056 169);     /* slightly lighter green for hover */
+
+  /* ── Sidebar tokens (panel admin oscuro — sin cambios) ───────────── */
+  --sidebar: oklch(0.277 0.056 169);
+  --sidebar-foreground: oklch(1 0 0);
+  --sidebar-primary: oklch(0.924 0.145 142);
+  --sidebar-primary-foreground: oklch(0.277 0.056 169);
+  --sidebar-accent: oklch(0.33 0.056 169);
   --sidebar-accent-foreground: oklch(1 0 0);
-  --sidebar-border: oklch(0.34 0.05 169);      /* subtle separator */
+  --sidebar-border: oklch(0.34 0.05 169);
   --sidebar-ring: oklch(0.924 0.145 142);
+
+  /* ── Extended Payefy tokens (nuevos) ────────────────────────────── */
+  --border-strong: oklch(0.9 0.008 155);            /* #DCE3E0           */
+  --tertiary: oklch(0.628 0.016 155);               /* #8B9A92  3° texto */
+  --brand-hover: oklch(0.22 0.05 169);              /* #013029           */
+  --brand-tint: oklch(0.955 0.02 160);              /* #E8F3EF activo    */
+  --mint-tint: oklch(0.972 0.04 145);               /* #EAFBE5           */
+  --success: oklch(0.556 0.1 165);                  /* #1B8F60           */
+  --success-tint: oklch(0.965 0.03 158);            /* #E7F8EF           */
+  --warning: oklch(0.56 0.12 68);                   /* #B7791F           */
+  --warning-tint: oklch(0.977 0.02 75);             /* #FFF7ED           */
+  --danger: oklch(0.54 0.19 28);                    /* #C0392B (= destructive) */
+  --danger-tint: oklch(0.977 0.015 20);             /* #FEF2F2           */
+  --info: oklch(0.43 0.2 264);                      /* #1D4ED8           */
+  --info-tint: oklch(0.965 0.018 240);              /* #EFF4FF           */
+
+  /* ── Portal del cliente — tokens de layout ──────────────────────── */
+  --header-bg: #0A1410;  /* se actualiza a blanco en Step 3 con Header  */
 }
 
 .dark {
@@ -131,7 +179,7 @@
   }
 }
 
-/* ─── Admin panel design tokens ─────────────────────────────── */
+/* ─── Admin panel design tokens (sin cambios) ───────────────────── */
 .admin-shell {
   --admin-bg: #F6F8FA;
   --admin-surface: #FFFFFF;
@@ -143,7 +191,6 @@
   --admin-brand: #A8F898;
   --admin-brand-strong: #0B7A44;
   --admin-brand-soft: #EDFBEA;
-  /* sidebar */
   --sb-bg: #0E1A26;
   --sb-bg2: #0A141E;
   --sb-text: #C4D0DB;
@@ -153,12 +200,6 @@
   --sb-border: rgba(255,255,255,0.07);
 }
 
-/* Client portal header token */
-:root {
-  --header-bg: #0A1410;
-}
-
-/* Sidebar nav link — pure CSS hover/active, no JS style mutations */
 .admin-shell .sb-nav-link {
   position: relative;
   transition: background 0.14s, color 0.14s;
@@ -184,7 +225,6 @@
   background: #A8F898;
 }
 
-/* Table row hover accent */
 .admin-shell .table-row-hover {
   transition: background 0.12s;
 }

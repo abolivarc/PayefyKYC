@@ -55,14 +55,14 @@ const COMPANY = {
   legal_name : 'YUSHU GROUP S.A. DE C.V.',
   tax_id     : 'YGR250813SL8',
   tax_regime : 'Régimen General de Ley Personas Morales',
-  person_type: 'Persona Moral',
+  person_type: 'persona_moral',
   tax_address: {
     calle: 'CALLE', numero_interior: '801', colonia: 'ANZURES',
     cp: '11590', municipio: 'MIGUEL HIDALGO', entidad: 'CIUDAD DE MEXICO',
   },
   operator_email: 'group.yushu@gmail.com',
   operator_name : 'Juan Carlos Lorenzo Relloso', // contacto/accionista (RL: Félix Bautista Ramos)
-  terminal_type : 'cards',
+  terminal_type : 'card_present',
 };
 
 // ─────────────────── MAPEO archivo -> destino (orden importa) ─────────────────
@@ -73,8 +73,8 @@ type Dest =
   | { kind: 'contract'; contract: string };
 
 const RULES: { re: RegExp; dest: Dest }[] = [
-  { re: /caratula_credito/i,                         dest: { kind: 'contract', contract: 'caratula_credito' } },
-  { re: /contrato.*revolvente/i,                     dest: { kind: 'contract', contract: 'credito_revolvente' } },
+  { re: /caratula_credito/i,                         dest: { kind: 'contract', contract: 'transfer_increase_letter' } },
+  { re: /contrato.*revolvente/i,                     dest: { kind: 'contract', contract: 'transfer_contract' } },
   { re: /contrato de arrendamiento/i,                dest: { kind: 'slot', code: 'company_address_proof' } },
   { re: /acta constitutiva/i,                        dest: { kind: 'slot', code: 'incorporation_act' } },
   { re: /^rppc|^rppyc|rpp ?y ?c|registro publico/i,  dest: { kind: 'slot', code: 'inscription_rpc' } },
@@ -105,7 +105,10 @@ const MIME: Record<string, string> = {
 
 // ─────────────────────────────────── helpers ─────────────────────────────────
 function assertServiceRole(key: string) {
-  const role = JSON.parse(Buffer.from(key.split('.')[1], 'base64').toString()).role;
+  if (key.startsWith('sb_secret_')) return; // new non-JWT format
+  const parts = key.split('.');
+  if (parts.length !== 3) throw new Error('Key no reconocida. ¿Pegaste el anon key?');
+  const role = JSON.parse(Buffer.from(parts[1], 'base64').toString()).role;
   if (role !== 'service_role')
     throw new Error(`La key tiene role="${role}", se esperaba service_role. ¿Pegaste el anon key?`);
 }

@@ -13,17 +13,21 @@ export default async function LoginPage({
   const { error, success } = await searchParams
 
   return (
-    <div className="space-y-4">
-      <p className="text-sm text-center text-muted-foreground mb-6">
-        Inicia sesión en tu cuenta
-      </p>
+    <div className="space-y-5">
+      <div className="space-y-1 text-center">
+        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          Inicia sesión
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Accede a tu expediente de onboarding
+        </p>
+      </div>
 
       {error && (
         <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
-
       {success && (
         <Alert>
           <AlertDescription>{success}</AlertDescription>
@@ -31,7 +35,7 @@ export default async function LoginPage({
       )}
 
       <form action={signInClient} className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           <Label htmlFor="email">Correo electrónico</Label>
           <Input
             id="email"
@@ -43,8 +47,16 @@ export default async function LoginPage({
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password">Contraseña</Label>
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Contraseña</Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ¿Olvidaste la contraseña?
+            </Link>
+          </div>
           <Input
             id="password"
             name="password"
@@ -56,28 +68,20 @@ export default async function LoginPage({
           />
         </div>
 
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full mt-1">
           Iniciar sesión
         </Button>
       </form>
 
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <p className="text-sm text-muted-foreground">
-          ¿No tienes cuenta?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-primary hover:underline"
-          >
-            Regístrate
-          </Link>
-        </p>
+      <p className="text-center text-sm text-muted-foreground">
+        ¿No tienes cuenta?{" "}
         <Link
-          href="/forgot-password"
-          className="text-sm text-muted-foreground hover:underline"
+          href="/register"
+          className="font-medium text-primary hover:text-brand-hover transition-colors"
         >
-          ¿Olvidaste tu contraseña?
+          Regístrate
         </Link>
-      </div>
+      </p>
     </div>
   )
 }
