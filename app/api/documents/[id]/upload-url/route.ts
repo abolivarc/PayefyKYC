@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
+import { sanitizeStorageKey } from "@/lib/documents/storage-path"
 
 // Matches kyc-documents bucket allowed_mime_types exactly.
 // image/webp and image/gif are intentionally excluded — the bucket rejects them
@@ -11,19 +12,6 @@ const ALLOWED_MIME = new Set([
   "image/png",
 ])
 const MAX_BYTES = 100 * 1024 * 1024 // 100 MB
-
-// macOS filenames are NFD (e.g. "E" + combining acute accent U+0301).
-// Supabase Storage normalizes paths to NFC internally, so a signed URL generated
-// for an NFD path fails token validation on PUT. Convert to NFC and remove
-// invisible/special-space Unicode codepoints that also cause mismatches.
-function sanitizeFileName(name: string): string {
-  return (
-    name
-      .normalize("NFC")
-      .replace(/[   ​‌‍﻿]/gu, " ")
-      .trim() || "documento"
-  )
-}
 
 export async function POST(
   req: Request,
@@ -82,7 +70,7 @@ export async function POST(
     .single()
   if (!membership) return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
 
-  const safeFileName = sanitizeFileName(fileName)
+  const safeFileName = sanitizeStorageKey(fileName)
   // Unique prefix prevents 400 "Object already exists" on retry: Supabase's signed
   // upload endpoint does not upsert by default, so a re-upload to the same path fails.
   const storagePath = `${app.company_id}/${doc.application_id}/${documentId}/${Date.now()}-${safeFileName}`
