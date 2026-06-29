@@ -55,6 +55,11 @@
   --color-danger-tint: var(--danger-tint);
   --color-info: var(--info);
   --color-info-tint: var(--info-tint);
+  --color-product-cards: var(--product-cards);
+  --color-product-cards-tint: var(--product-cards-tint);
+  --color-product-terminals: var(--product-terminals);
+  --color-product-terminals-tint: var(--product-terminals-tint);
+  --color-thumb: var(--thumb-bg);
 
   /* ── Radios  6 / 8 / 12 / 16 ────────────────────────────────────── */
   --radius-sm: 0.375rem;   /*  6px */
@@ -127,6 +132,11 @@
   --danger-tint: oklch(0.977 0.015 20);             /* #FEF2F2           */
   --info: oklch(0.43 0.2 264);                      /* #1D4ED8           */
   --info-tint: oklch(0.965 0.018 240);              /* #EFF4FF           */
+  --product-cards: oklch(0.45 0.14 270);            /* muted indigo text */
+  --product-cards-tint: oklch(0.965 0.02 270);      /* light indigo bg   */
+  --product-terminals: oklch(0.52 0.1 185);         /* muted teal text   */
+  --product-terminals-tint: oklch(0.97 0.025 185);  /* light teal bg     */
+  --thumb-bg: oklch(0.128 0.024 220);               /* dark navy for product thumbnails */
 
   /* ── Portal del cliente — tokens de layout ──────────────────────── */
   --header-bg: #0A1410;  /* se actualiza a blanco en Step 3 con Header  */
@@ -233,4 +243,14 @@
 }
 .admin-shell .table-row-hover:hover td:first-child {
   box-shadow: inset 3px 0 0 #A8F898;
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

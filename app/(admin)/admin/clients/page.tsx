@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server"
-import { ClientsTable } from "@/components/admin/clients-table"
+import { ClientsGrid } from "@/components/admin/clients-grid"
 
 export default async function ClientsPage() {
   const supabase = await createClient()
@@ -50,38 +50,24 @@ export default async function ClientsPage() {
     <div className="p-6 md:p-8">
       <div className="flex items-start justify-between mb-6 gap-4">
         <div>
-          <h1
-            className="text-2xl font-extrabold tracking-tight"
-            style={{
-              fontFamily: "var(--font-display)",
-              color: "var(--admin-text, #0F1B2A)",
-              letterSpacing: "-0.02em",
-            }}
-          >
+          <h1 className="font-heading text-2xl font-extrabold tracking-tight text-foreground">
             Clientes
           </h1>
-          <p
-            className="text-sm mt-1"
-            style={{ color: "var(--admin-text-muted, #5A6B7B)" }}
-          >
-            <strong style={{ color: "var(--admin-text, #0F1B2A)" }}>
-              {list.length}
-            </strong>{" "}
+          <p className="text-sm mt-1 text-muted-foreground">
+            <strong className="text-foreground">{list.length}</strong>{" "}
             empresas registradas
             {reviewCount > 0 && (
               <>
                 {" "}
                 ·{" "}
-                <strong style={{ color: "var(--admin-text, #0F1B2A)" }}>
-                  {reviewCount}
-                </strong>{" "}
+                <strong className="text-foreground">{reviewCount}</strong>{" "}
                 en revisión
               </>
             )}
           </p>
         </div>
       </div>
-      <ClientsTable companies={list} isSuperAdmin={isSuperAdmin} />
+      <ClientsGrid companies={list} isSuperAdmin={isSuperAdmin} />
     </div>
   )
 }
