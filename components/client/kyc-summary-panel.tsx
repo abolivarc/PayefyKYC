@@ -8,10 +8,9 @@ function getGroupStatus(group: DocGroup): GroupStatus {
   if (!doc) return "empty"
 
   if (group.isMulti) {
-    const anyDone = group.docs.some(
-      (d) => d.status === "approved" || d.status === "pending_review"
-    )
-    if (anyDone) return "review"
+    if (group.docs.some((d) => d.status === "approved")) return "done"
+    if (group.docs.some((d) => d.status === "changes_requested")) return "changes"
+    if (group.docs.some((d) => d.status === "pending_review" && !isDocumentExpired(d.uploaded_at))) return "review"
     return "empty"
   }
 
