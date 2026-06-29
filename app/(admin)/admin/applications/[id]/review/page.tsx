@@ -9,8 +9,13 @@ import { CompletionOverrideButton } from "@/components/admin/completion-override
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
-// Template codes that belong to the Anexos / Contratos section (not KYC)
-const ANNEX_SECTION_CODES = new Set(["annex", "bank_statement", "inscription_rpc", "terms_opm"])
+// Template codes that belong to the Anexos / Contratos section (not KYC).
+// Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
+// signs, and re-uploads them, so they need full approve/reject UI, not a form renderer.
+const ANNEX_SECTION_CODES = new Set([
+  "annex", "bank_statement", "inscription_rpc",
+  "terms_opm", "terms_and_conditions",
+])
 
 const STATUS_COLORS: Record<string, { bg: string; color: string; border: string }> = {
   draft:                     { bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" },
@@ -544,7 +549,7 @@ export default async function ReviewPage({
             )
           })}
 
-          {/* ── Feature 3: Anexos / Contratos section ── */}
+          {/* ── Anexos / Contratos section ── */}
           {(() => {
             const annexGroups = Array.from(ANNEX_SECTION_CODES)
               .filter((code) => docsByCode.has(code))
@@ -583,6 +588,59 @@ export default async function ReviewPage({
                               applicationId={appId}
                               templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
                               isRequired={false}
+                              currentStatus={doc.status as DocStatus}
+                              storageAvailable={!!doc.storage_path}
+                              reviewerNotes={doc.reviewer_notes}
+                              uploadedAt={doc.uploaded_at}
+                            />
+                          ))}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              </section>
+            )
+          })()}
+
+          {/* ── Catch-all: any document code not covered by CATEGORY_CODES or ANNEX_SECTION_CODES ── */}
+          {(() => {
+            const allKnownCodes = new Set([
+              ...CATEGORY_CODES.flatMap((c) => c.codes),
+              ...ANNEX_SECTION_CODES,
+            ])
+            const uncoveredGroups = Array.from(docsByCode.entries()).filter(
+              ([code, ds]) =>
+                !allKnownCodes.has(code) &&
+                ds.some((d) => d.storage_path || d.status !== "pending_upload")
+            )
+            if (uncoveredGroups.length === 0) return null
+
+            return (
+              <section>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  Otros documentos
+                </p>
+                <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
+                  <div style={{ padding: "0 20px" }}>
+                    {uncoveredGroups.map(([code, codeDocs]) => {
+                      const tmpl = codeDocs[0].template!
+                      const isMulti = codeDocs.length > 1
+                      return (
+                        <div key={code}>
+                          {isMulti && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0 4px" }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>{tmpl.name}</span>
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>{codeDocs.length} archivos</span>
+                            </div>
+                          )}
+                          {codeDocs.map((doc, idx) => (
+                            <ReviewDocumentRow
+                              key={doc.id}
+                              documentId={doc.id}
+                              applicationId={appId}
+                              templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
+                              isRequired={tmpl.is_required}
                               currentStatus={doc.status as DocStatus}
                               storageAvailable={!!doc.storage_path}
                               reviewerNotes={doc.reviewer_notes}
