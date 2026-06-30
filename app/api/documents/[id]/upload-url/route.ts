@@ -3,9 +3,9 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { sanitizeStorageKey } from "@/lib/documents/storage-path"
 
-// Matches kyc-documents bucket allowed_mime_types exactly.
-// image/webp and image/gif are intentionally excluded — the bucket rejects them
-// and would cause a 400 at the PUT step if we issued a signed URL for them.
+// Matches kyc-documents bucket allowed_mime_types for formal documents.
+// image/webp and image/gif are intentionally excluded — the bucket rejected them
+// before allowed_mime_types was set to NULL. Extra docs (template_id IS NULL) bypass this.
 const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
@@ -39,21 +39,28 @@ export async function POST(
       { status: 400 }
     )
   }
-  if (!ALLOWED_MIME.has(mimeType)) {
-    return NextResponse.json({ error: `Tipo de archivo no permitido: ${mimeType}` }, { status: 400 })
-  }
 
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  // Fetch document to get application_id and template_id
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: doc } = await serviceClient
     .from("documents")
-    .select("application_id")
+    .select("application_id, template_id")
     .eq("id", documentId)
     .single()
   if (!doc) return NextResponse.json({ error: "Documento no encontrado" }, { status: 404 })
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isExtra = (doc as any).template_id === null
+
+  // Mime type gate — only for formal documents; extras accept any type (bucket is now unrestricted)
+  if (!isExtra && !ALLOWED_MIME.has(mimeType)) {
+    return NextResponse.json({ error: `Tipo de archivo no permitido: ${mimeType}` }, { status: 400 })
+  }
 
   const { data: app } = await serviceClient
     .from("applications")
@@ -62,13 +69,29 @@ export async function POST(
     .single()
   if (!app) return NextResponse.json({ error: "Solicitud no encontrada" }, { status: 404 })
 
+  // Authorization: company member always allowed; staff also allowed for extra docs
   const { data: membership } = await serviceClient
     .from("company_users")
     .select("id")
     .eq("company_id", app.company_id)
     .eq("user_id", user.id)
     .single()
-  if (!membership) return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+
+  if (!membership) {
+    if (!isExtra) {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+    }
+    // Extra docs: allow staff (any role other than 'client')
+    const { data: profile } = await serviceClient
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+    const isStaff = profile?.role && profile.role !== "client"
+    if (!isStaff) {
+      return NextResponse.json({ error: "Acceso denegado" }, { status: 403 })
+    }
+  }
 
   const safeFileName = sanitizeStorageKey(fileName)
   // Unique prefix prevents 400 "Object already exists" on retry: Supabase's signed

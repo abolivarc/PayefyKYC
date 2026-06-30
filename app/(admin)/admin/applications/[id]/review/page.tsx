@@ -7,6 +7,7 @@ import { AdminFullStatusSelector } from "@/components/admin/admin-full-status-se
 import { AdminCheckRow } from "@/components/admin/admin-check-row"
 import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
+import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 
@@ -173,7 +174,7 @@ export default async function ReviewPage({
       .single(),
     supabase
       .from("documents")
-      .select(`id, status, storage_path, file_name, reviewer_notes, template_id, uploaded_at, is_checked,
+      .select(`id, status, storage_path, file_name, reviewer_notes, template_id, uploaded_at, is_checked, title,
                document_templates(id, code, name, is_form, is_required, sort_order, field_type)`)
       .eq("application_id", appId),
     admin
@@ -202,26 +203,32 @@ export default async function ReviewPage({
   }
   type Doc = {
     id: string; status: string; storage_path: string | null; file_name: string | null;
-    reviewer_notes: string | null; template_id: string; uploaded_at: string | null;
-    is_checked: boolean; template: DocTemplate | null
+    reviewer_notes: string | null; template_id: string | null; uploaded_at: string | null;
+    is_checked: boolean; title: string | null; template: DocTemplate | null
   }
 
-  const docs: Doc[] = (docsResult.data ?? []).map((d) => ({
-    id: d.id,
-    status: d.status,
-    storage_path: d.storage_path,
-    file_name: (d as unknown as { file_name?: string | null }).file_name ?? null,
-    reviewer_notes: (d as unknown as { reviewer_notes?: string | null }).reviewer_notes ?? null,
-    template_id: d.template_id,
-    uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
-    is_checked: (d as unknown as { is_checked?: boolean }).is_checked ?? false,
-    template: (d.document_templates as unknown) as DocTemplate | null,
+  const rawDocs = (docsResult.data ?? []) as unknown as Array<Record<string, unknown>>
+  const docs: Doc[] = rawDocs.map((d) => ({
+    id: d.id as string,
+    status: d.status as string,
+    storage_path: (d.storage_path as string | null) ?? null,
+    file_name: (d.file_name as string | null) ?? null,
+    reviewer_notes: (d.reviewer_notes as string | null) ?? null,
+    template_id: (d.template_id as string | null) ?? null,
+    uploaded_at: (d.uploaded_at as string | null) ?? null,
+    is_checked: (d.is_checked as boolean) ?? false,
+    title: (d.title as string | null) ?? null,
+    template: (d.document_templates as DocTemplate | null) ?? null,
   }))
 
-  // ── Group docs by template code ───────────────────────────────────────────
+  // ── Group docs by template code; extra docs (template_id IS NULL) go separately ──
   const docsByCode = new Map<string, Doc[]>()
+  const extraDocs: Doc[] = []
   for (const d of docs) {
-    if (!d.template) continue
+    if (!d.template) {
+      extraDocs.push(d)
+      continue
+    }
     const arr = docsByCode.get(d.template.code) ?? []
     arr.push(d)
     docsByCode.set(d.template.code, arr)
@@ -695,6 +702,39 @@ export default async function ReviewPage({
               </section>
             )
           })()}
+          {/* ── Documentos adicionales (template_id IS NULL) ── */}
+          <section>
+            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+              Documentos adicionales / sin título
+            </p>
+            <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
+              <div style={{ padding: "0 20px" }}>
+                {extraDocs.length === 0 ? (
+                  <p style={{ margin: "12px 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                    Sin documentos adicionales.
+                  </p>
+                ) : (
+                  extraDocs.map((doc) => (
+                    <ReviewDocumentRow
+                      key={doc.id}
+                      documentId={doc.id}
+                      applicationId={appId}
+                      templateName={doc.title ?? doc.file_name ?? "Documento sin título"}
+                      isRequired={false}
+                      currentStatus={doc.status as "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"}
+                      storageAvailable={!!doc.storage_path}
+                      reviewerNotes={doc.reviewer_notes}
+                      uploadedAt={doc.uploaded_at}
+                    />
+                  ))
+                )}
+                <div style={{ paddingBottom: 8 }}>
+                  <AdditionalUploadBox applicationId={appId} />
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
       </div>
     </div>

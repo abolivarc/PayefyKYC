@@ -12,6 +12,8 @@ import { SubmitApplicationButton } from "@/components/documents/submit-applicati
 import { ProductHero } from "@/components/client/product-hero"
 import { StageStepper } from "@/components/client/stage-stepper"
 import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
+import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
+import { AdditionalDocRow } from "@/components/documents/additional-doc-row"
 
 const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal_rep_id"])
 
@@ -134,7 +136,7 @@ export default async function DocumentsPage({
   const { data: allDocs, error: docsErr } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at,
+      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes,
        document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
@@ -150,12 +152,30 @@ export default async function DocumentsPage({
     is_form: boolean; is_required: boolean; field_type: string; file_format: string;
     instructions: string | null; sort_order: number
   }
-  // 4. Construir mapa de template.code → docs
+  // 4. Construir mapa de template.code → docs; separar extras (template_id IS NULL)
   type RawDoc = typeof allDocs[number] & { uploaded_at?: string | null }
+  type ExtraDoc = { id: string; status: string; fileName: string | null; storagePath: string | null; title: string | null; reviewerNotes: string | null }
+
   const codeMap = new Map<string, RawDoc[]>()
+  const extraDocs: ExtraDoc[] = []
+
   for (const d of allDocs) {
     const tmpl = (d.document_templates as unknown) as TemplateMeta | null
-    if (!tmpl) continue
+    if (!tmpl) {
+      // Extra doc (template_id IS NULL) — only show ones belonging to this application
+      if (d.application_id === appId) {
+        const raw = d as unknown as Record<string, unknown>
+        extraDocs.push({
+          id: d.id,
+          status: d.status,
+          fileName: d.file_name,
+          storagePath: d.storage_path,
+          title: (raw.title as string | null) ?? null,
+          reviewerNotes: (raw.reviewer_notes as string | null) ?? null,
+        })
+      }
+      continue
+    }
     const existing = codeMap.get(tmpl.code) ?? []
     existing.push(d)
     codeMap.set(tmpl.code, existing)
@@ -335,6 +355,36 @@ export default async function DocumentsPage({
 
         {/* Checklist */}
         <DocumentChecklist categories={categories} applicationId={appId} />
+
+        {/* Documentos adicionales */}
+        <section className="mt-6">
+          <h3
+            className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 px-1"
+          >
+            Documentos adicionales
+          </h3>
+          <div className="rounded-lg border bg-card">
+            <div className="px-4">
+              {extraDocs.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-3">
+                  Sin documentos adicionales.
+                </p>
+              ) : (
+                extraDocs.map((doc) => (
+                  <AdditionalDocRow
+                    key={doc.id}
+                    documentId={doc.id}
+                    title={doc.title}
+                    fileName={doc.fileName}
+                    currentStatus={doc.status as "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"}
+                    reviewerNotes={doc.reviewerNotes}
+                  />
+                ))
+              )}
+              <AdditionalUploadBox applicationId={appId} />
+            </div>
+          </div>
+        </section>
 
       </div>
     </div>

@@ -453,7 +453,8 @@ export type Database = {
           reviewer_notes: string | null
           status: Database["public"]["Enums"]["document_status"]
           storage_path: string | null
-          template_id: string
+          template_id: string | null
+          title: string | null
           updated_at: string
           uploaded_at: string | null
           uploaded_by: string | null
@@ -475,7 +476,8 @@ export type Database = {
           reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           storage_path?: string | null
-          template_id: string
+          template_id?: string | null
+          title?: string | null
           updated_at?: string
           uploaded_at?: string | null
           uploaded_by?: string | null
@@ -497,7 +499,8 @@ export type Database = {
           reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["document_status"]
           storage_path?: string | null
-          template_id?: string
+          template_id?: string | null
+          title?: string | null
           updated_at?: string
           uploaded_at?: string | null
           uploaded_by?: string | null
