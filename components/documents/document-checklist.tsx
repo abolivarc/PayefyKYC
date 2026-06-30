@@ -1,6 +1,7 @@
 import { DocumentUploadRow } from "./document-upload-row"
 import { MultiUploadRow } from "./multi-upload-row"
 import { CheckOrUploadRow } from "./check-or-upload-row"
+import { DataCheckRow } from "./data-check-row"
 
 export interface DocWithTemplate {
   id: string
@@ -94,6 +95,17 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                         fileFormat={group.file_format}
                         fileName={doc.file_name}
                         initialIsChecked={doc.is_checked}
+                        isRequired={group.is_required}
+                      />
+                    )
+                  }
+
+                  if (group.field_type === "data_check") {
+                    return (
+                      <DataCheckRow
+                        key={group.templateCode}
+                        templateName={group.templateName}
+                        currentStatus={doc.status}
                         isRequired={group.is_required}
                       />
                     )

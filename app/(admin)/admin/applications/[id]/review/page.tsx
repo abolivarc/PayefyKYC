@@ -5,6 +5,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ReviewDocumentRow } from "@/components/documents/review-document-row"
 import { AdminFullStatusSelector } from "@/components/admin/admin-full-status-selector"
 import { AdminCheckRow } from "@/components/admin/admin-check-row"
+import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -57,6 +58,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
   { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
   { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
+  { title: "Datos solicitados", codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc"] },
   { title: "Adicionales", codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"] },
 ]
 
@@ -73,6 +75,7 @@ const BITACORA_LABELS: Record<string, string> = {
   document_changes_requested:   "Cambios solicitados en documento",
   document_rejected:            "Documento rechazado",
   document_checked:             "Casilla marcada/desmarcada",
+  document_validated:           "Dato validado por admin",
   completion_override_enabled:  "Avance forzado a 100%",
   completion_override_disabled: "Forzado 100% desactivado",
   application_activated:        "Solicitud activada",
@@ -277,9 +280,10 @@ export default async function ReviewPage({
     .sort((a, b) => a.sortOrder - b.sortOrder)
 
   const overviewUpload = overviewGroups.filter(
-    (g) => !g.isCheckType && !ANNEX_SECTION_CODES.has(g.code)
+    (g) => !g.isCheckType && !ANNEX_SECTION_CODES.has(g.code) && g.fieldType !== "data_check"
   )
   const overviewCheck = overviewGroups.filter((g) => g.isCheckType)
+  const overviewDataCheck = overviewGroups.filter((g) => g.fieldType === "data_check")
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
@@ -416,6 +420,28 @@ export default async function ReviewPage({
                 </div>
               )}
 
+              {/* Datos solicitados (data_check) */}
+              {overviewDataCheck.length > 0 && (
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                    Datos solicitados
+                  </p>
+                  {overviewDataCheck.map((g) => {
+                    const primaryDoc = docsByCode.get(g.code)![0]
+                    return (
+                      <AdminValidationRow
+                        key={g.code}
+                        documentId={primaryDoc.id}
+                        applicationId={appId}
+                        templateName={g.name}
+                        initialIsValidated={g.displayStatus === "approved"}
+                        isRequired={g.isRequired}
+                      />
+                    )
+                  })}
+                </div>
+              )}
+
               {/* Contracts */}
               <div>
                 <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
@@ -493,6 +519,7 @@ export default async function ReviewPage({
                     {catGroups.map(({ code, docs: codeDocs }) => {
                       const tmpl = codeDocs[0].template!
                       const isCheckType = tmpl.field_type === "check_or_upload"
+                      const isDataCheck = tmpl.field_type === "data_check"
 
                       if (isCheckType) {
                         return (
@@ -504,6 +531,19 @@ export default async function ReviewPage({
                             initialIsChecked={codeDocs[0].is_checked}
                             isRequired={tmpl.is_required}
                             storageDocId={codeDocs[0].storage_path ? codeDocs[0].id : undefined}
+                          />
+                        )
+                      }
+
+                      if (isDataCheck) {
+                        return (
+                          <AdminValidationRow
+                            key={code}
+                            documentId={codeDocs[0].id}
+                            applicationId={appId}
+                            templateName={tmpl.name}
+                            initialIsValidated={codeDocs[0].status === "approved"}
+                            isRequired={tmpl.is_required}
                           />
                         )
                       }

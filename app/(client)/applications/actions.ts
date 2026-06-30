@@ -121,7 +121,7 @@ export async function createApplications(formData: FormData) {
     // 5. Obtener templates del producto y filtrar por tipo de persona (solo terminals)
     const { data: allTemplates, error: tmplErr } = await supabase
       .from("document_templates")
-      .select("id, code")
+      .select("id, code, field_type")
       .eq("product_id", product.id)
 
     let templates = allTemplates ?? []
@@ -147,7 +147,8 @@ export async function createApplications(formData: FormData) {
         templates.map((t) => ({
           application_id: app.id,
           template_id: t.id,
-          status: "pending_upload",
+          // data_check: Payefy validates internally; client has nothing to upload
+          status: t.field_type === "data_check" ? "pending_review" : "pending_upload",
         }))
       )
       console.log("[CREATE DEBUG] docs insert result:", { appId: app.id, count: templates.length, error: docsErr?.message })
@@ -202,7 +203,7 @@ export async function addProductToCompany(
 
   const { data: templates } = await supabase
     .from("document_templates")
-    .select("id")
+    .select("id, field_type")
     .eq("product_id", product.id)
 
   if (templates?.length) {
@@ -215,7 +216,7 @@ export async function addProductToCompany(
       templates.map((t) => ({
         application_id: app.id,
         template_id: t.id,
-        status: "pending_upload",
+        status: t.field_type === "data_check" ? "pending_review" : "pending_upload",
       }))
     )
   }

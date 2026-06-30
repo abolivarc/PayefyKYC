@@ -256,6 +256,43 @@ export async function adminSetDocumentChecked(
 }
 
 // ─────────────────────────────────────
+// Validar / desvalidar un documento data_check (solo admin)
+// ─────────────────────────────────────
+export async function validateDataCheck(
+  documentId: string,
+  validated: boolean,
+  applicationId: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const now = new Date().toISOString()
+  const { error } = await adminDb()
+    .from("documents")
+    .update({
+      status: validated ? "approved" : "pending_review",
+      reviewed_by: validated ? user.id : null,
+      reviewed_at: validated ? now : null,
+    })
+    .eq("id", documentId)
+
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: user.id,
+    action: "document_validated",
+    entityType: "document",
+    entityId: documentId,
+    changes: { validated },
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
 // Toggle completion_override en una application
 // ─────────────────────────────────────
 export async function toggleCompletionOverride(

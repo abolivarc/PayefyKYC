@@ -62,6 +62,10 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
     codes: ["bank_statement", "pf_bank_statement"],
   },
   {
+    title: "Datos solicitados",
+    codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc"],
+  },
+  {
     title: "Adicionales",
     codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"],
   },
@@ -228,6 +232,7 @@ export default async function DocumentsPage({
   const total = allGroupDocs.length
   const done = allGroupDocs.filter((d) => {
     if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+    if (d.template.field_type === "data_check") return d.status === "approved"
     if (isDocumentExpired(d.uploaded_at)) return false
     return ["approved", "pending_review"].includes(d.status)
   }).length
@@ -240,6 +245,8 @@ export default async function DocumentsPage({
   const allRequiredReady = requiredGroups.every((g) =>
     g.docs.every((d) => {
       if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
+      // data_check: client has no action; always ready from client's side
+      if (d.template.field_type === "data_check") return true
       if (isDocumentExpired(d.uploaded_at)) return false
       return ["pending_review", "approved"].includes(d.status)
     })
