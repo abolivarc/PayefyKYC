@@ -26,7 +26,7 @@ interface Props {
   isSuperAdmin: boolean
 }
 
-/* ── Status pills (token-only, no hex) ──────────────────────────── */
+/* ── Status pills ───────────────────────────────────────────────── */
 const STATUS_MAP: Record<string, { label: string; pill: string; pip: string }> = {
   draft:                      { label: "Borrador",         pill: "bg-muted text-muted-foreground border-border",     pip: "bg-tertiary"  },
   documents_pending:          { label: "Docs enviados",    pill: "bg-info-tint text-info border-info/20",            pip: "bg-info"      },
@@ -44,7 +44,7 @@ const STATUS_MAP: Record<string, { label: string; pill: string; pip: string }> =
   archived:                   { label: "Archivado",        pill: "bg-muted text-muted-foreground border-border",     pip: "bg-tertiary"  },
 }
 
-/* ── Product chips (semantic product tokens) ─────────────────────── */
+/* ── Product chips ──────────────────────────────────────────────── */
 const PRODUCT_MAP: Record<string, { label: string; chip: string }> = {
   cards:     { label: "Tarjetas", chip: "bg-product-cards-tint text-product-cards border border-product-cards/20"             },
   terminals: { label: "Terminal", chip: "bg-product-terminals-tint text-product-terminals border border-product-terminals/20" },
@@ -60,31 +60,22 @@ const FILTER_STATUSES: Record<FilterTab, string[]> = {
   approved: ["approved_compliance", "approved_provider", "contracts_signed", "activated"],
 }
 
-/* ── Folder accent by worst status ─────────────────────────────── */
-function folderAccent(apps: App[]): { icon: string; bg: string } {
+/* ── Card accent by worst status ────────────────────────────────── */
+function cardAccent(apps: App[]): { stripe: string; avatarBg: string; avatarColor: string } {
   const ss = apps.map((a) => a.status)
   if (ss.some((s) => s === "rejected"))
-    return { icon: "text-danger",  bg: "bg-danger-tint"  }
+    return { stripe: "#d1622f", avatarBg: "#fef2f2", avatarColor: "#d1622f" }
   if (ss.some((s) => ["changes_requested", "provider_changes_requested"].includes(s)))
-    return { icon: "text-warning", bg: "bg-warning-tint" }
+    return { stripe: "#c9772f", avatarBg: "#fdf1e6", avatarColor: "#c9772f" }
   if (ss.some((s) => ["in_compliance_review", "in_provider_review", "documents_pending", "activation_pending", "contracts_pending"].includes(s)))
-    return { icon: "text-info",    bg: "bg-info-tint"    }
+    return { stripe: "#1D4ED8", avatarBg: "#EFF4FF", avatarColor: "#1D4ED8" }
   if (ss.some((s) => ["approved_compliance", "approved_provider", "contracts_signed", "activated"].includes(s)))
-    return { icon: "text-success", bg: "bg-mint-tint"    }
-  return { icon: "text-tertiary",  bg: "bg-secondary"   }
+    return { stripe: "#1f7a4d", avatarBg: "#e7f6ec", avatarColor: "#1f7a4d" }
+  return { stripe: "#E4ECE7", avatarBg: "#F3F7F4", avatarColor: "#5B7168" }
 }
 
-/* ── Per-card ⋯ dropdown ─────────────────────────────────────────
-   stopPropagation keeps the card's cover Link from triggering.     */
-function CardMenu({
-  company,
-  apps,
-  isSuperAdmin,
-}: {
-  company: Company
-  apps: App[]
-  isSuperAdmin: boolean
-}) {
+/* ── Per-card ⋯ dropdown ─────────────────────────────────────────── */
+function CardMenu({ company, apps, isSuperAdmin }: { company: Company; apps: App[]; isSuperAdmin: boolean }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -93,9 +84,7 @@ function CardMenu({
     function onMouse(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") setOpen(false)
-    }
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false) }
     document.addEventListener("mousedown", onMouse)
     document.addEventListener("keydown", onKey)
     return () => {
@@ -105,18 +94,14 @@ function CardMenu({
   }, [open])
 
   return (
-    <div ref={ref} className="relative">
+    <div ref={ref} className="relative z-10">
       <button
         type="button"
         aria-label="Opciones"
         aria-expanded={open}
         aria-haspopup="menu"
-        onClick={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          setOpen((v) => !v)
-        }}
-        className="flex items-center justify-center min-h-[44px] min-w-[44px] rounded-md text-tertiary hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v) }}
+        className="flex items-center justify-center min-h-[36px] min-w-[36px] rounded-md text-tertiary hover:text-foreground hover:bg-secondary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <MoreHorizontal className="h-4 w-4" />
       </button>
@@ -138,16 +123,8 @@ function CardMenu({
             </Link>
           )}
           {isSuperAdmin && (
-            <div
-              role="menuitem"
-              className="border-t border-border mt-0.5 pt-0.5 px-1 pb-1"
-              onClick={() => setOpen(false)}
-            >
-              <DeleteClientButton
-                companyId={company.id}
-                legalName={company.legal_name}
-                taxId={company.tax_id ?? ""}
-              />
+            <div role="menuitem" className="border-t border-border mt-0.5 pt-0.5 px-1 pb-1" onClick={() => setOpen(false)}>
+              <DeleteClientButton companyId={company.id} legalName={company.legal_name} taxId={company.tax_id ?? ""} />
             </div>
           )}
         </div>
@@ -159,20 +136,25 @@ function CardMenu({
 /* ── Skeleton card ──────────────────────────────────────────────── */
 function SkeletonCard() {
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card p-4 gap-3 motion-safe:animate-pulse">
-      <div className="w-9 h-9 rounded-md bg-secondary" />
-      <div className="space-y-1.5">
-        <div className="h-3.5 bg-secondary rounded w-4/5" />
-        <div className="h-3 bg-secondary rounded w-2/3" />
-        <div className="h-3 bg-secondary rounded w-1/2 mt-0.5" />
+    <div className="flex flex-col overflow-hidden motion-safe:animate-pulse" style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22 }}>
+      <div className="h-1 bg-[#E4ECE7]" />
+      <div className="p-5 flex flex-col gap-3">
+        <div className="flex items-start justify-between">
+          <div className="w-12 h-12 bg-secondary" style={{ borderRadius: 14 }} />
+          <div className="w-8 h-8 bg-secondary rounded-md" />
+        </div>
+        <div className="space-y-1.5">
+          <div className="h-4 bg-secondary rounded w-4/5" />
+          <div className="h-3 bg-secondary rounded w-2/3" />
+        </div>
+        <div className="flex gap-1.5">
+          <div className="h-5 w-14 bg-secondary rounded-full" />
+          <div className="h-5 w-20 bg-secondary rounded-full" />
+        </div>
       </div>
-      <div className="flex gap-1">
-        <div className="h-5 w-14 bg-secondary rounded" />
-        <div className="h-5 w-16 bg-secondary rounded" />
-      </div>
-      <div className="flex items-center justify-between pt-2 border-t border-border">
+      <div className="px-5 py-3 flex items-center justify-between" style={{ borderTop: "1px solid #F0F4F1" }}>
+        <div className="h-3 w-16 bg-secondary rounded" />
         <div className="h-3 w-14 bg-secondary rounded" />
-        <div className="h-5 w-5 bg-secondary rounded" />
       </div>
     </div>
   )
@@ -188,12 +170,9 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
     const q = search.trim().toLowerCase()
     return companies.filter((c) => {
       const matchSearch =
-        !q ||
-        c.legal_name.toLowerCase().includes(q) ||
-        (c.tax_id ?? "").toLowerCase().includes(q)
+        !q || c.legal_name.toLowerCase().includes(q) || (c.tax_id ?? "").toLowerCase().includes(q)
       const matchFilter =
-        filter === "all" ||
-        c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
+        filter === "all" || c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
       return matchSearch && matchFilter
     })
   }, [companies, search, filter])
@@ -217,9 +196,8 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
 
   return (
     <div>
-      {/* ── Toolbar: 2 rows — search+toggle on top, chips below ─── */}
-      <div className="mb-4 space-y-2">
-        {/* Row 1: search + view toggle */}
+      {/* ── Toolbar ─────────────────────────────────────────────── */}
+      <div className="mb-5 space-y-2">
         <div className="flex items-center gap-2">
           <div className="relative flex-1 min-w-0">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-tertiary pointer-events-none" />
@@ -228,47 +206,26 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Buscar por razón social o RFC…"
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-tertiary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/30"
+              className="w-full pl-9 pr-3 h-10 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-tertiary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/30"
             />
           </div>
           <div className="flex items-center gap-0.5 border border-border rounded-md p-0.5 shrink-0">
-            <button
-              type="button"
-              aria-label="Vista de cuadrícula"
-              aria-pressed={view === "grid"}
-              onClick={() => setView("grid")}
-              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-                view === "grid"
-                  ? "bg-secondary text-foreground"
-                  : "text-tertiary hover:text-foreground"
-              }`}
-            >
+            <button type="button" aria-label="Vista de cuadrícula" aria-pressed={view === "grid"} onClick={() => setView("grid")} className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${view === "grid" ? "bg-secondary text-foreground" : "text-tertiary hover:text-foreground"}`}>
               <LayoutGrid className="h-3.5 w-3.5" />
             </button>
-            <button
-              type="button"
-              aria-label="Vista de lista"
-              aria-pressed={view === "list"}
-              onClick={() => setView("list")}
-              className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${
-                view === "list"
-                  ? "bg-secondary text-foreground"
-                  : "text-tertiary hover:text-foreground"
-              }`}
-            >
+            <button type="button" aria-label="Vista de lista" aria-pressed={view === "list"} onClick={() => setView("list")} className={`flex items-center justify-center w-8 h-8 rounded transition-colors ${view === "list" ? "bg-secondary text-foreground" : "text-tertiary hover:text-foreground"}`}>
               <List className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
-        {/* Row 2: filter chips — horizontal scroll on narrow viewports */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
           {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => setFilter(tab.key)}
-              className={`inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-full border whitespace-nowrap transition-colors ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors ${
                 filter === tab.key
                   ? "bg-brand-tint border-transparent text-primary font-semibold"
                   : "bg-card border-border text-muted-foreground hover:bg-secondary"
@@ -281,103 +238,108 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
         </div>
       </div>
 
-      {/* ── Empty state ────────────────────────────────────────────── */}
+      {/* ── Empty state ─────────────────────────────────────────── */}
       {filtered.length === 0 && (
-        <div className="rounded-lg border border-border bg-card py-16 text-center">
+        <div style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22 }} className="py-16 text-center">
           <FolderOpen className="h-8 w-8 text-tertiary mx-auto mb-3" />
           <p className="text-sm text-muted-foreground">
-            {search
-              ? `Sin resultados para "${search}"`
-              : "Sin clientes registrados"}
+            {search ? `Sin resultados para "${search}"` : "Sin clientes registrados"}
           </p>
         </div>
       )}
 
-      {/* ── Grid view ──────────────────────────────────────────────── */}
+      {/* ── Grid view ──────────────────────────────────────────── */}
       {filtered.length > 0 && view === "grid" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filtered.map((company) => {
             const apps = company.applications ?? []
-            const reviewHref = apps[0]
-              ? `/admin/applications/${apps[0].id}/review`
-              : "#"
-            const { icon, bg } = folderAccent(apps)
-            const timeAgo = formatDistanceToNow(new Date(company.created_at), {
-              addSuffix: true,
-              locale: es,
-            })
+            const reviewHref = apps[0] ? `/admin/applications/${apps[0].id}/review` : "#"
+            const { stripe, avatarBg, avatarColor } = cardAccent(apps)
+            const timeAgo = formatDistanceToNow(new Date(company.created_at), { addSuffix: true, locale: es })
 
             return (
               <div
                 key={company.id}
-                className="group relative flex flex-col rounded-lg border border-border bg-card p-4 gap-3 hover:shadow motion-safe:transition-shadow"
+                className="group relative flex flex-col overflow-hidden hover:shadow-[0_6px_24px_rgba(15,42,34,.12)] transition-shadow duration-200"
+                style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22 }}
               >
-                {/* Cover link (keyboard + click nav) */}
+                {/* Cover link */}
                 <Link
                   href={reviewHref}
-                  className="absolute inset-0 rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none z-0"
+                  className="absolute inset-0 focus-visible:ring-2 focus-visible:ring-[rgba(168,248,152,.6)] focus-visible:outline-none z-0"
+                  style={{ borderRadius: 22 }}
                   aria-label={`Revisar ${company.legal_name}`}
                 />
 
-                {/* Folder icon */}
-                <div
-                  className={`w-9 h-9 rounded-md flex items-center justify-center shrink-0 relative z-10 pointer-events-none ${bg}`}
-                >
-                  <FolderOpen className={`h-5 w-5 ${icon}`} />
-                </div>
+                {/* Top accent stripe */}
+                <div className="h-[3px] shrink-0" style={{ background: stripe }} />
 
-                {/* Name + RFC */}
-                <div className="relative z-10 pointer-events-none">
-                  <p
-                    className="text-sm font-semibold text-foreground leading-snug line-clamp-2"
-                    title={company.legal_name}
-                  >
-                    {company.legal_name}
-                  </p>
-                  {company.tax_id && (
-                    <p className="font-mono text-xs text-muted-foreground mt-0.5 tracking-wide">
-                      {company.tax_id}
+                {/* Card body */}
+                <div className="p-5 flex flex-col gap-3 flex-1">
+                  {/* Avatar + menu */}
+                  <div className="flex items-start justify-between">
+                    <div
+                      className="w-12 h-12 flex items-center justify-center font-black text-lg select-none relative z-10 pointer-events-none"
+                      style={{ background: avatarBg, color: avatarColor, borderRadius: 14 }}
+                    >
+                      {company.legal_name[0]?.toUpperCase() ?? "?"}
+                    </div>
+                    <CardMenu company={company} apps={apps} isSuperAdmin={isSuperAdmin} />
+                  </div>
+
+                  {/* Name + RFC */}
+                  <div className="relative z-10 pointer-events-none">
+                    <p
+                      className="font-bold leading-snug line-clamp-2 mb-0.5"
+                      style={{ fontSize: 15, color: "#0F2A22" }}
+                      title={company.legal_name}
+                    >
+                      {company.legal_name}
                     </p>
-                  )}
-                </div>
+                    {company.tax_id && (
+                      <p className="font-mono text-xs tracking-wide" style={{ color: "#8A9E94" }}>
+                        {company.tax_id}
+                      </p>
+                    )}
+                  </div>
 
-                {/* Chips */}
-                <div className="relative z-10 flex flex-col gap-1 pointer-events-none">
-                  {apps.length === 0 ? (
-                    <span className="text-xs text-tertiary">Sin solicitudes</span>
-                  ) : (
-                    apps.map((app) => {
-                      const prod = app.products?.code
-                        ? PRODUCT_MAP[app.products.code]
-                        : null
-                      const st = STATUS_MAP[app.status] ?? STATUS_MAP.draft
-                      return (
-                        <div key={app.id} className="flex items-center gap-1 flex-wrap">
-                          {prod && (
-                            <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold ${prod.chip}`}>
-                              {prod.label}
+                  {/* Status chips */}
+                  <div className="relative z-10 flex flex-col gap-1.5 pointer-events-none mt-auto">
+                    {apps.length === 0 ? (
+                      <span className="text-xs" style={{ color: "#8A9E94" }}>Sin solicitudes</span>
+                    ) : (
+                      apps.map((app) => {
+                        const prod = app.products?.code ? PRODUCT_MAP[app.products.code] : null
+                        const st = STATUS_MAP[app.status] ?? STATUS_MAP.draft
+                        return (
+                          <div key={app.id} className="flex items-center gap-1.5 flex-wrap">
+                            {prod && (
+                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${prod.chip}`}>
+                                {prod.label}
+                              </span>
+                            )}
+                            <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${st.pill}`}>
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.pip}`} />
+                              {st.label}
                             </span>
-                          )}
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold border ${st.pill}`}>
-                            <span className={`w-1 h-1 rounded-full shrink-0 ${st.pip}`} />
-                            {st.label}
-                          </span>
-                        </div>
-                      )
-                    })
-                  )}
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
                 </div>
 
                 {/* Footer */}
-                <div className="relative z-10 flex items-center justify-between mt-auto pt-2 border-t border-border">
-                  <span className="text-xs text-tertiary pointer-events-none">
+                <div
+                  className="px-5 pb-4 pt-3 flex items-center justify-between relative z-10"
+                  style={{ borderTop: "1px solid #F0F4F1" }}
+                >
+                  <span className="text-[11px] pointer-events-none" style={{ color: "#8A9E94" }}>
                     {timeAgo}
                   </span>
-                  <CardMenu
-                    company={company}
-                    apps={apps}
-                    isSuperAdmin={isSuperAdmin}
-                  />
+                  <span className="text-[11px] font-medium pointer-events-none" style={{ color: "#5B7168" }}>
+                    {apps.length} {apps.length === 1 ? "solicitud" : "solicitudes"}
+                  </span>
                 </div>
               </div>
             )
@@ -385,69 +347,63 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
         </div>
       )}
 
-      {/* ── List view ──────────────────────────────────────────────── */}
+      {/* ── List view ──────────────────────────────────────────── */}
       {filtered.length > 0 && view === "list" && (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22, overflow: "hidden" }}>
           {filtered.map((company, i) => {
             const apps = company.applications ?? []
-            const reviewHref = apps[0]
-              ? `/admin/applications/${apps[0].id}/review`
-              : "#"
-            const { icon, bg } = folderAccent(apps)
-            const timeAgo = formatDistanceToNow(new Date(company.created_at), {
-              addSuffix: true,
-              locale: es,
-            })
+            const reviewHref = apps[0] ? `/admin/applications/${apps[0].id}/review` : "#"
+            const { stripe, avatarBg, avatarColor } = cardAccent(apps)
+            const timeAgo = formatDistanceToNow(new Date(company.created_at), { addSuffix: true, locale: es })
 
             return (
               <div
                 key={company.id}
-                className={`group relative flex items-center gap-4 px-4 py-3 hover:bg-secondary transition-colors ${
-                  i < filtered.length - 1 ? "border-b border-border" : ""
+                className={`group relative flex items-center gap-4 px-5 py-3.5 hover:bg-[#F8FAF9] transition-colors ${
+                  i < filtered.length - 1 ? "border-b border-[#F0F4F1]" : ""
                 }`}
               >
-                {/* Cover link */}
                 <Link
                   href={reviewHref}
-                  className="absolute inset-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring focus-visible:outline-none z-0"
+                  className="absolute inset-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[rgba(168,248,152,.6)] focus-visible:outline-none z-0"
                   aria-label={`Revisar ${company.legal_name}`}
                 />
 
-                {/* Icon */}
+                {/* Left accent */}
+                <div className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full" style={{ background: stripe }} />
+
+                {/* Avatar */}
                 <div
-                  className={`shrink-0 w-8 h-8 rounded-md flex items-center justify-center relative z-10 pointer-events-none ${bg}`}
+                  className="shrink-0 w-9 h-9 flex items-center justify-center font-black text-sm select-none relative z-10 pointer-events-none"
+                  style={{ background: avatarBg, color: avatarColor, borderRadius: 10 }}
                 >
-                  <FolderOpen className={`h-4 w-4 ${icon}`} />
+                  {company.legal_name[0]?.toUpperCase() ?? "?"}
                 </div>
 
                 {/* Name + RFC */}
                 <div className="flex-1 min-w-0 relative z-10 pointer-events-none">
-                  <p className="text-sm font-semibold text-foreground truncate">
+                  <p className="font-semibold text-sm truncate" style={{ color: "#0F2A22" }}>
                     {company.legal_name}
                   </p>
                   {company.tax_id && (
-                    <p className="font-mono text-xs text-muted-foreground">
-                      {company.tax_id}
-                    </p>
+                    <p className="font-mono text-xs" style={{ color: "#8A9E94" }}>{company.tax_id}</p>
                   )}
                 </div>
 
                 {/* Chips */}
                 <div className="hidden md:flex items-center gap-1.5 flex-wrap relative z-10 pointer-events-none">
                   {apps.map((app) => {
-                    const prod = app.products?.code
-                      ? PRODUCT_MAP[app.products.code]
-                      : null
+                    const prod = app.products?.code ? PRODUCT_MAP[app.products.code] : null
                     const st = STATUS_MAP[app.status] ?? STATUS_MAP.draft
                     return (
                       <div key={app.id} className="flex items-center gap-1">
                         {prod && (
-                          <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold ${prod.chip}`}>
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${prod.chip}`}>
                             {prod.label}
                           </span>
                         )}
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold border ${st.pill}`}>
-                          <span className={`w-1 h-1 rounded-full shrink-0 ${st.pip}`} />
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold border ${st.pill}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.pip}`} />
                           {st.label}
                         </span>
                       </div>
@@ -456,17 +412,13 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                 </div>
 
                 {/* Date */}
-                <span className="hidden lg:block text-xs text-tertiary shrink-0 relative z-10 pointer-events-none">
+                <span className="hidden lg:block text-xs shrink-0 relative z-10 pointer-events-none" style={{ color: "#8A9E94" }}>
                   {timeAgo}
                 </span>
 
                 {/* Menu */}
                 <div className="relative z-10 shrink-0">
-                  <CardMenu
-                    company={company}
-                    apps={apps}
-                    isSuperAdmin={isSuperAdmin}
-                  />
+                  <CardMenu company={company} apps={apps} isSuperAdmin={isSuperAdmin} />
                 </div>
               </div>
             )
@@ -477,23 +429,23 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
   )
 }
 
-/* ── Skeleton export (used by loading.tsx) ─────────────────────── */
+/* ── Skeleton export ────────────────────────────────────────────── */
 export function ClientsGridSkeleton() {
   return (
     <div>
-      <div className="mb-4 space-y-2">
+      <div className="mb-5 space-y-2">
         <div className="flex items-center gap-2">
-          <div className="h-9 flex-1 bg-secondary rounded-md motion-safe:animate-pulse" />
-          <div className="h-9 w-[68px] bg-secondary rounded-md motion-safe:animate-pulse" />
+          <div className="h-10 flex-1 bg-secondary rounded-md motion-safe:animate-pulse" />
+          <div className="h-10 w-[68px] bg-secondary rounded-md motion-safe:animate-pulse" />
         </div>
         <div className="flex gap-1.5">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-8 w-20 bg-secondary rounded-full motion-safe:animate-pulse" />
+            <div key={i} className="h-7 w-20 bg-secondary rounded-full motion-safe:animate-pulse" />
           ))}
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-        {Array.from({ length: 10 }).map((_, i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
           <SkeletonCard key={i} />
         ))}
       </div>

@@ -52,32 +52,42 @@ interface Props {
 
 export function DocumentChecklist({ categories, applicationId }: Props) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {categories.map((cat) => {
         if (cat.groups.length === 0) return null
         return (
           <section key={cat.title}>
-            <h3
-              className="px-1 mb-2"
-              style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A9E94" }}
-            >
-              {cat.title}
-            </h3>
-            <div
-              style={{
-                background: "#fff",
-                border: "1px solid #E4ECE7",
-                borderRadius: 22,
-                boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
-                overflow: "hidden",
-              }}
-            >
-              <div className="px-5">
-                {cat.groups.map((group) => {
-                  if (group.isMulti) {
-                    return (
+            <div className="flex items-center gap-2 mb-3 px-1">
+              <h3
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  color: "#8A9E94",
+                  margin: 0,
+                }}
+              >
+                {cat.title}
+              </h3>
+              <span
+                className="font-mono"
+                style={{
+                  fontSize: 11,
+                  color: "#B8C9C0",
+                  fontWeight: 600,
+                }}
+              >
+                {cat.groups.length}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {cat.groups.map((group) => {
+                if (group.isMulti) {
+                  return (
+                    <div key={group.templateCode} className="md:col-span-2">
                       <MultiUploadRow
-                        key={group.templateCode}
                         applicationId={applicationId}
                         templateId={group.templateId}
                         templateName={group.templateName}
@@ -89,58 +99,58 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                           fileName: d.file_name,
                         }))}
                       />
-                    )
-                  }
+                    </div>
+                  )
+                }
 
-                  const doc = group.docs[0]
-                  if (!doc) return null
+                const doc = group.docs[0]
+                if (!doc) return null
 
-                  if (group.field_type === "check_or_upload") {
-                    return (
-                      <CheckOrUploadRow
-                        key={group.templateCode}
-                        documentId={doc.id}
-                        templateName={group.templateName}
-                        templateInstructions={group.templateInstructions}
-                        currentStatus={doc.status}
-                        fileFormat={group.file_format}
-                        fileName={doc.file_name}
-                        initialIsChecked={doc.is_checked}
-                        isRequired={group.is_required}
-                      />
-                    )
-                  }
-
-                  if (group.field_type === "data_check") {
-                    return (
-                      <DataCheckRow
-                        key={group.templateCode}
-                        templateName={group.templateName}
-                        currentStatus={doc.status}
-                        isRequired={group.is_required}
-                      />
-                    )
-                  }
-
+                if (group.field_type === "check_or_upload") {
                   return (
-                    <DocumentUploadRow
+                    <CheckOrUploadRow
                       key={group.templateCode}
                       documentId={doc.id}
-                      applicationId={applicationId}
-                      templateCode={group.templateCode}
                       templateName={group.templateName}
                       templateInstructions={group.templateInstructions}
                       currentStatus={doc.status}
                       fileFormat={group.file_format}
-                      isForm={group.is_form}
                       fileName={doc.file_name}
-                      uploadedAt={doc.uploaded_at}
-                      isShared={group.isShared}
+                      initialIsChecked={doc.is_checked}
                       isRequired={group.is_required}
                     />
                   )
-                })}
-              </div>
+                }
+
+                if (group.field_type === "data_check") {
+                  return (
+                    <DataCheckRow
+                      key={group.templateCode}
+                      templateName={group.templateName}
+                      currentStatus={doc.status}
+                      isRequired={group.is_required}
+                    />
+                  )
+                }
+
+                return (
+                  <DocumentUploadRow
+                    key={group.templateCode}
+                    documentId={doc.id}
+                    applicationId={applicationId}
+                    templateCode={group.templateCode}
+                    templateName={group.templateName}
+                    templateInstructions={group.templateInstructions}
+                    currentStatus={doc.status}
+                    fileFormat={group.file_format}
+                    isForm={group.is_form}
+                    fileName={doc.file_name}
+                    uploadedAt={doc.uploaded_at}
+                    isShared={group.isShared}
+                    isRequired={group.is_required}
+                  />
+                )
+              })}
             </div>
           </section>
         )

@@ -1,20 +1,20 @@
 import type { Metadata } from "next";
-import { Inter, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Plus_Jakarta_Sans, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import NextTopLoader from "nextjs-toploader";
 import "./globals.css";
 
-const inter = Inter({
+const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
-  display: "swap",
-  weight: ["400", "500", "600", "700"],
+  display: "block",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
-const jakarta = Plus_Jakarta_Sans({
+const grotesk = Space_Grotesk({
   variable: "--font-display",
   subsets: ["latin"],
-  display: "swap",
-  weight: ["500", "600", "700", "800"],
+  display: "block",
+  weight: ["400", "500", "600", "700"],
 });
 
 const jetbrains = JetBrains_Mono({
@@ -35,7 +35,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable} antialiased`}>
+      <body className={`${jakarta.variable} ${grotesk.variable} ${jetbrains.variable} antialiased`}>
         <NextTopLoader color="#A8F898" showSpinner={false} height={3} />
         {children}
       </body>
