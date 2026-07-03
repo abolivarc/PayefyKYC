@@ -15,13 +15,13 @@ type DocStatus =
 
 const STATUS_BADGE: Record<
   DocStatus,
-  { label: string; variant: "pending" | "warning" | "success" | "destructive" }
+  { label: string; variant: "pending" | "info" | "warning" | "success" | "destructive" }
 > = {
-  pending_upload: { label: "Pendiente", variant: "pending" },
-  pending_review: { label: "En revisión", variant: "warning" },
-  approved: { label: "Aprobado", variant: "success" },
-  rejected: { label: "Rechazado", variant: "destructive" },
-  changes_requested: { label: "Con observaciones", variant: "destructive" },
+  pending_upload:    { label: "Pendiente",         variant: "pending"     },
+  pending_review:    { label: "En revisión",        variant: "info"        },
+  approved:          { label: "Aprobado",           variant: "success"     },
+  rejected:          { label: "Rechazado",          variant: "destructive" },
+  changes_requested: { label: "Con observaciones",  variant: "warning"     },
 }
 
 interface DocItem {

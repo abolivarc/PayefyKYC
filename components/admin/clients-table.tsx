@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Search } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
@@ -32,10 +33,10 @@ const STATUS_MAP: Record<
 > = {
   draft: {
     label: "Borrador",
-    pip: "#334155",
-    bg: "#F1F5F9",
-    text: "#334155",
-    border: "#E2E8F0",
+    pip: "#5B7168",
+    bg: "#F3F7F4",
+    text: "#5B7168",
+    border: "#E4ECE7",
   },
   documents_pending: {
     label: "Docs enviados",
@@ -53,17 +54,17 @@ const STATUS_MAP: Record<
   },
   changes_requested: {
     label: "Cambios sol.",
-    pip: "#92400E",
-    bg: "#FFF7ED",
-    text: "#92400E",
-    border: "#FCEBD2",
+    pip: "#c9772f",
+    bg: "#fdf1e6",
+    text: "#c9772f",
+    border: "#f8d8b0",
   },
   approved_compliance: {
     label: "Aprobado",
-    pip: "#047857",
-    bg: "#E7F8EF",
-    text: "#047857",
-    border: "#CBEFDB",
+    pip: "#1f7a4d",
+    bg: "#e7f6ec",
+    text: "#1f7a4d",
+    border: "#b8e8ca",
   },
   in_provider_review: {
     label: "Con proveedor",
@@ -74,17 +75,17 @@ const STATUS_MAP: Record<
   },
   provider_changes_requested: {
     label: "Cambios prov.",
-    pip: "#92400E",
-    bg: "#FFF7ED",
-    text: "#92400E",
-    border: "#FCEBD2",
+    pip: "#c9772f",
+    bg: "#fdf1e6",
+    text: "#c9772f",
+    border: "#f8d8b0",
   },
   approved_provider: {
     label: "Aprobado prov.",
-    pip: "#047857",
-    bg: "#E7F8EF",
-    text: "#047857",
-    border: "#CBEFDB",
+    pip: "#1f7a4d",
+    bg: "#e7f6ec",
+    text: "#1f7a4d",
+    border: "#b8e8ca",
   },
   contracts_pending: {
     label: "Contratos pend.",
@@ -95,10 +96,10 @@ const STATUS_MAP: Record<
   },
   contracts_signed: {
     label: "Contratos firm.",
-    pip: "#047857",
-    bg: "#E7F8EF",
-    text: "#047857",
-    border: "#CBEFDB",
+    pip: "#1f7a4d",
+    bg: "#e7f6ec",
+    text: "#1f7a4d",
+    border: "#b8e8ca",
   },
   activation_pending: {
     label: "Pend. activación",
@@ -109,24 +110,24 @@ const STATUS_MAP: Record<
   },
   activated: {
     label: "Activo ✓",
-    pip: "#047857",
-    bg: "#E7F8EF",
-    text: "#047857",
-    border: "#CBEFDB",
+    pip: "#1f7a4d",
+    bg: "#e7f6ec",
+    text: "#1f7a4d",
+    border: "#b8e8ca",
   },
   rejected: {
     label: "Rechazado",
-    pip: "#B91C1C",
-    bg: "#FEF2F2",
-    text: "#B91C1C",
-    border: "#FBDADA",
+    pip: "#d1622f",
+    bg: "#fef2f2",
+    text: "#d1622f",
+    border: "#fbd5c5",
   },
   archived: {
     label: "Archivado",
-    pip: "#334155",
-    bg: "#F1F5F9",
-    text: "#334155",
-    border: "#E2E8F0",
+    pip: "#5B7168",
+    bg: "#F3F7F4",
+    text: "#5B7168",
+    border: "#E4ECE7",
   },
 }
 
@@ -171,6 +172,7 @@ const FILTER_STATUSES: Record<FilterTab, string[]> = {
 export function ClientsTable({ companies, isSuperAdmin }: Props) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<FilterTab>("all")
+  const router = useRouter()
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -181,9 +183,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
         (c.tax_id ?? "").toLowerCase().includes(q)
       const matchFilter =
         filter === "all" ||
-        c.applications.some((a) =>
-          FILTER_STATUSES[filter].includes(a.status)
-        )
+        c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
       return matchSearch && matchFilter
     })
   }, [companies, search, filter])
@@ -195,24 +195,20 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
         c.applications.some((a) => FILTER_STATUSES.review.includes(a.status))
       ).length,
       changes: companies.filter((c) =>
-        c.applications.some((a) =>
-          FILTER_STATUSES.changes.includes(a.status)
-        )
+        c.applications.some((a) => FILTER_STATUSES.changes.includes(a.status))
       ).length,
       approved: companies.filter((c) =>
-        c.applications.some((a) =>
-          FILTER_STATUSES.approved.includes(a.status)
-        )
+        c.applications.some((a) => FILTER_STATUSES.approved.includes(a.status))
       ).length,
     }),
     [companies]
   )
 
   const tabs: { key: FilterTab; label: string }[] = [
-    { key: "all", label: "Todos" },
-    { key: "review", label: "En revisión" },
-    { key: "changes", label: "Cambios" },
-    { key: "approved", label: "Aprobados" },
+    { key: "all",      label: "Todos"       },
+    { key: "review",   label: "En revisión" },
+    { key: "changes",  label: "Cambios"     },
+    { key: "approved", label: "Aprobados"   },
   ]
 
   return (
@@ -222,28 +218,29 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
         {/* Search */}
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-            style={{ color: "#8A99A8" }}
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
+            style={{ color: "#8A9E94" }}
           />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por razón social o RFC…"
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2.5 text-sm outline-none transition-all"
             style={{
               background: "#fff",
-              borderColor: "#E7ECF1",
-              color: "#0F1B2A",
+              borderColor: "#E4ECE7",
+              border: "1px solid #E4ECE7",
+              borderRadius: 12,
+              color: "#0F2A22",
               fontFamily: "var(--font-sans)",
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = "#0B7A44"
-              e.currentTarget.style.boxShadow =
-                "0 0 0 3px rgba(168,248,152,0.18)"
+              e.currentTarget.style.borderColor = "rgba(168,248,152,.60)"
+              e.currentTarget.style.boxShadow = "0 0 0 4px rgba(168,248,152,.25)"
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = "#E7ECF1"
+              e.currentTarget.style.borderColor = "#E4ECE7"
               e.currentTarget.style.boxShadow = "none"
             }}
           />
@@ -254,62 +251,52 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
           <button
             key={tab.key}
             onClick={() => setFilter(tab.key)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium rounded-full border transition-all"
-            style={
-              filter === tab.key
-                ? {
-                    background: "#EDFBEA",
-                    borderColor: "transparent",
-                    color: "#0B7A44",
-                    fontWeight: 600,
-                  }
-                : {
-                    background: "#fff",
-                    borderColor: "#E7ECF1",
-                    color: "#5A6B7B",
-                  }
-            }
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium transition-all"
+            style={{
+              borderRadius: 999,
+              border: "1px solid transparent",
+              ...(filter === tab.key
+                ? { background: "#e7f6ec", borderColor: "transparent", color: "#1f7a4d", fontWeight: 600 }
+                : { background: "#fff", borderColor: "#E4ECE7", color: "#5B7168" }),
+            }}
           >
             {tab.label}
-            <span className="font-mono opacity-60 text-[11px]">
-              {counts[tab.key]}
-            </span>
+            <span className="font-mono opacity-60 text-[11px]">{counts[tab.key]}</span>
           </button>
         ))}
       </div>
 
       {/* Table */}
       <div
-        className="rounded-xl border overflow-hidden"
+        className="overflow-hidden"
         style={{
           background: "#fff",
-          borderColor: "#E7ECF1",
-          boxShadow: "0 1px 2px rgba(16,30,45,0.05)",
+          border: "1px solid #E4ECE7",
+          borderRadius: 22,
+          boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
         }}
       >
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr style={{ background: "#FBFCFD" }}>
-                {["Empresa", "RFC", "Producto(s) / Estado", "Registro", "Acción"].map(
-                  (h, i) => (
-                    <th
-                      key={h}
-                      className="px-5 py-3 whitespace-nowrap border-b"
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 600,
-                        letterSpacing: "0.05em",
-                        textTransform: "uppercase",
-                        color: "#8A99A8",
-                        borderColor: "#E7ECF1",
-                        textAlign: i === 4 ? "right" : "left",
-                      }}
-                    >
-                      {h}
-                    </th>
-                  )
-                )}
+              <tr style={{ background: "#F8FAF9" }}>
+                {["Empresa", "RFC", "Producto(s) / Estado", "Registro", ""].map((h, i) => (
+                  <th
+                    key={i}
+                    className="px-5 py-3 whitespace-nowrap border-b"
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: "0.06em",
+                      textTransform: "uppercase",
+                      color: "#8A9E94",
+                      borderColor: "#E4ECE7",
+                      textAlign: "left",
+                    }}
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -318,33 +305,34 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                   <td
                     colSpan={5}
                     className="px-5 py-16 text-center"
-                    style={{ color: "#8A99A8", fontSize: 14 }}
+                    style={{ color: "#8A9E94", fontSize: 14 }}
                   >
-                    {search
-                      ? `Sin resultados para "${search}"`
-                      : "Sin clientes registrados"}
+                    {search ? `Sin resultados para "${search}"` : "Sin clientes registrados"}
                   </td>
                 </tr>
               ) : (
                 filtered.map((company) => {
                   const apps = company.applications ?? []
-                  const timeAgo = formatDistanceToNow(
-                    new Date(company.created_at),
-                    { addSuffix: true, locale: es }
-                  )
+                  const reviewHref = apps[0]
+                    ? `/admin/applications/${apps[0].id}/review`
+                    : null
+                  const timeAgo = formatDistanceToNow(new Date(company.created_at), {
+                    addSuffix: true,
+                    locale: es,
+                  })
                   return (
                     <tr
                       key={company.id}
                       className="table-row-hover border-b last:border-0"
-                      style={{ borderColor: "#E7ECF1" }}
+                      style={{ borderColor: "#E4ECE7" }}
+                      onClick={() => {
+                        if (reviewHref) router.push(reviewHref)
+                      }}
                     >
                       <td className="px-5 py-3.5">
                         <div
                           className="font-semibold text-sm leading-tight"
-                          style={{
-                            color: "#0F1B2A",
-                            letterSpacing: "-0.01em",
-                          }}
+                          style={{ color: "#0F2A22", letterSpacing: "-0.01em" }}
                         >
                           {company.legal_name}
                         </div>
@@ -353,9 +341,8 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                         <span
                           className="text-sm"
                           style={{
-                            fontFamily:
-                              "var(--font-mono, monospace)",
-                            color: "#5A6B7B",
+                            fontFamily: "var(--font-mono, monospace)",
+                            color: "#5B7168",
                             letterSpacing: "0.02em",
                           }}
                         >
@@ -365,30 +352,20 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                       <td className="px-5 py-3.5">
                         <div className="flex flex-col gap-1.5 items-start">
                           {apps.length === 0 ? (
-                            <span
-                              className="text-xs"
-                              style={{ color: "#8A99A8" }}
-                            >
+                            <span className="text-xs" style={{ color: "#8A9E94" }}>
                               Sin solicitudes
                             </span>
                           ) : (
                             apps.map((app) => {
-                              const prod =
-                                app.products?.code
-                                  ? PRODUCT_MAP[app.products.code]
-                                  : null
-                              const st =
-                                STATUS_MAP[app.status] ??
-                                STATUS_MAP.draft
+                              const prod = app.products?.code ? PRODUCT_MAP[app.products.code] : null
+                              const st = STATUS_MAP[app.status] ?? STATUS_MAP.draft
                               return (
-                                <div
-                                  key={app.id}
-                                  className="flex items-center gap-1.5 flex-wrap"
-                                >
+                                <div key={app.id} className="flex items-center gap-1.5 flex-wrap">
                                   {prod && (
                                     <span
-                                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold border"
+                                      className="inline-flex items-center px-2 py-0.5 text-[11px] font-semibold border"
                                       style={{
+                                        borderRadius: 999,
                                         background: prod.bg,
                                         color: prod.text,
                                         borderColor: prod.border,
@@ -398,8 +375,9 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                                     </span>
                                   )}
                                   <span
-                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border"
+                                    className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-semibold border"
                                     style={{
+                                      borderRadius: 999,
                                       background: st.bg,
                                       color: st.text,
                                       borderColor: st.border,
@@ -418,42 +396,24 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                         </div>
                       </td>
                       <td className="px-5 py-3.5 hidden md:table-cell">
-                        <span
-                          className="text-sm"
-                          style={{ color: "#5A6B7B" }}
-                        >
+                        <span className="text-sm" style={{ color: "#5B7168" }}>
                           {timeAgo}
                         </span>
                       </td>
                       <td className="px-5 py-3.5">
-                        <div className="flex items-center justify-end gap-2">
-                          {apps[0] && (
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {reviewHref && (
                             <Link
-                              href={`/admin/applications/${apps[0].id}/review`}
-                              className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all"
-                              style={{
-                                background: "#fff",
-                                color: "#0B7A44",
-                                borderColor: "#E7ECF1",
-                              }}
-                              onMouseEnter={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLElement
-                                ).style.background = "#E7FAF0"
-                                ;(
-                                  e.currentTarget as HTMLElement
-                                ).style.borderColor = "transparent"
-                              }}
-                              onMouseLeave={(e) => {
-                                ;(
-                                  e.currentTarget as HTMLElement
-                                ).style.background = "#fff"
-                                ;(
-                                  e.currentTarget as HTMLElement
-                                ).style.borderColor = "#E7ECF1"
-                              }}
+                              href={reviewHref}
+                              className="inline-flex items-center gap-1 text-xs font-semibold"
+                              style={{ color: "#1f7a4d" }}
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              Revisar
+                              Ver
+                              <span className="row-arrow">→</span>
                             </Link>
                           )}
                           {isSuperAdmin && (

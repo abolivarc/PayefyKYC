@@ -15,7 +15,10 @@ export default async function LoginPage({
   return (
     <div className="space-y-5">
       <div className="space-y-1 text-center">
-        <h1 className="text-lg font-semibold tracking-tight text-foreground">
+        <h1
+          className="text-xl font-bold tracking-tight"
+          style={{ color: "#0F2A22", letterSpacing: "-.4px" }}
+        >
           Inicia sesión
         </h1>
         <p className="text-sm text-muted-foreground">
@@ -36,7 +39,9 @@ export default async function LoginPage({
 
       <form action={signInClient} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email">Correo electrónico</Label>
+          <Label htmlFor="email" className="text-sm font-medium" style={{ color: "#0F2A22" }}>
+            Correo electrónico
+          </Label>
           <Input
             id="email"
             name="email"
@@ -49,12 +54,14 @@ export default async function LoginPage({
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Contraseña</Label>
+            <Label htmlFor="password" className="text-sm font-medium" style={{ color: "#0F2A22" }}>
+              Contraseña
+            </Label>
             <Link
               href="/forgot-password"
               className="text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
-              ¿Olvidaste la contraseña?
+              ¿Olvidaste tu contraseña?
             </Link>
           </div>
           <Input
@@ -68,8 +75,12 @@ export default async function LoginPage({
           />
         </div>
 
-        <Button type="submit" className="w-full mt-1">
-          Iniciar sesión
+        <Button
+          type="submit"
+          className="w-full mt-2"
+          style={{ height: "52px", fontSize: "15px" }}
+        >
+          Entrar
         </Button>
       </form>
 
@@ -77,7 +88,8 @@ export default async function LoginPage({
         ¿No tienes cuenta?{" "}
         <Link
           href="/register"
-          className="font-medium text-primary hover:text-brand-hover transition-colors"
+          className="font-semibold transition-colors"
+          style={{ color: "#004238" }}
         >
           Regístrate
         </Link>

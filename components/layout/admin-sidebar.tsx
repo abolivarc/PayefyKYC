@@ -170,8 +170,8 @@ function SidebarContent({
               )}
               style={{
                 color: isActive
-                  ? "#fff"
-                  : "var(--sb-text, #C4D0DB)",
+                  ? "#0a3d1e"
+                  : "var(--sb-text, #b8e8c8)",
               }}
             >
               <Icon className="h-4 w-4 shrink-0 opacity-80" />

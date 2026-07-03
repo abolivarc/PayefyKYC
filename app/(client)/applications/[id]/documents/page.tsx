@@ -275,7 +275,7 @@ export default async function DocumentsPage({
   const product = (app.products as unknown) as { name: string; code: string } | null
 
   return (
-    <div style={{ background: "#F4F8F6", minHeight: "100vh" }}>
+    <div style={{ background: "#F3F7F4", minHeight: "100vh" }}>
       <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 24px 64px" }}>
 
         {/* Back link */}
@@ -283,7 +283,7 @@ export default async function DocumentsPage({
           <Link
             href="/dashboard"
             className="text-sm font-medium"
-            style={{ color: "#5A6B7B", textDecoration: "none" }}
+            style={{ color: "#5B7168", textDecoration: "none" }}
           >
             ← Inicio
           </Link>
@@ -300,21 +300,22 @@ export default async function DocumentsPage({
 
         {/* Progress card */}
         <div
-          className="flex items-center gap-5 rounded-2xl mb-5 flex-wrap"
+          className="flex items-center gap-5 mb-5 flex-wrap"
           style={{
             background: "#fff",
-            border: "1px solid #E7ECF1",
-            boxShadow: "0 1px 2px rgba(16,30,45,.05)",
+            border: "1px solid #E4ECE7",
+            borderRadius: 22,
+            boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
             padding: 20,
           }}
         >
           {/* Circular ring */}
           <div className="relative shrink-0" style={{ width: 62, height: 62 }}>
             <svg width="62" height="62" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="31" cy="31" r="26" fill="none" stroke="#E7ECF1" strokeWidth="5"/>
+              <circle cx="31" cy="31" r="26" fill="none" stroke="#E4ECE7" strokeWidth="5"/>
               <circle
                 cx="31" cy="31" r="26" fill="none"
-                stroke="#0B7A44" strokeWidth="5"
+                stroke="#1f7a4d" strokeWidth="5"
                 strokeLinecap="round"
                 strokeDasharray={`${2 * Math.PI * 26}`}
                 strokeDashoffset={`${2 * Math.PI * 26 * (1 - pct / 100)}`}
@@ -323,7 +324,7 @@ export default async function DocumentsPage({
             </svg>
             <div
               className="absolute inset-0 flex items-center justify-center font-extrabold"
-              style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "#0F1B2A" }}
+              style={{ fontFamily: "var(--font-display)", fontSize: 14, color: "#0F2A22" }}
             >
               {pct}%
             </div>
@@ -333,11 +334,11 @@ export default async function DocumentsPage({
           <div className="flex-1" style={{ minWidth: 200 }}>
             <h3
               className="font-bold mb-0.5"
-              style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#0F1B2A", margin: "0 0 3px" }}
+              style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#0F2A22", margin: "0 0 3px" }}
             >
               Progreso del expediente
             </h3>
-            <p className="text-sm" style={{ color: "#5A6B7B", margin: 0 }}>
+            <p className="text-sm" style={{ color: "#5B7168", margin: 0 }}>
               {done} de {total} documentos completados
             </p>
           </div>

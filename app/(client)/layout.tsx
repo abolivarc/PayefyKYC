@@ -72,7 +72,7 @@ export default async function ClientLayout({ children }: { children: ReactNode }
   return (
     <div className="min-h-screen flex flex-col">
       <Header variant="client" userNav={<UserNav email={email} fullName={fullName} />} />
-      <main className="flex-1" style={{ background: "#F4F8F6" }}>{children}</main>
+      <main className="flex-1" style={{ background: "#F3F7F4" }}>{children}</main>
     </div>
   )
 }

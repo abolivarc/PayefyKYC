@@ -5,9 +5,9 @@ interface Props {
 }
 
 function statusBadge(status: string): { label: string; bg: string; color: string; border: string } {
-  if (status === "approved") return { label: "Validado", bg: "#E7F8EF", color: "#047857", border: "#CBEFDB" }
-  if (status === "pending_review") return { label: "En revisión", bg: "#FFF7ED", color: "#92400E", border: "#FCEBD2" }
-  return { label: "Pendiente", bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" }
+  if (status === "approved")      return { label: "Validado",    bg: "#e7f6ec", color: "#1f7a4d", border: "#b8e8ca" }
+  if (status === "pending_review") return { label: "En revisión", bg: "#EFF4FF", color: "#1D4ED8", border: "#dce8ff" }
+  return { label: "Pendiente", bg: "#F3F7F4", color: "#5B7168", border: "#E4ECE7" }
 }
 
 export function DataCheckRow({ templateName, currentStatus, isRequired }: Props) {

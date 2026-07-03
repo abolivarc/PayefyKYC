@@ -1,10 +1,10 @@
 const STAGES = [
-  { key: "documents", label: "Documentos" },
-  { key: "compliance", label: "Compliance" },
-  { key: "proveedor", label: "Proveedor" },
-  { key: "contratos", label: "Contratos" },
-  { key: "activacion", label: "Activación" },
-  { key: "activo", label: "Activo" },
+  { key: "documents",  label: "Documentos"  },
+  { key: "compliance", label: "Compliance"  },
+  { key: "proveedor",  label: "Proveedor"   },
+  { key: "contratos",  label: "Contratos"   },
+  { key: "activacion", label: "Activación"  },
+  { key: "activo",     label: "Activo"      },
 ]
 
 function getStageIndex(status: string): number {
@@ -26,38 +26,69 @@ export function StageStepper({ status }: StageStepperProps) {
 
   return (
     <div
-      className="flex items-center overflow-x-auto mb-5 rounded-2xl"
+      className="flex items-center overflow-x-auto mb-5"
       style={{
         background: "#fff",
-        border: "1px solid #E7ECF1",
-        boxShadow: "0 1px 2px rgba(16,30,45,.05)",
+        border: "1px solid #E4ECE7",
+        boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
+        borderRadius: 22,
         padding: "14px 20px",
         gap: 0,
       }}
     >
       {STAGES.map((stage, i) => {
-        const isDone = i < currentIdx
+        const isDone    = i < currentIdx
         const isCurrent = i === currentIdx
 
         return (
-          <div key={stage.key} className="flex items-center" style={{ flex: i < STAGES.length - 1 ? "1 1 auto" : "0 0 auto" }}>
-            <div className="flex items-center gap-2 shrink-0 whitespace-nowrap" style={{ color: isCurrent ? "#0F1B2A" : isDone ? "#5A6B7B" : "#8A99A8" }}>
+          <div
+            key={stage.key}
+            className="flex items-center"
+            style={{ flex: i < STAGES.length - 1 ? "1 1 auto" : "0 0 auto" }}
+          >
+            <div
+              className="flex items-center gap-2 shrink-0 whitespace-nowrap"
+              style={{
+                color: isCurrent ? "#0F2A22" : isDone ? "#5B7168" : "#8A9E94",
+              }}
+            >
+              {/* Círculo paso */}
               <span
-                className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                className="w-6 h-6 flex items-center justify-center text-xs font-bold shrink-0"
                 style={{
-                  border: isDone ? "2px solid #0B7A44" : isCurrent ? "2px solid #0B7A44" : "2px solid #E7ECF1",
-                  background: isDone ? "#0B7A44" : isCurrent ? "#EDFBEA" : "#fff",
-                  color: isDone ? "#fff" : isCurrent ? "#0B7A44" : "#8A99A8",
+                  borderRadius: "50%",
+                  border: isDone
+                    ? "2px solid #1f7a4d"
+                    : isCurrent
+                    ? "2px solid #004238"
+                    : "2px solid #E4ECE7",
+                  background: isDone
+                    ? "#1f7a4d"
+                    : isCurrent
+                    ? "#e7f6ec"
+                    : "#fff",
+                  color: isDone
+                    ? "#fff"
+                    : isCurrent
+                    ? "#004238"
+                    : "#8A9E94",
                 }}
               >
                 {isDone ? (
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M2.5 6l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path
+                      d="M2.5 6l2.5 2.5 4.5-4.5"
+                      stroke="#fff"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                 ) : (
                   i + 1
                 )}
               </span>
+
               <span className="text-sm" style={{ fontWeight: isCurrent ? 700 : 600 }}>
                 {stage.label}
               </span>
@@ -70,7 +101,7 @@ export function StageStepper({ status }: StageStepperProps) {
                   flex: "1 1 18px",
                   minWidth: 18,
                   height: 2,
-                  background: isDone ? "#0B7A44" : "#E7ECF1",
+                  background: isDone ? "#1f7a4d" : "#E4ECE7",
                   borderRadius: 2,
                 }}
               />

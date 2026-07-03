@@ -9,12 +9,12 @@ import { Spinner } from "@/components/ui/spinner"
 
 type DocStatus = "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"
 
-const STATUS_BADGE: Record<DocStatus, { label: string; variant: "pending" | "warning" | "success" | "destructive" }> = {
-  pending_upload:    { label: "Pendiente",          variant: "pending" },
-  pending_review:    { label: "En revisión",         variant: "warning" },
-  approved:          { label: "Aprobado",            variant: "success" },
-  rejected:          { label: "Rechazado",           variant: "destructive" },
-  changes_requested: { label: "Con observaciones",   variant: "destructive" },
+const STATUS_BADGE: Record<DocStatus, { label: string; variant: "pending" | "info" | "warning" | "success" | "destructive" }> = {
+  pending_upload:    { label: "Pendiente",         variant: "pending"     },
+  pending_review:    { label: "En revisión",        variant: "info"        },
+  approved:          { label: "Aprobado",           variant: "success"     },
+  rejected:          { label: "Rechazado",          variant: "destructive" },
+  changes_requested: { label: "Con observaciones",  variant: "warning"     },
 }
 
 interface Props {
@@ -72,7 +72,7 @@ export function AdditionalDocRow({
           <p className="text-xs text-muted-foreground mt-0.5 truncate">📎 {uploadedName}</p>
         )}
         {status === "changes_requested" && reviewerNotes && (
-          <p className="text-xs text-amber-700 mt-1 bg-amber-50 rounded px-2 py-1">
+          <p className="text-xs mt-1 rounded px-2 py-1" style={{ background: "#fdf1e6", color: "#c9772f" }}>
             Nota: {reviewerNotes}
           </p>
         )}

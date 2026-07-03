@@ -52,16 +52,27 @@ interface Props {
 
 export function DocumentChecklist({ categories, applicationId }: Props) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {categories.map((cat) => {
         if (cat.groups.length === 0) return null
         return (
           <section key={cat.title}>
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1 px-1">
+            <h3
+              className="px-1 mb-2"
+              style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#8A9E94" }}
+            >
               {cat.title}
             </h3>
-            <div className="rounded-lg border bg-card divide-y divide-border">
-              <div className="px-4">
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #E4ECE7",
+                borderRadius: 22,
+                boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
+                overflow: "hidden",
+              }}
+            >
+              <div className="px-5">
                 {cat.groups.map((group) => {
                   if (group.isMulti) {
                     return (
