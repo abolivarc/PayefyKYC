@@ -249,6 +249,9 @@ export default async function ReviewPage({
     : 0
   const pct = completionOverride ? 100 : rawPct
 
+  // Count docs that need reviewer action (pending_review = uploaded but not yet decided)
+  const pendingReviewCount = docs.filter((d) => d.status === "pending_review" && d.template).length
+
   const contractMap = new Map<string, string>()
   for (const c of contractsResult.data ?? []) contractMap.set(c.kind, c.status)
 
@@ -356,6 +359,32 @@ export default async function ReviewPage({
 
       {/* ── Content ── */}
       <div style={{ padding: "20px 32px 40px", flex: 1 }}>
+
+        {/* ── Action required banner ── */}
+        {pendingReviewCount > 0 && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            background: "#EFF4FF", border: "1px solid #C7D9FF", borderRadius: 12,
+            padding: "12px 18px", marginBottom: 16,
+          }}>
+            <div style={{
+              width: 32, height: 32, borderRadius: "50%", background: "#1D4ED8",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <span style={{ color: "#fff", fontSize: 14, fontWeight: 800 }}>{pendingReviewCount}</span>
+            </div>
+            <div>
+              <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "#1D4ED8", lineHeight: 1.2 }}>
+                {pendingReviewCount === 1
+                  ? "1 documento esperando tu decisión"
+                  : `${pendingReviewCount} documentos esperando tu decisión`}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 12, color: "#3B6BE0" }}>
+                Aprueba o solicita cambios en los documentos marcados en azul abajo
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* ── OVERVIEW CARD ── */}
         <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 3px rgba(16,30,45,.06)", overflow: "hidden", marginBottom: 20 }}>
@@ -522,7 +551,7 @@ export default async function ReviewPage({
                   {title}
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-                  <div style={{ padding: "0 20px" }}>
+                  <div style={{ padding: "12px 16px" }}>
                     {catGroups.map(({ code, docs: codeDocs }) => {
                       const tmpl = codeDocs[0].template!
                       const isCheckType = tmpl.field_type === "check_or_upload"
@@ -579,6 +608,7 @@ export default async function ReviewPage({
                               key={doc.id}
                               documentId={doc.id}
                               applicationId={appId}
+                              templateCode={tmpl.code}
                               templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
                               isRequired={!isMulti && tmpl.is_required}
                               currentStatus={doc.status as DocStatus}
@@ -609,14 +639,14 @@ export default async function ReviewPage({
                   Anexos / Contratos
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-                  <div style={{ padding: "0 20px" }}>
+                  <div style={{ padding: "12px 16px" }}>
                     {annexGroups.map(({ code, docs: codeDocs }) => {
                       const tmpl = codeDocs[0].template!
                       const isMulti = codeDocs.length > 1
                       return (
                         <div key={code}>
                           {isMulti && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0 4px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0 4px" }}>
                               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
                                 {tmpl.name}
                               </span>
@@ -633,6 +663,7 @@ export default async function ReviewPage({
                               key={doc.id}
                               documentId={doc.id}
                               applicationId={appId}
+                              templateCode={code}
                               templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
                               isRequired={false}
                               currentStatus={doc.status as DocStatus}
@@ -669,14 +700,14 @@ export default async function ReviewPage({
                   Otros documentos
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-                  <div style={{ padding: "0 20px" }}>
+                  <div style={{ padding: "12px 16px" }}>
                     {uncoveredGroups.map(([code, codeDocs]) => {
                       const tmpl = codeDocs[0].template!
                       const isMulti = codeDocs.length > 1
                       return (
                         <div key={code}>
                           {isMulti && (
-                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 0 4px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>{tmpl.name}</span>
                               <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>{codeDocs.length} archivos</span>
                             </div>
@@ -686,6 +717,7 @@ export default async function ReviewPage({
                               key={doc.id}
                               documentId={doc.id}
                               applicationId={appId}
+                              templateCode={code}
                               templateName={isMulti ? (doc.file_name ?? `Archivo ${idx + 1}`) : tmpl.name}
                               isRequired={tmpl.is_required}
                               currentStatus={doc.status as DocStatus}
@@ -708,7 +740,7 @@ export default async function ReviewPage({
               Documentos adicionales / sin título
             </p>
             <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-              <div style={{ padding: "0 20px" }}>
+              <div style={{ padding: "12px 16px" }}>
                 {extraDocs.length === 0 ? (
                   <p style={{ margin: "12px 0", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
                     Sin documentos adicionales.
@@ -721,7 +753,7 @@ export default async function ReviewPage({
                       applicationId={appId}
                       templateName={doc.title ?? doc.file_name ?? "Documento sin título"}
                       isRequired={false}
-                      currentStatus={doc.status as "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"}
+                      currentStatus={doc.status as DocStatus}
                       storageAvailable={!!doc.storage_path}
                       reviewerNotes={doc.reviewer_notes}
                       uploadedAt={doc.uploaded_at}

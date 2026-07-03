@@ -1,11 +1,9 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
-import { isDocumentExpired } from "@/lib/documents/expiry"
+import { isDocumentExpired, EXPIRY_CODES } from "@/lib/documents/expiry"
 import {
   approveDocument,
   requestDocumentChanges,
@@ -18,20 +16,18 @@ type DocStatus =
   | "rejected"
   | "changes_requested"
 
-const STATUS_BADGE: Record<
-  DocStatus,
-  { label: string; variant: "pending" | "warning" | "success" | "destructive" }
-> = {
-  pending_upload: { label: "Sin subir", variant: "pending" },
-  pending_review: { label: "En revisión", variant: "warning" },
-  approved: { label: "Aprobado", variant: "success" },
-  rejected: { label: "Rechazado", variant: "destructive" },
-  changes_requested: { label: "Cambios solicitados", variant: "destructive" },
+const STATUS_CONFIG: Record<DocStatus, { label: string; bg: string; color: string; border: string; dot: string }> = {
+  pending_upload:    { label: "Sin subir",           bg: "#F3F7F4", color: "#5B7168", border: "#E4ECE7", dot: "#D1D5DB" },
+  pending_review:    { label: "Esperando revisión",  bg: "#EFF4FF", color: "#1D4ED8", border: "#dce8ff", dot: "#1D4ED8" },
+  approved:          { label: "Aprobado",            bg: "#e7f6ec", color: "#1f7a4d", border: "#b8e8ca", dot: "#1f7a4d" },
+  rejected:          { label: "Rechazado",           bg: "#fef2f2", color: "#d1622f", border: "#fecaca", dot: "#d1622f" },
+  changes_requested: { label: "Con observaciones",   bg: "#fdf1e6", color: "#c9772f", border: "#f5d9b5", dot: "#c9772f" },
 }
 
 interface Props {
   documentId: string
   applicationId: string
+  templateCode?: string
   templateName: string
   isRequired: boolean
   currentStatus: DocStatus
@@ -43,6 +39,7 @@ interface Props {
 export function ReviewDocumentRow({
   documentId,
   applicationId,
+  templateCode,
   templateName,
   isRequired,
   currentStatus,
@@ -51,126 +48,157 @@ export function ReviewDocumentRow({
   uploadedAt,
 }: Props) {
   const [status, setStatus] = useState<DocStatus>(currentStatus)
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [notes, setNotes] = useState("")
+  const [dialogMode, setDialogMode] = useState<"changes" | null>(null)
+  const [notes, setNotes] = useState(reviewerNotes ?? "")
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
-  const expired = isDocumentExpired(uploadedAt)
-  const badge = STATUS_BADGE[status] ?? STATUS_BADGE.pending_review
+  const expired = (templateCode ? EXPIRY_CODES.has(templateCode) : false) && isDocumentExpired(uploadedAt)
+  const cfg = expired
+    ? { label: "Vencido", bg: "#fdf1e6", color: "#c9772f", border: "#f5d9b5", dot: "#c9772f" }
+    : STATUS_CONFIG[status] ?? STATUS_CONFIG.pending_review
+
+  const needsAction = status === "pending_review" && !expired
+  const rowBg = needsAction ? "#F0F6FF" : status === "approved" ? "#F5FBF7" : "#fff"
+  const rowBorder = needsAction ? "#C7D9FF" : status === "approved" ? "#C3E8D0" : "#E4ECE7"
 
   function handleApprove() {
-    if (expired) return
     setError(null)
     startTransition(async () => {
       const result = await approveDocument(documentId, applicationId)
-      if (result?.error) {
-        setError(result.error)
-      } else {
-        setStatus("approved")
-      }
+      if (result?.error) setError(result.error)
+      else setStatus("approved")
     })
   }
 
-  function handleRequestChanges() {
+  function handleSendChanges() {
     if (!notes.trim()) return
     setError(null)
     startTransition(async () => {
-      const result = await requestDocumentChanges(
-        documentId,
-        applicationId,
-        notes.trim()
-      )
-      if (result?.error) {
-        setError(result.error)
-      } else {
+      const result = await requestDocumentChanges(documentId, applicationId, notes.trim())
+      if (result?.error) setError(result.error)
+      else {
         setStatus("changes_requested")
-        setDialogOpen(false)
-        setNotes("")
+        setDialogMode(null)
       }
     })
   }
 
   return (
-    <div className="flex flex-wrap items-start gap-3 py-3 border-b last:border-0">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium">{templateName}</span>
-          {isRequired && (
-            <span className="text-xs text-destructive">*requerido</span>
+    <div
+      style={{
+        background: rowBg,
+        border: `1px solid ${rowBorder}`,
+        borderRadius: 12,
+        padding: "14px 16px",
+        marginBottom: 8,
+        display: "flex",
+        flexDirection: "column",
+        gap: 10,
+        transition: "background .2s, border-color .2s",
+      }}
+    >
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 3 }}>
+            {/* Status badge */}
+            <span
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`,
+                borderRadius: 999, fontSize: 11, fontWeight: 700, padding: "2px 9px",
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: cfg.dot, flexShrink: 0 }} />
+              {cfg.label}
+            </span>
+            {!isRequired && (
+              <span style={{ fontSize: 11, color: "#8A9E94", background: "#F3F7F4", borderRadius: 999, padding: "2px 7px" }}>
+                Opcional
+              </span>
+            )}
+            {needsAction && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: "#1D4ED8" }}>
+                ← requiere decisión
+              </span>
+            )}
+          </div>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0F2A22", lineHeight: 1.3 }}>
+            {templateName}
+          </p>
+          {status === "changes_requested" && notes && (
+            <p style={{ margin: "6px 0 0", fontSize: 12, background: "#fdf1e6", color: "#c9772f", borderRadius: 8, padding: "6px 10px" }}>
+              Nota enviada: {notes}
+            </p>
           )}
-          {expired ? (
-            <Badge variant="destructive" className="text-xs">Vencido (+60 días)</Badge>
-          ) : (
-            <Badge variant={badge.variant}>{badge.label}</Badge>
+          {expired && (
+            <p style={{ margin: "4px 0 0", fontSize: 12, color: "#c9772f" }}>
+              Documento vencido — el cliente debe volver a subirlo
+            </p>
+          )}
+          {error && <p style={{ margin: "4px 0 0", fontSize: 12, color: "#d1622f" }}>{error}</p>}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {storageAvailable && (
+            <a
+              href={`/api/documents/${documentId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 12, fontWeight: 600, color: "#1f7a4d", textDecoration: "none",
+                padding: "5px 10px", borderRadius: 7, border: "1px solid #b8e8ca", background: "#e7f6ec",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Ver
+            </a>
+          )}
+
+          {(status === "pending_review" || status === "changes_requested" || status === "approved") && !expired && (
+            <button
+              onClick={handleApprove}
+              disabled={isPending}
+              style={{
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                padding: "5px 12px", borderRadius: 7,
+                border: "1px solid #b8e8ca",
+                background: status === "approved" ? "#fff" : "#1f7a4d",
+                color: status === "approved" ? "#1f7a4d" : "#fff",
+                opacity: isPending ? 0.6 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {isPending ? "…" : status === "approved" ? "Re-aprobar" : "Aprobar"}
+            </button>
+          )}
+
+          {status !== "pending_upload" && (
+            <button
+              onClick={() => { setNotes(reviewerNotes ?? ""); setDialogMode("changes") }}
+              disabled={isPending}
+              style={{
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+                padding: "5px 12px", borderRadius: 7,
+                border: "1px solid #f5d9b5",
+                background: "#fff",
+                color: "#c9772f",
+                opacity: isPending ? 0.6 : 1,
+                whiteSpace: "nowrap",
+              }}
+            >
+              Observaciones
+            </button>
           )}
         </div>
-        {reviewerNotes && status === "changes_requested" && (
-          <p className="text-xs text-amber-700 mt-1 bg-amber-50 rounded px-2 py-1">
-            Nota: {reviewerNotes}
-          </p>
-        )}
-        {expired && (
-          <p className="text-xs text-destructive mt-1">
-            Documento vencido — el cliente debe volver a subirlo antes de aprobar.
-          </p>
-        )}
-        {error && (
-          <p className="text-xs text-destructive mt-1">{error}</p>
-        )}
       </div>
 
-      <div className="flex items-center gap-2 shrink-0">
-        {storageAvailable && (
-          <a
-            href={`/api/documents/${documentId}/view`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-primary hover:underline"
-          >
-            Ver documento
-          </a>
-        )}
-        {status === "pending_review" && (
-          <>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 disabled:opacity-40 disabled:cursor-not-allowed"
-              disabled={isPending || expired}
-              title={expired ? "Documento vencido — no se puede aprobar" : undefined}
-              onClick={handleApprove}
-            >
-              {isPending ? "..." : "Aprobar"}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-amber-500 text-amber-700 hover:bg-amber-50"
-              disabled={isPending}
-              onClick={() => setDialogOpen(true)}
-            >
-              Solicitar cambios
-            </Button>
-          </>
-        )}
-        {status === "approved" && (
-          <Button
-            size="sm"
-            variant="ghost"
-            className="text-xs text-muted-foreground"
-            disabled={isPending || expired}
-            title={expired ? "Documento vencido" : undefined}
-            onClick={handleApprove}
-          >
-            Re-aprobar
-          </Button>
-        )}
-      </div>
-
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
+      {/* Inline changes form (shown when dialog mode = changes) */}
+      <Dialog open={dialogMode === "changes"} onClose={() => setDialogMode(null)}>
         <DialogHeader>
-          <DialogTitle>Solicitar cambios: {templateName}</DialogTitle>
+          <DialogTitle>Observaciones: {templateName}</DialogTitle>
         </DialogHeader>
         <Textarea
           value={notes}
@@ -180,19 +208,23 @@ export function ReviewDocumentRow({
           className="mt-2"
         />
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setDialogOpen(false)}
+          <button
+            onClick={() => setDialogMode(null)}
+            style={{ fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 8, border: "1px solid #E4ECE7", background: "#fff", color: "#5B7168", cursor: "pointer" }}
           >
             Cancelar
-          </Button>
-          <Button
+          </button>
+          <button
             disabled={!notes.trim() || isPending}
-            onClick={handleRequestChanges}
-            className="bg-amber-600 hover:bg-amber-700"
+            onClick={handleSendChanges}
+            style={{
+              fontSize: 13, fontWeight: 700, padding: "8px 18px", borderRadius: 8,
+              border: "none", background: notes.trim() ? "#c9772f" : "#E4ECE7",
+              color: notes.trim() ? "#fff" : "#8A9E94", cursor: notes.trim() ? "pointer" : "not-allowed",
+            }}
           >
-            {isPending ? "Enviando..." : "Enviar observaciones"}
-          </Button>
+            {isPending ? "Enviando…" : "Enviar observaciones"}
+          </button>
         </DialogFooter>
       </Dialog>
     </div>

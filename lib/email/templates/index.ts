@@ -182,6 +182,29 @@ export function emailApproved({
   </div>`)
 }
 
+export function emailDocumentApproved({
+  companyName,
+  clientName,
+  documentName,
+  applicationUrl,
+}: {
+  companyName: string
+  clientName: string
+  documentName: string
+  applicationUrl: string
+}): string {
+  return wrap(`
+  ${header()}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Documento aprobado ✓</h2>
+    <p>Hola <strong>${clientName}</strong>,</p>
+    <p>Tu documento <strong>${documentName}</strong> del expediente de <strong>${companyName}</strong> ha sido revisado y aprobado.</p>
+    <p>Sigue subiendo los documentos restantes para completar tu proceso.</p>
+    <div style="margin:24px 0;">${btn(applicationUrl, "Ver mi expediente")}</div>
+    ${footer()}
+  </div>`)
+}
+
 // ── Nuevas plantillas P3 ────────────────────────────────
 
 export function emailExpedienteToTransfer({

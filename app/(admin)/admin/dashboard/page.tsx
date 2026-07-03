@@ -81,11 +81,11 @@ export default async function AdminDashboardPage() {
   const { data: pendingDocs } = await supabase
     .from("documents")
     .select(
-      "id, application_id, document_templates(name), applications(companies(legal_name))"
+      "id, application_id, document_templates(name), applications(id, companies(legal_name), products(code))"
     )
     .eq("status", "pending_review")
     .order("uploaded_at", { ascending: true })
-    .limit(8)
+    .limit(50)
 
   const { data: recentApps } = await supabase
     .from("applications")
@@ -102,6 +102,28 @@ export default async function AdminDashboardPage() {
   const changesRequested = apps.filter((a) =>
     ["changes_requested", "provider_changes_requested"].includes(a.status)
   ).length
+
+  // Group pending docs by application for the inbox
+  type PendingGroup = { applicationId: string; companyName: string; productCode: string; count: number }
+  const pendingByApp = new Map<string, PendingGroup>()
+  for (const d of pendingDocs ?? []) {
+    const appData = (d.applications as unknown) as { id: string; companies: { legal_name: string } | null; products: { code: string } | null } | null
+    const appId = d.application_id
+    if (!appId || !appData) continue
+    const existing = pendingByApp.get(appId)
+    if (existing) {
+      existing.count++
+    } else {
+      pendingByApp.set(appId, {
+        applicationId: appId,
+        companyName: appData.companies?.legal_name ?? "Empresa",
+        productCode: appData.products?.code ?? "",
+        count: 1,
+      })
+    }
+  }
+  const pendingGroups = Array.from(pendingByApp.values()).sort((a, b) => b.count - a.count)
+  const totalPendingDocs = (pendingDocs ?? []).length
 
   const greeting = getGreeting()
   const name = profile?.full_name || user?.email || "Usuario"
@@ -135,11 +157,11 @@ export default async function AdminDashboardPage() {
                 icon={<FileText size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)" }} />}
               />
               <StatCard
-                label="En revisión"
-                value={pending}
-                sub="requieren atención"
-                icon={<Clock size={16} color={pending > 0 ? "#D97706" : "var(--admin-text-subtle, #8A99A8)"} />}
-                highlight={pending > 0 ? "amber" : undefined}
+                label="Docs por revisar"
+                value={totalPendingDocs}
+                sub="requieren decisión"
+                icon={<Clock size={16} color={totalPendingDocs > 0 ? "#1D4ED8" : "var(--admin-text-subtle, #8A99A8)"} />}
+                highlight={totalPendingDocs > 0 ? "blue" : undefined}
               />
               <StatCard
                 label="Activadas"
@@ -220,38 +242,53 @@ export default async function AdminDashboardPage() {
 
           {/* Right column */}
           <div className="space-y-5">
-            {/* Pending docs */}
-            <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
-              <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface-2, #FBFCFD)" }}>
-                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+            {/* Pending docs inbox */}
+            <div style={{ background: "var(--admin-surface, #fff)", border: `1px solid ${totalPendingDocs > 0 ? "#C7D9FF" : "var(--admin-border, #E7ECF1)"}`, borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+              <div style={{ padding: "14px 20px", borderBottom: `1px solid ${totalPendingDocs > 0 ? "#C7D9FF" : "var(--admin-border, #E7ECF1)"}`, background: totalPendingDocs > 0 ? "#EFF4FF" : "var(--admin-surface-2, #FBFCFD)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: totalPendingDocs > 0 ? "#1D4ED8" : "var(--admin-text, #0F1B2A)" }}>
                   Documentos por revisar
                 </h2>
+                {totalPendingDocs > 0 && (
+                  <span style={{ background: "#1D4ED8", color: "#fff", borderRadius: 999, fontSize: 11, fontWeight: 800, padding: "2px 8px" }}>
+                    {totalPendingDocs}
+                  </span>
+                )}
               </div>
-              <div style={{ padding: "12px 16px" }}>
-                {!pendingDocs?.length ? (
-                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand-strong, #0B7A44)", margin: 0 }}>
+              <div style={{ padding: "10px 12px" }}>
+                {pendingGroups.length === 0 ? (
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-brand-strong, #0B7A44)", margin: "4px 8px" }}>
                     ✓ Sin documentos pendientes
                   </p>
                 ) : (
-                  pendingDocs.map((doc) => {
-                    const template = (doc.document_templates as unknown) as { name: string } | null
-                    const appData = (doc.applications as unknown) as { companies: { legal_name: string } | null } | null
-                    const companyName = appData?.companies?.legal_name
+                  pendingGroups.map((group) => {
+                    const productLabel = group.productCode === "cards" ? "Tarjetas" : group.productCode === "terminals" ? "Terminal" : group.productCode
                     return (
                       <Link
-                        key={doc.id}
-                        href={`/admin/applications/${doc.application_id}/review`}
-                        className="block rounded-lg no-underline transition-colors hover:bg-[#F4F8F6]"
-                        style={{ padding: "10px 8px" }}
+                        key={group.applicationId}
+                        href={`/admin/applications/${group.applicationId}/review`}
+                        className="no-underline"
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 8px", borderRadius: 10, transition: "background .15s", marginBottom: 2 }}
                       >
-                        <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "var(--admin-text, #0F1B2A)", lineHeight: 1.3 }}>
-                          {template?.name ?? "Documento"}
-                        </p>
-                        {companyName && (
-                          <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--admin-text-muted, #5A6B7B)" }}>
-                            {companyName}
+                        {/* Count bubble */}
+                        <span style={{
+                          width: 28, height: 28, borderRadius: "50%",
+                          background: "#1D4ED8", color: "#fff",
+                          fontSize: 12, fontWeight: 800,
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          {group.count}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {group.companyName}
                           </p>
-                        )}
+                          {productLabel && (
+                            <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                              {productLabel} · {group.count === 1 ? "1 doc" : `${group.count} docs`}
+                            </p>
+                          )}
+                        </div>
+                        <span style={{ fontSize: 11, color: "#1D4ED8", fontWeight: 700, flexShrink: 0 }}>Revisar →</span>
                       </Link>
                     )
                   })
@@ -301,12 +338,13 @@ function StatCard({
   value: number
   sub: string
   icon: React.ReactNode
-  highlight?: "amber" | "emerald" | "red"
+  highlight?: "amber" | "emerald" | "red" | "blue"
 }) {
   const valueColor =
     highlight === "amber" ? "#D97706"
     : highlight === "emerald" ? "#059669"
     : highlight === "red" ? "#DC2626"
+    : highlight === "blue" ? "#1D4ED8"
     : "var(--admin-text, #0F1B2A)"
 
   return (

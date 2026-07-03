@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
-import { emailChangesRequested, emailApproved } from "@/lib/email/templates"
+import { emailChangesRequested, emailApproved, emailDocumentApproved } from "@/lib/email/templates"
 
 function adminDb() {
   return createAdminClient(
@@ -29,10 +29,54 @@ export async function approveDocument(
 
   const { error } = await supabase
     .from("documents")
-    .update({ status: "approved" })
+    .update({ status: "approved", reviewer_notes: null })
     .eq("id", documentId)
 
   if (error) return { error: error.message }
+
+  // Notify client via email
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("document_templates(name)")
+    .eq("id", documentId)
+    .single()
+
+  const { data: app } = await supabase
+    .from("applications")
+    .select("company_id, companies(legal_name)")
+    .eq("id", applicationId)
+    .single()
+
+  const { data: member } = await supabase
+    .from("company_users")
+    .select("user_id, profiles(full_name, email)")
+    .eq("company_id", (app?.company_id as string) ?? "")
+    .limit(1)
+    .single()
+
+  const profile = (member?.profiles as unknown) as { full_name: string; email: string } | null
+  const company = (app?.companies as unknown) as { legal_name: string } | null
+  const templateName = ((doc?.document_templates as unknown) as { name: string } | null)?.name ?? "Documento"
+  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
+
+  if (member?.user_id && profile) {
+    await createNotification({
+      recipientId: member.user_id,
+      type: "document_approved",
+      title: `Documento aprobado: ${templateName}`,
+      message: `Tu documento "${templateName}" ha sido aprobado.`,
+      relatedApplicationId: applicationId,
+      relatedDocumentId: documentId,
+      emailTo: profile.email,
+      emailSubject: `[PayefyKYC] Documento aprobado: ${templateName}`,
+      emailHtml: emailDocumentApproved({
+        companyName: company?.legal_name ?? "",
+        clientName: profile.full_name,
+        documentName: templateName,
+        applicationUrl: appUrl,
+      }),
+    })
+  }
 
   await logAudit({
     actorId: user.id,
