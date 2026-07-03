@@ -34,8 +34,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es">
-      <body className={`${jakarta.variable} ${grotesk.variable} ${jetbrains.variable} antialiased`}>
+    <html lang="es" className={`${jakarta.variable} ${grotesk.variable} ${jetbrains.variable}`}>
+      <body className="antialiased">
         <NextTopLoader color="#A8F898" showSpinner={false} height={3} />
         {children}
       </body>

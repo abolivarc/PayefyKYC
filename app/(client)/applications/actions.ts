@@ -201,12 +201,27 @@ export async function addProductToCompany(
   if (error || !app)
     return { error: "Ya tienes una solicitud para ese producto." }
 
-  const { data: templates } = await supabase
+  const { data: allTemplates } = await supabase
     .from("document_templates")
-    .select("id, field_type")
+    .select("id, code, field_type")
     .eq("product_id", product.id)
 
-  if (templates?.length) {
+  let templates = allTemplates ?? []
+
+  if (productCode === "terminals") {
+    const { data: co } = await supabase
+      .from("companies")
+      .select("person_type")
+      .eq("id", companyId)
+      .single()
+    if (co?.person_type === "persona_fisica") {
+      templates = templates.filter((t) => t.code.startsWith("pf_"))
+    } else {
+      templates = templates.filter((t) => !t.code.startsWith("pf_"))
+    }
+  }
+
+  if (templates.length) {
     // Service role para INSERT — is_company_member falla en server action context
     const adminClient = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

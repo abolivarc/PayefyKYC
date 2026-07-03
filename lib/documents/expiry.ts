@@ -1,3 +1,12 @@
+export const EXPIRY_CODES = new Set([
+  "company_address_proof",
+  "tax_situation_certificate",
+  "bank_statement",
+  "pf_address_proof",
+  "pf_tax_situation",
+  "pf_bank_statement",
+])
+
 const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000
 const WARN_THRESHOLD_MS = 53 * 24 * 60 * 60 * 1000
 

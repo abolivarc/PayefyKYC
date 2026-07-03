@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react"
 import Link from "next/link"
-import { isDocumentExpired } from "@/lib/documents/expiry"
+import { isDocumentExpired, EXPIRY_CODES } from "@/lib/documents/expiry"
 import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
@@ -59,7 +59,7 @@ export function DocumentUploadRow({
   const [error, setError] = useState<string | null>(null)
 
   const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
-  const expired = isDocumentExpired(currentUploadedAt)
+  const expired = EXPIRY_CODES.has(templateCode) && isDocumentExpired(currentUploadedAt)
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending_upload
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
