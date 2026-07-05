@@ -5,213 +5,255 @@ import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { upsertContract, type ContractKind, type ContractStatus } from "@/app/(admin)/admin/tracking/actions"
 
-type ContractState = {
+export type ContractState = {
   payefy: string | null
   transfer_increase: string | null
   transfer_contract: string | null
+  payefy_doc_path?: string | null
 }
 
-interface ContractDef {
-  kind: ContractKind
-  label: string
-  hint: string
-  key: keyof ContractState
-}
+// ── Payefy contract row: upload-focused ─────────────────────────────────────
 
-const CONTRACT_DEFS: ContractDef[] = [
-  { kind: "payefy_service",           label: "Contrato Payefy",            hint: "DocuSign",  key: "payefy" },
-  { kind: "transfer_increase_letter", label: "Carta de aumento Transfer",  hint: "",          key: "transfer_increase" },
-  { kind: "transfer_contract",        label: "Contrato Transfer",          hint: "weetrust",  key: "transfer_contract" },
-]
-
-function statusLabel(s: string | null) {
-  if (!s || s === "pending") return "Pendiente"
-  if (s === "sent")          return "Enviado"
-  if (s === "signed")        return "Firmado"
-  if (s === "not_applicable") return "No aplica"
-  return s
-}
-
-function statusColor(s: string | null) {
-  if (s === "signed")   return "#0f6e56"
-  if (s === "sent")     return "#92500b"
-  if (s === "not_applicable") return "#b4bcb7"
-  return "#b4bcb7"
-}
-
-interface RowProps {
+function PayefyRow({
+  applicationId,
+  currentStatus,
+  signedDocPath,
+}: {
   applicationId: string
-  def: ContractDef
   currentStatus: string | null
-}
-
-function ContractRow({ applicationId, def, currentStatus }: RowProps) {
+  signedDocPath?: string | null
+}) {
   const router = useRouter()
-  const [pending, startTransition] = useTransition()
-  const [link, setLink] = useState("")
-  const [showLink, setShowLink] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
+  const isSigned = currentStatus === "signed"
 
-  async function handleStatus(newStatus: ContractStatus) {
-    setError(null)
-    startTransition(async () => {
-      const res = await upsertContract({
-        applicationId,
-        kind: def.kind,
-        status: newStatus,
-        externalLink: link || undefined,
-      })
-      if (res?.error) setError(res.error)
-      else { setLink(""); setShowLink(false); router.refresh() }
-    })
-  }
-
-  async function handleFileUpload(file: File) {
+  async function handleUpload(file: File) {
     setError(null)
     setUploading(true)
     try {
       const supabase = createClient()
       const ext = file.name.split(".").pop() ?? "pdf"
-      const path = `contracts/${applicationId}/${def.kind}.${ext}`
+      const path = `contracts/${applicationId}/payefy_service.${ext}`
       const { error: upErr } = await supabase.storage
         .from("kyc-documents")
         .upload(path, file, { upsert: true })
       if (upErr) { setError(upErr.message); return }
-
-      const res = await upsertContract({
-        applicationId,
-        kind: def.kind,
-        status: "signed",
-        signedDocPath: path,
-        externalLink: link || undefined,
-      })
+      const res = await upsertContract({ applicationId, kind: "payefy_service", status: "signed", signedDocPath: path })
       if (res?.error) setError(res.error)
-      else { setLink(""); setShowLink(false); router.refresh() }
+      else router.refresh()
     } finally {
       setUploading(false)
       if (fileRef.current) fileRef.current.value = ""
     }
   }
 
-  const isSigned = currentStatus === "signed"
-  const isSent   = currentStatus === "sent"
+  function handleMarkSigned() {
+    startTransition(async () => {
+      const res = await upsertContract({ applicationId, kind: "payefy_service", status: "signed" })
+      if (res?.error) setError(res.error)
+      else router.refresh()
+    })
+  }
+
+  function handleReset() {
+    startTransition(async () => {
+      const res = await upsertContract({ applicationId, kind: "payefy_service", status: "pending" })
+      if (res?.error) setError(res.error)
+      else router.refresh()
+    })
+  }
 
   return (
-    <div style={{ borderBottom: "1px solid #e3e8e5", paddingBottom: 10, marginBottom: 10 }}>
-      {/* Row header */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-        {/* Status dot */}
-        <span style={{ width: 8, height: 8, borderRadius: "50%",
-          background: statusColor(currentStatus), display: "inline-block", flexShrink: 0 }} />
-
-        {/* Label */}
-        <span style={{ fontSize: 13, flex: 1, color: "#16201b", minWidth: 160 }}>
-          {def.label}
-          {def.hint && (
-            <span style={{ fontSize: 11, color: "#b4bcb7", marginLeft: 5 }}>({def.hint})</span>
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <div style={{
+          width: 20, height: 20, borderRadius: 4, border: `2px solid ${isSigned ? "#0f6e56" : "#D1D5DB"}`,
+          background: isSigned ? "#0f6e56" : "#fff", flexShrink: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          {isSigned && (
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           )}
-        </span>
+        </div>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#0F1B2A" }}>
+            Contrato Payefy
+          </span>
+          <span style={{ fontSize: 11, color: "#8A9E94", marginLeft: 6 }}>(DocuSign)</span>
+        </div>
+        {isSigned && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#0f6e56", background: "#e7f6ec", borderRadius: 99, padding: "2px 8px" }}>
+            Firmado
+          </span>
+        )}
+      </div>
 
-        {/* Status pill */}
-        <span style={{ fontSize: 11, fontWeight: 600, color: statusColor(currentStatus) }}>
-          {statusLabel(currentStatus)}
-        </span>
-
-        {/* Action buttons */}
-        {!isSigned && (
-          <>
-            {!isSent && (
-              <button
-                disabled={pending}
-                onClick={() => handleStatus("sent")}
-                style={{ fontSize: 11, padding: "4px 10px", border: "1px solid #d3dbd6",
-                  borderRadius: 6, background: "#fff", cursor: "pointer", color: "#92500b",
-                  fontWeight: 500, opacity: pending ? 0.5 : 1 }}
-              >
-                Enviado
-              </button>
-            )}
+      {!isSigned ? (
+        <div style={{
+          border: "2px dashed #D1D5DB", borderRadius: 10,
+          padding: "14px 16px", display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 10, background: "#FAFAFA",
+        }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8A9E94" strokeWidth="1.5">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <p style={{ margin: 0, fontSize: 12, color: "#5B7168", textAlign: "center" }}>
+            Sube el contrato firmado (PDF o imagen)
+          </p>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+            <label style={{
+              fontSize: 12, fontWeight: 700, padding: "7px 16px",
+              background: "#004238", color: "#A8F898", borderRadius: 8,
+              cursor: uploading ? "not-allowed" : "pointer", opacity: uploading ? 0.6 : 1,
+              display: "inline-flex", alignItems: "center", gap: 5,
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              {uploading ? "Subiendo…" : "Subir contrato"}
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                style={{ display: "none" }}
+                disabled={uploading}
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}
+              />
+            </label>
             <button
               disabled={pending || uploading}
-              onClick={() => setShowLink((v) => !v)}
-              style={{ fontSize: 11, padding: "4px 10px", border: "1px solid #004238",
-                borderRadius: 6, background: "#e7f0ea", cursor: "pointer",
-                color: "#004238", fontWeight: 500, opacity: (pending || uploading) ? 0.5 : 1 }}
+              onClick={handleMarkSigned}
+              style={{
+                fontSize: 12, fontWeight: 600, padding: "7px 14px",
+                background: "#fff", border: "1px solid #D1D5DB", color: "#5B7168",
+                borderRadius: 8, cursor: "pointer", opacity: (pending || uploading) ? 0.5 : 1,
+              }}
             >
-              Firmado
+              {pending ? "…" : "Marcar firmado (sin archivo)"}
             </button>
-          </>
-        )}
-
-        {/* Upload signed doc */}
-        {!isSigned && (
-          <label style={{ fontSize: 11, padding: "4px 10px", border: "1px solid #d3dbd6",
-            borderRadius: 6, background: "#fff", cursor: "pointer", color: "#5f6b64",
-            fontWeight: 500, display: "inline-flex", alignItems: "center", gap: 4,
-            opacity: uploading ? 0.5 : 1 }}>
-            <svg viewBox="0 0 24 24" width={12} height={12} fill="none"
-              stroke="currentColor" strokeWidth={2}>
+          </div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, background: "#e7f6ec", borderRadius: 8, padding: "8px 12px" }}>
+          {signedDocPath && (
+            <a
+              href={`/api/contracts/${applicationId}/payefy_service/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 12, fontWeight: 600, color: "#0f6e56", textDecoration: "none" }}
+            >
+              Ver contrato ↗
+            </a>
+          )}
+          <label style={{
+            fontSize: 12, fontWeight: 600, color: "#5B7168", cursor: "pointer",
+            display: "inline-flex", alignItems: "center", gap: 4, marginLeft: "auto",
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
               <polyline points="17 8 12 3 7 8"/>
               <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            {uploading ? "Subiendo…" : "Subir escaneo"}
+            Cambiar archivo
             <input
               ref={fileRef}
               type="file"
               accept=".pdf,.jpg,.jpeg,.png"
               style={{ display: "none" }}
               disabled={uploading}
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) handleFileUpload(f)
-              }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}
             />
           </label>
-        )}
-
-        {isSigned && (
-          <span style={{ fontSize: 11, color: "#0f6e56", fontWeight: 600 }}>✓ Firmado</span>
-        )}
-      </div>
-
-      {/* Link + confirm panel */}
-      {showLink && !isSigned && (
-        <div style={{ marginTop: 8, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="Link DocuSign / weetrust (opcional)"
-            style={{ flex: 1, minWidth: 200, fontSize: 12, padding: "5px 8px",
-              border: "1px solid #e3e8e5", borderRadius: 6, outline: "none", color: "#16201b" }}
-          />
           <button
+            onClick={handleReset}
             disabled={pending}
-            onClick={() => handleStatus("signed")}
-            style={{ fontSize: 12, padding: "5px 12px", background: "#004238",
-              color: "#fff", border: "none", borderRadius: 6, cursor: "pointer",
-              fontWeight: 600, opacity: pending ? 0.5 : 1 }}
+            style={{ fontSize: 11, color: "#8A9E94", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
           >
-            {pending ? "Guardando…" : "Confirmar firma"}
-          </button>
-          <button
-            onClick={() => setShowLink(false)}
-            style={{ fontSize: 12, padding: "5px 8px", background: "#fff",
-              color: "#5f6b64", border: "1px solid #d3dbd6", borderRadius: 6, cursor: "pointer" }}
-          >
-            Cancelar
+            Deshacer
           </button>
         </div>
       )}
-
-      {error && (
-        <p style={{ fontSize: 11, color: "#a32d2d", marginTop: 4 }}>{error}</p>
-      )}
+      {error && <p style={{ fontSize: 11, color: "#a32d2d", margin: "4px 0 0" }}>{error}</p>}
     </div>
   )
 }
+
+// ── Transfer contract row: checkbox-focused ──────────────────────────────────
+
+function TransferCheckRow({
+  applicationId,
+  kind,
+  label,
+  currentStatus,
+}: {
+  applicationId: string
+  kind: ContractKind
+  label: string
+  currentStatus: string | null
+}) {
+  const router = useRouter()
+  const [pending, startTransition] = useTransition()
+  const [error, setError] = useState<string | null>(null)
+  const isSigned = currentStatus === "signed"
+
+  function toggle() {
+    const next: ContractStatus = isSigned ? "pending" : "signed"
+    startTransition(async () => {
+      const res = await upsertContract({ applicationId, kind, status: next })
+      if (res?.error) setError(res.error)
+      else router.refresh()
+    })
+  }
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <button
+        onClick={toggle}
+        disabled={pending}
+        style={{
+          display: "flex", alignItems: "center", gap: 10,
+          background: "none", border: "none", cursor: pending ? "not-allowed" : "pointer",
+          padding: 0, opacity: pending ? 0.6 : 1, width: "100%", textAlign: "left",
+        }}
+      >
+        <div style={{
+          width: 20, height: 20, borderRadius: 4, flexShrink: 0,
+          border: `2px solid ${isSigned ? "#0f6e56" : "#D1D5DB"}`,
+          background: isSigned ? "#0f6e56" : "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background .15s, border-color .15s",
+        }}>
+          {isSigned && (
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path d="M2 5.5l2.5 2.5 4.5-4.5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </div>
+        <span style={{ fontSize: 13, color: isSigned ? "#0F1B2A" : "#5B7168", fontWeight: isSigned ? 600 : 400, flex: 1 }}>
+          {label}
+        </span>
+        {isSigned && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: "#0f6e56", background: "#e7f6ec", borderRadius: 99, padding: "2px 8px", flexShrink: 0 }}>
+            Confirmado
+          </span>
+        )}
+      </button>
+      {error && <p style={{ fontSize: 11, color: "#a32d2d", margin: "4px 0 0" }}>{error}</p>}
+    </div>
+  )
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 interface Props {
   applicationId: string
@@ -221,18 +263,33 @@ interface Props {
 export function ContractManager({ applicationId, contracts }: Props) {
   return (
     <div>
-      <p style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: ".04em",
-        color: "#5f6b64", margin: "0 0 10px", fontWeight: 600 }}>
+      <p style={{
+        fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em",
+        color: "var(--admin-text-subtle, #8A99A8)", margin: "0 0 14px", fontWeight: 700,
+      }}>
         Contratos y firmas
       </p>
-      {CONTRACT_DEFS.map((def) => (
-        <ContractRow
-          key={def.kind}
+
+      <PayefyRow
+        applicationId={applicationId}
+        currentStatus={contracts.payefy}
+        signedDocPath={contracts.payefy_doc_path}
+      />
+
+      <div style={{ borderTop: "1px solid var(--admin-border, #E7ECF1)", paddingTop: 12, marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
+        <TransferCheckRow
           applicationId={applicationId}
-          def={def}
-          currentStatus={contracts[def.key]}
+          kind="transfer_contract"
+          label="Contrato Transfer firmado por proveedor"
+          currentStatus={contracts.transfer_contract}
         />
-      ))}
+        <TransferCheckRow
+          applicationId={applicationId}
+          kind="transfer_increase_letter"
+          label="Carta de aumento Transfer confirmada"
+          currentStatus={contracts.transfer_increase}
+        />
+      </div>
     </div>
   )
 }

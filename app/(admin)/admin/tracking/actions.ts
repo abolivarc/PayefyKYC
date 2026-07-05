@@ -73,6 +73,7 @@ export async function upsertContract({
   })
 
   revalidatePath("/admin/tracking")
+  revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
 

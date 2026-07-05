@@ -8,6 +8,7 @@ import { AdminCheckRow } from "@/components/admin/admin-check-row"
 import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
 import { ExportExpedienteButton } from "@/components/admin/export-expediente-button"
+import { ContractManager } from "@/components/admin/contract-manager"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -62,12 +63,6 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
   { title: "Datos solicitados", codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc"] },
   { title: "Adicionales", codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"] },
-]
-
-const CONTRACT_DEFS = [
-  { kind: "payefy_service",           label: "Contrato prestación de servicios · Payefy", hint: "DocuSign" },
-  { kind: "transfer_increase_letter", label: "Carta de aumento · Transfer",                hint: "" },
-  { kind: "transfer_contract",        label: "Contrato Transfer",                          hint: "weetrust" },
 ]
 
 const BITACORA_LABELS: Record<string, string> = {
@@ -139,19 +134,6 @@ function DocIcon({ status, isChecked, isCheckType }: { status: string; isChecked
   )
 }
 
-function contractIcon(status: string | null) {
-  if (status === "signed") return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="#EDFBEA" stroke="#0B7A44" strokeWidth="1"/>
-      <path d="M4 8l2.5 2.5 5.5-5" stroke="#0B7A44" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-    </svg>
-  )
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <rect x="0.5" y="0.5" width="15" height="15" rx="3.5" fill="#F8FAFC" stroke="#CBD5E1" strokeWidth="1"/>
-    </svg>
-  )
-}
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -180,7 +162,7 @@ export default async function ReviewPage({
       .eq("application_id", appId),
     admin
       .from("application_contracts")
-      .select("kind, status")
+      .select("kind, status, signed_doc_path")
       .eq("application_id", appId),
     admin
       .from("audit_logs")
@@ -254,8 +236,15 @@ export default async function ReviewPage({
   // Count docs that need reviewer action (pending_review = uploaded but not yet decided)
   const pendingReviewCount = docs.filter((d) => d.status === "pending_review" && d.template).length
 
-  const contractMap = new Map<string, string>()
-  for (const c of contractsResult.data ?? []) contractMap.set(c.kind, c.status)
+  const contractMap = new Map<string, { status: string; signed_doc_path: string | null }>()
+  for (const c of contractsResult.data ?? []) contractMap.set(c.kind, { status: c.status, signed_doc_path: (c as unknown as { signed_doc_path: string | null }).signed_doc_path ?? null })
+
+  const contractState = {
+    payefy: contractMap.get("payefy_service")?.status ?? null,
+    transfer_increase: contractMap.get("transfer_increase_letter")?.status ?? null,
+    transfer_contract: contractMap.get("transfer_contract")?.status ?? null,
+    payefy_doc_path: contractMap.get("payefy_service")?.signed_doc_path ?? null,
+  }
 
   const logs = (logsResult.data ?? []).map((l) => ({
     ...l,
@@ -482,28 +471,7 @@ export default async function ReviewPage({
               )}
 
               {/* Contracts */}
-              <div>
-                <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
-                  Contratos y firmas
-                </p>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  {CONTRACT_DEFS.map((def) => {
-                    const s = contractMap.get(def.kind) ?? null
-                    const isSigned = s === "signed"
-                    return (
-                      <div key={def.kind} style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
-                        {contractIcon(s)}
-                        <span style={{ fontSize: 13, color: isSigned ? "var(--admin-text, #0F1B2A)" : "var(--admin-text-muted, #5A6B7B)", flex: 1 }}>
-                          {def.label}
-                          {def.hint && <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 5 }}>({def.hint})</span>}
-                        </span>
-                        {s === "sent" && <span style={{ fontSize: 11, color: "#92400E" }}>enviado</span>}
-                        {s === "signed" && <span style={{ fontSize: 11, color: "#047857", fontWeight: 600 }}>firmado</span>}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
+              <ContractManager applicationId={appId} contracts={contractState} />
 
               {/* Bitácora */}
               {logs.length > 0 && (
