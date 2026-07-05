@@ -4,6 +4,7 @@ import * as Sentry from "@sentry/nextjs"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
 import JSZip from "jszip"
+import { generateDataPdf, type DataField } from "@/lib/documents/generate-data-pdf"
 
 const STAFF_ROLES = ["sales_agent", "sales_director", "compliance", "onboarding", "accounting", "super_admin"]
 
@@ -64,12 +65,20 @@ export async function exportExpediente(
       .eq("entity_id", applicationId)
       .order("created_at", { ascending: true })
 
-    // 4. Load all documents
+    // 4. Load all documents (file uploads)
     const { data: docs } = await admin
       .from("documents")
-      .select("storage_path, file_name, uploaded_at, status, document_templates(name, code, is_form)")
+      .select("storage_path, file_name, uploaded_at, status, document_templates(name, code, is_form, field_type)")
       .eq("application_id", applicationId)
       .not("storage_path", "is", null)
+
+    // 4b. Load data_check docs (text fields — stored in file_name, no storage_path)
+    const { data: dataDocs } = await admin
+      .from("documents")
+      .select("file_name, status, document_templates(name, code, field_type, sort_order)")
+      .eq("application_id", applicationId)
+      .is("storage_path", null)
+      .not("file_name", "is", null)
 
     // 5. Build ZIP
     const zip = new JSZip()
@@ -78,7 +87,7 @@ export async function exportExpediente(
 
     for (const doc of docs ?? []) {
       if (!doc.storage_path) continue
-      const tmpl = (doc.document_templates as unknown) as { name: string; code: string; is_form: boolean } | null
+      const tmpl = (doc.document_templates as unknown) as { name: string; code: string; is_form: boolean; field_type?: string } | null
 
       for (const bucket of ["kyc-documents", "generated-pdfs"]) {
         const { data, error } = await admin.storage.from(bucket).download(doc.storage_path)
@@ -91,6 +100,40 @@ export async function exportExpediente(
         docCount++
         break
       }
+    }
+
+    // 5b. Generate DATOS_SOLICITADOS.pdf if any data_check fields exist
+    const dataFields: DataField[] = (dataDocs ?? [])
+      .filter((d) => {
+        const tmpl = (d.document_templates as unknown) as { field_type?: string } | null
+        return tmpl?.field_type === "data_check"
+      })
+      .sort((a, b) => {
+        const aOrder = ((a.document_templates as unknown) as { sort_order?: number } | null)?.sort_order ?? 999
+        const bOrder = ((b.document_templates as unknown) as { sort_order?: number } | null)?.sort_order ?? 999
+        return aOrder - bOrder
+      })
+      .map((d) => {
+        const tmpl = (d.document_templates as unknown) as { name: string } | null
+        return {
+          label: tmpl?.name ?? "Dato",
+          value: d.file_name,
+          status: d.status,
+        }
+      })
+
+    if (dataFields.length > 0) {
+      const exportDate = new Date().toLocaleDateString("es-MX", { year: "numeric", month: "long", day: "numeric" })
+      const pdfBytes = await generateDataPdf({
+        companyName: company?.legal_name ?? "Empresa",
+        taxId: company?.tax_id ?? null,
+        personType: company?.person_type ?? null,
+        productName: product?.name ?? null,
+        applicationId,
+        exportDate,
+        fields: dataFields,
+      })
+      zip.file("DATOS_SOLICITADOS.pdf", pdfBytes)
     }
 
     // 6. Build summary JSON
@@ -133,6 +176,11 @@ export async function exportExpediente(
         nombre: (d.document_templates as unknown as { name: string } | null)?.name ?? d.file_name,
         status: d.status,
         uploaded_at: d.uploaded_at,
+      })),
+      datos_solicitados: dataFields.map((f) => ({
+        campo: f.label,
+        valor: f.value,
+        status: f.status,
       })),
     }
 

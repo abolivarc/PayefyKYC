@@ -7,6 +7,7 @@ import { AdminFullStatusSelector } from "@/components/admin/admin-full-status-se
 import { AdminCheckRow } from "@/components/admin/admin-check-row"
 import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
+import { ExportExpedienteButton } from "@/components/admin/export-expediente-button"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -340,6 +341,7 @@ export default async function ReviewPage({
           </div>
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            <ExportExpedienteButton applicationId={appId} />
             {/* Feature 4: completion override toggle */}
             <CompletionOverrideButton applicationId={appId} initialValue={completionOverride} />
             <Link
