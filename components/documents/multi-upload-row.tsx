@@ -88,15 +88,14 @@ export function MultiUploadRow({
       style={{
         background: "#fff",
         border: "1px solid #E4ECE7",
-        borderRadius: 14,
-        boxShadow: "0 1px 3px rgba(15,42,34,.06)",
-        padding: 20,
+        borderRadius: 10,
+        padding: "12px 14px",
       }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-3 mb-4">
         <div className="flex-1 min-w-0">
-          <p className="font-bold leading-snug" style={{ fontSize: 16, color: "#0F2A22", marginBottom: 4 }}>
+          <p className="font-bold leading-snug" style={{ fontSize: 14, color: "#0F2A22", marginBottom: 4 }}>
             {templateName}
           </p>
           {templateInstructions && (
@@ -121,7 +120,7 @@ export function MultiUploadRow({
             <div
               key={doc.id}
               className="flex items-center gap-3"
-              style={{ background: "#F8FAF9", border: "1px solid #E4ECE7", borderRadius: 10, padding: "10px 14px" }}
+              style={{ background: "#F8FAF9", border: "1px solid #E4ECE7", borderRadius: 10, padding: "7px 12px" }}
             >
               <span className="font-mono text-[11px] font-bold shrink-0" style={{ color: "#8A9E94", minWidth: 20 }}>
                 #{i + 1}

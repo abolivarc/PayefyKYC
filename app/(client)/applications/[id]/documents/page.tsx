@@ -242,6 +242,7 @@ export default async function DocumentsPage({
       application_id: d.application_id,
       is_checked: (d as unknown as { is_checked: boolean }).is_checked ?? false,
       uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
+      reviewer_notes: (d as unknown as { reviewer_notes?: string | null }).reviewer_notes ?? null,
       template: {
         id: tmpl.id,
         code: tmpl.code,
@@ -307,7 +308,7 @@ export default async function DocumentsPage({
 
   return (
     <div style={{ background: "#F3F7F4", minHeight: "100vh" }}>
-      <div style={{ maxWidth: 960, margin: "0 auto", padding: "24px 24px 64px" }}>
+      <div style={{ maxWidth: 1140, margin: "0 auto", padding: "20px 16px 64px" }}>
 
         {/* Back link */}
         <div className="mb-4">

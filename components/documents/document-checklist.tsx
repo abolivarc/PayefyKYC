@@ -1,7 +1,7 @@
 import { DocumentUploadRow } from "./document-upload-row"
 import { MultiUploadRow } from "./multi-upload-row"
 import { CheckOrUploadRow } from "./check-or-upload-row"
-import { DataCheckRow } from "./data-check-row"
+import { DataInputField } from "./data-input-field"
 
 export interface DocWithTemplate {
   id: string
@@ -11,6 +11,7 @@ export interface DocWithTemplate {
   application_id: string
   is_checked: boolean
   uploaded_at: string | null
+  reviewer_notes?: string | null
   template: {
     id: string
     code: string
@@ -51,42 +52,91 @@ interface Props {
 }
 
 export function DocumentChecklist({ categories, applicationId }: Props) {
+  // Separate data_check groups into their own section
+  const dataGroups = categories.flatMap((c) =>
+    c.groups.filter((g) => g.field_type === "data_check")
+  )
+
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      {/* ── Data input fields section ── */}
+      {dataGroups.length > 0 && (
+        <section>
+          <p
+            style={{
+              margin: "0 0 8px 2px",
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "#8A9E94",
+            }}
+          >
+            Datos solicitados
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: 8,
+            }}
+          >
+            {dataGroups.map((group) => {
+              const doc = group.docs[0]
+              if (!doc) return null
+              return (
+                <DataInputField
+                  key={group.templateCode}
+                  documentId={doc.id}
+                  applicationId={applicationId}
+                  templateName={group.templateName}
+                  templateInstructions={group.templateInstructions}
+                  currentValue={doc.file_name}
+                  currentStatus={doc.status}
+                  isRequired={group.is_required}
+                />
+              )
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Document upload tiles ── */}
       {categories.map((cat) => {
-        if (cat.groups.length === 0) return null
+        const uploadGroups = cat.groups.filter((g) => g.field_type !== "data_check")
+        if (uploadGroups.length === 0) return null
         return (
           <section key={cat.title}>
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <h3
-                style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  textTransform: "uppercase",
-                  color: "#8A9E94",
-                  margin: 0,
-                }}
-              >
-                {cat.title}
-              </h3>
-              <span
-                className="font-mono"
-                style={{
-                  fontSize: 11,
-                  color: "#B8C9C0",
-                  fontWeight: 600,
-                }}
-              >
-                {cat.groups.length}
+            <p
+              style={{
+                margin: "0 0 6px 2px",
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#8A9E94",
+              }}
+            >
+              {cat.title}{" "}
+              <span style={{ color: "#C8D5CC", fontWeight: 600 }}>
+                {uploadGroups.length}
               </span>
-            </div>
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {cat.groups.map((group) => {
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(190px, 1fr))",
+                gap: 8,
+              }}
+            >
+              {uploadGroups.map((group) => {
                 if (group.isMulti) {
                   return (
-                    <div key={group.templateCode} className="md:col-span-2">
+                    <div
+                      key={group.templateCode}
+                      style={{ gridColumn: "span 2" }}
+                    >
                       <MultiUploadRow
                         applicationId={applicationId}
                         templateId={group.templateId}
@@ -122,17 +172,6 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                   )
                 }
 
-                if (group.field_type === "data_check") {
-                  return (
-                    <DataCheckRow
-                      key={group.templateCode}
-                      templateName={group.templateName}
-                      currentStatus={doc.status}
-                      isRequired={group.is_required}
-                    />
-                  )
-                }
-
                 return (
                   <DocumentUploadRow
                     key={group.templateCode}
@@ -148,6 +187,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                     uploadedAt={doc.uploaded_at}
                     isShared={group.isShared}
                     isRequired={group.is_required}
+                    reviewerNotes={doc.reviewer_notes}
                   />
                 )
               })}

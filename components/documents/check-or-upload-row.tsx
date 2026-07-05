@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react"
 import { setDocumentChecked } from "@/app/(client)/applications/actions"
 import { uploadDocumentFile } from "@/lib/documents/upload"
-import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 
 type DocStatus =
   | "pending_upload"
@@ -12,12 +12,12 @@ type DocStatus =
   | "rejected"
   | "changes_requested"
 
-const STATUS_CONFIG: Record<DocStatus, { label: string; bg: string; color: string; border: string; dot: string }> = {
-  pending_upload:    { label: "Pendiente",        bg: "#F3F7F4", color: "#5B7168", border: "#E4ECE7", dot: "#D1D5DB"  },
-  pending_review:    { label: "En revisión",       bg: "#EFF4FF", color: "#1D4ED8", border: "#dce8ff", dot: "#1D4ED8" },
-  approved:          { label: "Aprobado",          bg: "#e7f6ec", color: "#1f7a4d", border: "#b8e8ca", dot: "#1f7a4d" },
-  rejected:          { label: "Rechazado",         bg: "#fef2f2", color: "#d1622f", border: "#fecaca", dot: "#d1622f" },
-  changes_requested: { label: "Con observaciones", bg: "#fdf1e6", color: "#c9772f", border: "#f5d9b5", dot: "#c9772f" },
+const STATUS: Record<string, { label: string; color: string; bg: string; stripe: string }> = {
+  pending_upload:    { label: "Pendiente",     color: "#8A9E94", bg: "#F3F7F4", stripe: "#D1D5DB" },
+  pending_review:    { label: "En revisión",   color: "#1D4ED8", bg: "#EFF4FF", stripe: "#1D4ED8" },
+  approved:          { label: "Aprobado",      color: "#1f7a4d", bg: "#e7f6ec", stripe: "#1f7a4d" },
+  rejected:          { label: "Rechazado",     color: "#d1622f", bg: "#fef2f2", stripe: "#d1622f" },
+  changes_requested: { label: "Observaciones", color: "#c9772f", bg: "#fdf1e6", stripe: "#c9772f" },
 }
 
 interface Props {
@@ -34,7 +34,6 @@ interface Props {
 export function CheckOrUploadRow({
   documentId,
   templateName,
-  templateInstructions,
   currentStatus,
   fileFormat,
   fileName,
@@ -49,7 +48,8 @@ export function CheckOrUploadRow({
   const [error, setError] = useState<string | null>(null)
 
   const satisfied = isChecked || status !== "pending_upload"
-  const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending_upload
+  const displayKey = isChecked ? "approved" : status
+  const cfg = STATUS[displayKey] ?? STATUS.pending_upload
   const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
 
   async function handleCheckChange(checked: boolean) {
@@ -70,10 +70,11 @@ export function CheckOrUploadRow({
     const file = e.target.files?.[0]
     if (!file) return
     setError(null)
+    e.target.value = ""
     startTransition(async () => {
       const result = await uploadDocumentFile(documentId, file)
       if (!result.success) {
-        setError(result.error ?? "Error al subir el archivo")
+        setError(result.error ?? "Error al subir")
       } else {
         setStatus("pending_review")
         setUploadedName(file.name)
@@ -85,86 +86,135 @@ export function CheckOrUploadRow({
   return (
     <div
       style={{
-        background: "#fff",
+        position: "relative",
+        background: satisfied ? "#FAFFFE" : "#fff",
         border: "1px solid #E4ECE7",
-        borderRadius: 14,
-        boxShadow: "0 1px 3px rgba(15,42,34,.06)",
-        padding: 20,
+        borderRadius: 10,
+        padding: "9px 10px 9px 14px",
         display: "flex",
         flexDirection: "column",
-        gap: 12,
+        gap: 6,
+        overflow: "hidden",
+        minHeight: 96,
       }}
     >
-      {/* Status badge */}
-      <div className="flex items-center gap-2 flex-wrap">
+      {/* Left stripe */}
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 3,
+          background: cfg.stripe,
+        }}
+      />
+
+      {/* Top: status + upload */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
         <span
-          className="inline-flex items-center gap-1.5 rounded-full text-[11px] font-semibold"
-          style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}`, padding: "3px 10px" }}
+          style={{
+            fontSize: 10,
+            fontWeight: 700,
+            background: cfg.bg,
+            color: cfg.color,
+            borderRadius: 99,
+            padding: "2px 7px",
+            flexShrink: 0,
+          }}
         >
-          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: cfg.dot }} />
-          {cfg.label}
+          {isChecked ? "No aplica" : cfg.label}
+          {!isRequired && <span style={{ fontWeight: 500, opacity: 0.7 }}> · opc</span>}
         </span>
-        {!isRequired && (
-          <span className="text-[11px] font-medium rounded-full" style={{ background: "#F3F7F4", color: "#8A9E94", padding: "3px 8px" }}>
-            Opcional
-          </span>
-        )}
-      </div>
-
-      {/* Document name */}
-      <div>
-        <p className="font-bold leading-snug" style={{ fontSize: 16, color: "#0F2A22", marginBottom: 4 }}>
-          {templateName}
-        </p>
-        {templateInstructions && (
-          <p className="text-xs leading-relaxed" style={{ color: "#8A9E94" }}>
-            {templateInstructions}
-          </p>
-        )}
-      </div>
-
-      {/* Filename */}
-      {uploadedName && status !== "pending_upload" && !isChecked && (
-        <div
-          className="flex items-center gap-1.5 rounded-[8px] px-3 py-2 text-xs truncate"
-          style={{ background: "#F8FAF9", color: "#5B7168", border: "1px solid #E4ECE7" }}
-        >
-          📎 <span className="truncate">{uploadedName}</span>
+        <div style={{ display: "flex", gap: 4, alignItems: "center", flexShrink: 0 }}>
+          {uploadedName && status !== "pending_upload" && !isChecked && (
+            <a
+              href={`/api/documents/${documentId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: "#1f7a4d",
+                textDecoration: "none",
+                padding: "2px 6px",
+                border: "1px solid #b8e8ca",
+                borderRadius: 5,
+                lineHeight: 1.5,
+              }}
+            >
+              Ver
+            </a>
+          )}
+          {!isChecked && (
+            <>
+              <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFileChange} />
+              <button
+                onClick={() => inputRef.current?.click()}
+                disabled={isPending}
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                  padding: "2px 8px",
+                  borderRadius: 5,
+                  border: "none",
+                  background: status === "pending_upload" ? "#004238" : "#F3F7F4",
+                  color: status === "pending_upload" ? "#A8F898" : "#5B7168",
+                  cursor: "pointer",
+                  opacity: isPending ? 0.5 : 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 3,
+                }}
+              >
+                {isPending && <Spinner size={9} />}
+                {isPending ? "…" : status === "pending_upload" ? "Subir" : "Cambiar"}
+              </button>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Checkbox */}
+      {/* Name */}
+      <p
+        className="line-clamp-2"
+        style={{
+          margin: 0,
+          fontSize: 12,
+          fontWeight: 700,
+          color: "#0F2A22",
+          lineHeight: 1.25,
+        }}
+      >
+        {templateName}
+      </p>
+
+      {/* Compact checkbox */}
       <label
-        className="flex items-center gap-2.5 cursor-pointer select-none rounded-[10px] px-3 py-2.5"
-        style={{ background: "#F8FAF9", border: "1px solid #E4ECE7", opacity: isPending ? 0.6 : 1 }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          cursor: isPending ? "default" : "pointer",
+          opacity: isPending ? 0.6 : 1,
+        }}
       >
         <input
           type="checkbox"
           checked={isChecked}
           disabled={isPending}
           onChange={(e) => handleCheckChange(e.target.checked)}
-          style={{ width: 16, height: 16, accentColor: "#004238", flexShrink: 0 }}
+          style={{ width: 13, height: 13, accentColor: "#004238", flexShrink: 0 }}
         />
-        <span className="text-xs font-medium" style={{ color: "#5B7168" }}>
-          Está en el acta / No aplica para esta empresa
+        <span style={{ fontSize: 10, color: "#5B7168" }}>
+          Está en el acta / No aplica
         </span>
       </label>
 
-      {error && <p className="text-xs text-destructive">{error}</p>}
-
-      {/* Action button */}
-      <div className="mt-auto pt-1">
-        <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={handleFileChange} />
-        <Button
-          size="sm"
-          variant={satisfied ? "outline" : "default"}
-          disabled={isPending}
-          onClick={() => inputRef.current?.click()}
-          className="w-full justify-center"
-        >
-          {isPending ? "Subiendo…" : !satisfied ? "Subir documento" : "Reemplazar"}
-        </Button>
-      </div>
+      {error && (
+        <p style={{ margin: 0, fontSize: 10, color: "#d1622f" }}>{error}</p>
+      )}
     </div>
   )
 }

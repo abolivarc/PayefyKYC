@@ -409,6 +409,58 @@ export async function addExtraDocument(
 }
 
 // ─────────────────────────────────────
+// Guardar valor de un campo de datos (data_check)
+// ─────────────────────────────────────
+export async function saveDataCheckValue(
+  documentId: string,
+  applicationId: string,
+  value: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: doc } = await supabase
+    .from("documents")
+    .select("application_id")
+    .eq("id", documentId)
+    .single()
+  if (!doc) return { error: "Documento no encontrado" }
+
+  const { data: app } = await supabase
+    .from("applications")
+    .select("company_id")
+    .eq("id", doc.application_id)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const { data: membership } = await supabase
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) return { error: "Sin acceso" }
+
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const trimmed = value.trim()
+  const { error } = await adminClient
+    .from("documents")
+    .update({
+      file_name: trimmed || null,
+      status: trimmed ? "pending_review" : "pending_upload",
+    })
+    .eq("id", documentId)
+
+  if (error) return { error: error.message }
+  revalidatePath(`/applications/${applicationId}/documents`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
 // Enviar expediente para revisión
 // ─────────────────────────────────────
 export async function submitApplication(applicationId: string) {
