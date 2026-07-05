@@ -162,7 +162,7 @@ export default async function DocumentsPage({
   const { data: allDocs } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes,
+      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes, client_notes,
        document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
@@ -243,6 +243,7 @@ export default async function DocumentsPage({
       is_checked: (d as unknown as { is_checked: boolean }).is_checked ?? false,
       uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
       reviewer_notes: (d as unknown as { reviewer_notes?: string | null }).reviewer_notes ?? null,
+      client_notes: (d as unknown as { client_notes?: string | null }).client_notes ?? null,
       template: {
         id: tmpl.id,
         code: tmpl.code,

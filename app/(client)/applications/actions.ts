@@ -547,3 +547,60 @@ export async function submitApplication(applicationId: string) {
   revalidatePath("/dashboard")
   return { success: true }
 }
+
+// ─────────────────────────────────────
+// Guardar nota del cliente en un documento
+// ─────────────────────────────────────
+export async function saveClientNote(
+  documentId: string,
+  applicationId: string,
+  note: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: doc } = await admin
+    .from("documents")
+    .select("application_id, applications(company_id)")
+    .eq("id", documentId)
+    .single()
+
+  if (!doc) return { error: "Documento no encontrado" }
+
+  const companyId = (doc.applications as unknown as { company_id: string } | null)?.company_id
+  if (!companyId) return { error: "Empresa no encontrada" }
+
+  const { data: membership } = await admin
+    .from("company_users")
+    .select("id")
+    .eq("company_id", companyId)
+    .eq("user_id", user.id)
+    .single()
+
+  if (!membership) return { error: "Acceso denegado" }
+
+  const trimmed = note.trim() || null
+
+  await admin
+    .from("documents")
+    .update({ client_notes: trimmed })
+    .eq("id", documentId)
+
+  await logAudit({
+    actorId: user.id,
+    action: "client_note_saved",
+    entityType: "document",
+    entityId: documentId,
+    changes: { client_notes: trimmed },
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/applications/${applicationId}/documents`)
+  return { success: true }
+}

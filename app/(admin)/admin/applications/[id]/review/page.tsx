@@ -175,7 +175,7 @@ export default async function ReviewPage({
       .single(),
     supabase
       .from("documents")
-      .select(`id, status, storage_path, file_name, reviewer_notes, template_id, uploaded_at, is_checked, title,
+      .select(`id, status, storage_path, file_name, reviewer_notes, client_notes, template_id, uploaded_at, is_checked, title,
                document_templates(id, code, name, is_form, is_required, sort_order, field_type)`)
       .eq("application_id", appId),
     admin
@@ -204,7 +204,7 @@ export default async function ReviewPage({
   }
   type Doc = {
     id: string; status: string; storage_path: string | null; file_name: string | null;
-    reviewer_notes: string | null; template_id: string | null; uploaded_at: string | null;
+    reviewer_notes: string | null; client_notes: string | null; template_id: string | null; uploaded_at: string | null;
     is_checked: boolean; title: string | null; template: DocTemplate | null
   }
 
@@ -215,6 +215,7 @@ export default async function ReviewPage({
     storage_path: (d.storage_path as string | null) ?? null,
     file_name: (d.file_name as string | null) ?? null,
     reviewer_notes: (d.reviewer_notes as string | null) ?? null,
+    client_notes: (d.client_notes as string | null) ?? null,
     template_id: (d.template_id as string | null) ?? null,
     uploaded_at: (d.uploaded_at as string | null) ?? null,
     is_checked: (d.is_checked as boolean) ?? false,
@@ -616,6 +617,7 @@ export default async function ReviewPage({
                               currentStatus={doc.status as DocStatus}
                               storageAvailable={!!doc.storage_path}
                               reviewerNotes={doc.reviewer_notes}
+                              clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                             />
                           ))}
@@ -671,6 +673,7 @@ export default async function ReviewPage({
                               currentStatus={doc.status as DocStatus}
                               storageAvailable={!!doc.storage_path}
                               reviewerNotes={doc.reviewer_notes}
+                              clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                             />
                           ))}
@@ -725,6 +728,7 @@ export default async function ReviewPage({
                               currentStatus={doc.status as DocStatus}
                               storageAvailable={!!doc.storage_path}
                               reviewerNotes={doc.reviewer_notes}
+                              clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                             />
                           ))}

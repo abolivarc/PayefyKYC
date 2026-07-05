@@ -33,6 +33,7 @@ interface Props {
   currentStatus: DocStatus
   storageAvailable: boolean
   reviewerNotes?: string | null
+  clientNotes?: string | null
   uploadedAt?: string | null
 }
 
@@ -45,6 +46,7 @@ export function ReviewDocumentRow({
   currentStatus,
   storageAvailable,
   reviewerNotes,
+  clientNotes,
   uploadedAt,
 }: Props) {
   const [status, setStatus] = useState<DocStatus>(currentStatus)
@@ -131,6 +133,16 @@ export function ReviewDocumentRow({
             <p style={{ margin: "6px 0 0", fontSize: 12, background: "#fdf1e6", color: "#c9772f", borderRadius: 8, padding: "6px 10px" }}>
               Nota enviada: {notes}
             </p>
+          )}
+          {clientNotes && (
+            <div style={{ margin: "6px 0 0", background: "#EFF4FF", border: "1px solid #C7D9FF", borderRadius: 8, padding: "6px 10px" }}>
+              <p style={{ margin: "0 0 2px", fontSize: 10, fontWeight: 700, color: "#1D4ED8", textTransform: "uppercase", letterSpacing: ".06em" }}>
+                Respuesta del cliente
+              </p>
+              <p style={{ margin: 0, fontSize: 12, color: "#1e3a8a", lineHeight: 1.4 }}>
+                {clientNotes}
+              </p>
+            </div>
           )}
           {expired && (
             <p style={{ margin: "4px 0 0", fontSize: 12, color: "#c9772f" }}>

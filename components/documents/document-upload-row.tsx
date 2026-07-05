@@ -4,6 +4,7 @@ import { useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import { isDocumentExpired, EXPIRY_CODES } from "@/lib/documents/expiry"
 import { uploadDocumentFile } from "@/lib/documents/upload"
+import { saveClientNote } from "@/app/(client)/applications/actions"
 import { Spinner } from "@/components/ui/spinner"
 
 type DocStatus =
@@ -18,7 +19,7 @@ const STATUS: Record<string, { label: string; color: string; bg: string; stripe:
   pending_review:    { label: "En revisión",   color: "#1D4ED8", bg: "#EFF4FF", stripe: "#1D4ED8" },
   approved:          { label: "Aprobado",      color: "#1f7a4d", bg: "#e7f6ec", stripe: "#1f7a4d" },
   rejected:          { label: "Rechazado",     color: "#d1622f", bg: "#fef2f2", stripe: "#d1622f" },
-  changes_requested: { label: "Observaciones", color: "#c9772f", bg: "#fdf1e6", stripe: "#c9772f" },
+  changes_requested: { label: "Observaciones", color: "#b91c1c", bg: "#fef2f2", stripe: "#dc2626" },
   expired:           { label: "Vencido",       color: "#c9772f", bg: "#fdf1e6", stripe: "#c9772f" },
 }
 
@@ -36,6 +37,7 @@ interface Props {
   isShared?: boolean
   isRequired?: boolean
   reviewerNotes?: string | null
+  clientNotes?: string | null
 }
 
 export function DocumentUploadRow({
@@ -51,19 +53,25 @@ export function DocumentUploadRow({
   isShared,
   isRequired = true,
   reviewerNotes,
+  clientNotes: initialClientNotes,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<DocStatus>(currentStatus)
   const [uploadedName, setUploadedName] = useState<string | null>(fileName)
   const [currentUploadedAt, setCurrentUploadedAt] = useState<string | null | undefined>(uploadedAt)
   const [isPending, startTransition] = useTransition()
+  const [isSavingNote, startSavingNote] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [showNotes, setShowNotes] = useState(false)
+  const [clientNote, setClientNote] = useState(initialClientNotes ?? "")
+  const [noteSaved, setNoteSaved] = useState(false)
 
   const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
   const expired = EXPIRY_CODES.has(templateCode) && isDocumentExpired(currentUploadedAt)
   const displayKey = expired ? "expired" : status
   const cfg = STATUS[displayKey] ?? STATUS.pending_upload
   const needsAction = status === "pending_upload" || expired
+  const hasObservations = status === "changes_requested" && !!reviewerNotes
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -78,6 +86,19 @@ export function DocumentUploadRow({
         setStatus("pending_review")
         setUploadedName(file.name)
         setCurrentUploadedAt(new Date().toISOString())
+        setShowNotes(false)
+      }
+    })
+  }
+
+  async function handleSaveNote() {
+    setNoteSaved(false)
+    startSavingNote(async () => {
+      const result = await saveClientNote(documentId, applicationId, clientNote)
+      if (!result.success) {
+        setError((result as { error?: string }).error ?? "Error al guardar")
+      } else {
+        setNoteSaved(true)
       }
     })
   }
@@ -86,8 +107,8 @@ export function DocumentUploadRow({
     <div
       style={{
         position: "relative",
-        background: status === "approved" && !expired ? "#FAFFFE" : "#fff",
-        border: "1px solid #E4ECE7",
+        background: status === "changes_requested" ? "#fff5f5" : status === "approved" && !expired ? "#FAFFFE" : "#fff",
+        border: `1px solid ${status === "changes_requested" ? "#fecaca" : "#E4ECE7"}`,
         borderRadius: 10,
         padding: "9px 10px 9px 14px",
         display: "flex",
@@ -95,6 +116,7 @@ export function DocumentUploadRow({
         gap: 6,
         overflow: "hidden",
         minHeight: 80,
+        transition: "background .15s, border-color .15s",
       }}
     >
       {/* Left status stripe */}
@@ -111,26 +133,49 @@ export function DocumentUploadRow({
 
       {/* Top row: badge + actions */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            lineHeight: 1,
-            background: cfg.bg,
-            color: cfg.color,
-            borderRadius: 99,
-            padding: "2px 7px",
-            flexShrink: 0,
-          }}
-        >
-          {cfg.label}
-          {!isRequired && (
-            <span style={{ fontWeight: 500, opacity: 0.7 }}> · opc</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, flexWrap: "wrap" }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              lineHeight: 1,
+              background: cfg.bg,
+              color: cfg.color,
+              borderRadius: 99,
+              padding: "2px 7px",
+              flexShrink: 0,
+            }}
+          >
+            {cfg.label}
+            {!isRequired && (
+              <span style={{ fontWeight: 500, opacity: 0.7 }}> · opc</span>
+            )}
+            {isShared && (
+              <span style={{ fontWeight: 500, opacity: 0.7 }}> ↗</span>
+            )}
+          </span>
+
+          {/* "Ver observaciones" toggle when changes_requested */}
+          {hasObservations && (
+            <button
+              onClick={() => setShowNotes((v) => !v)}
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                padding: "2px 7px",
+                borderRadius: 99,
+                border: "1px solid #fecaca",
+                background: showNotes ? "#b91c1c" : "#fff",
+                color: showNotes ? "#fff" : "#b91c1c",
+                cursor: "pointer",
+                lineHeight: 1.4,
+                flexShrink: 0,
+              }}
+            >
+              {showNotes ? "Cerrar ↑" : "Ver observaciones ↓"}
+            </button>
           )}
-          {isShared && (
-            <span style={{ fontWeight: 500, opacity: 0.7 }}> ↗</span>
-          )}
-        </span>
+        </div>
 
         <div style={{ display: "flex", gap: 4, flexShrink: 0, alignItems: "center" }}>
           {uploadedName && status !== "pending_upload" && !expired && (
@@ -163,11 +208,11 @@ export function DocumentUploadRow({
                 padding: "2px 8px",
                 borderRadius: 5,
                 textDecoration: "none",
-                background: needsAction ? "#004238" : "#F3F7F4",
-                color: needsAction ? "#A8F898" : "#5B7168",
+                background: needsAction ? "#004238" : status === "changes_requested" ? "#b91c1c" : "#F3F7F4",
+                color: needsAction ? "#A8F898" : status === "changes_requested" ? "#fff" : "#5B7168",
               }}
             >
-              {needsAction ? "Llenar" : "Editar"}
+              {needsAction ? "Llenar" : status === "changes_requested" ? "Corregir" : "Editar"}
             </Link>
           ) : (
             <>
@@ -188,8 +233,8 @@ export function DocumentUploadRow({
                   padding: "2px 8px",
                   borderRadius: 5,
                   border: "none",
-                  background: needsAction ? "#004238" : "#F3F7F4",
-                  color: needsAction ? "#A8F898" : "#5B7168",
+                  background: needsAction ? "#004238" : status === "changes_requested" ? "#b91c1c" : "#F3F7F4",
+                  color: needsAction ? "#A8F898" : status === "changes_requested" ? "#fff" : "#5B7168",
                   cursor: "pointer",
                   opacity: isPending ? 0.5 : 1,
                   display: "flex",
@@ -198,7 +243,7 @@ export function DocumentUploadRow({
                 }}
               >
                 {isPending && <Spinner size={9} />}
-                {isPending ? "…" : needsAction ? "Subir" : "Cambiar"}
+                {isPending ? "…" : needsAction ? "Subir" : status === "changes_requested" ? "Re-subir" : "Cambiar"}
               </button>
             </>
           )}
@@ -219,19 +264,80 @@ export function DocumentUploadRow({
         {templateName}
       </p>
 
-      {/* Reviewer note (changes requested) */}
-      {status === "changes_requested" && reviewerNotes && (
-        <p
-          className="line-clamp-2"
+      {/* Observations panel (expandable) */}
+      {showNotes && (
+        <div
           style={{
-            margin: 0,
-            fontSize: 10,
-            color: "#c9772f",
-            lineHeight: 1.3,
+            marginTop: 2,
+            display: "flex",
+            flexDirection: "column",
+            gap: 8,
+            background: "#fff",
+            border: "1px solid #fecaca",
+            borderRadius: 7,
+            padding: "10px 10px 8px",
           }}
         >
-          🔔 {reviewerNotes}
-        </p>
+          {/* Admin note */}
+          {reviewerNotes && (
+            <div>
+              <p style={{ margin: "0 0 3px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "#b91c1c" }}>
+                Nota del revisor
+              </p>
+              <p style={{ margin: 0, fontSize: 11, color: "#7f1d1d", lineHeight: 1.4 }}>
+                {reviewerNotes}
+              </p>
+            </div>
+          )}
+
+          {/* Client reply */}
+          <div>
+            <p style={{ margin: "0 0 4px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "#5B7168" }}>
+              Tu respuesta (opcional)
+            </p>
+            <textarea
+              value={clientNote}
+              onChange={(e) => { setClientNote(e.target.value); setNoteSaved(false) }}
+              placeholder="Escribe una observación o pregunta al revisor…"
+              rows={2}
+              style={{
+                width: "100%",
+                fontSize: 11,
+                padding: "6px 8px",
+                borderRadius: 6,
+                border: "1px solid #E4ECE7",
+                resize: "vertical",
+                fontFamily: "inherit",
+                color: "#0F2A22",
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+              {noteSaved && (
+                <span style={{ fontSize: 10, color: "#1f7a4d", fontWeight: 600 }}>Respuesta guardada</span>
+              )}
+              {!noteSaved && <span />}
+              <button
+                onClick={handleSaveNote}
+                disabled={isSavingNote}
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  padding: "3px 10px",
+                  borderRadius: 5,
+                  border: "none",
+                  background: "#004238",
+                  color: "#A8F898",
+                  cursor: isSavingNote ? "not-allowed" : "pointer",
+                  opacity: isSavingNote ? 0.6 : 1,
+                }}
+              >
+                {isSavingNote ? "…" : "Guardar respuesta"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {error && (
