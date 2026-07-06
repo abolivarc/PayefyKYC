@@ -9,6 +9,7 @@ import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
 import { ExportExpedienteButton } from "@/components/admin/export-expediente-button"
 import { ContractManager } from "@/components/admin/contract-manager"
+import { SendToTransferButton } from "@/components/admin/send-to-transfer-button"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -152,7 +153,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, company_id, companies(legal_name, tax_id, contact_email, person_type), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, tax_id, contact_email, person_type), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -179,6 +180,7 @@ export default async function ReviewPage({
   const company = (app.companies as unknown) as { legal_name: string; tax_id: string; contact_email?: string; person_type?: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
+  const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
 
   type DocTemplate = {
     id: string; code: string; name: string; is_form: boolean;
@@ -331,6 +333,7 @@ export default async function ReviewPage({
           </div>
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+            <SendToTransferButton applicationId={appId} transferStatus={transferStatus} />
             <ExportExpedienteButton applicationId={appId} />
             {/* Feature 4: completion override toggle */}
             <CompletionOverrideButton applicationId={appId} initialValue={completionOverride} />

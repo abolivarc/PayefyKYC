@@ -29,12 +29,13 @@ interface Props {
   applicationId: string
   clientEmail?: string
   onClose: () => void
+  initialTemplate?: EmailTemplateKey
 }
 
-export function EmailComposer({ applicationId, clientEmail, onClose }: Props) {
+export function EmailComposer({ applicationId, clientEmail, onClose, initialTemplate }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
-  const [template, setTemplate] = useState<EmailTemplateKey>("expediente_to_transfer")
+  const [template, setTemplate] = useState<EmailTemplateKey>(initialTemplate ?? "expediente_to_transfer")
   const [toEmail, setToEmail] = useState("")
   const [customMessage, setCustomMessage] = useState("")
   const [attachExpediente, setAttachExpediente] = useState(true)
