@@ -49,21 +49,20 @@ export async function sendExpedienteEmail({
   const { data: app, error: appErr } = await admin
     .from("applications")
     .select(
-      `id, transfer_status,
-       companies(name),
-       products(name),
-       company_users!inner(profiles(full_name, email))`
+      `id, transfer_status, company_id,
+       companies(name, company_users(profiles(full_name, email))),
+       products(name)`
     )
     .eq("id", applicationId)
     .single()
 
   if (appErr || !app) return { error: appErr?.message ?? "Solicitud no encontrada" }
 
-  const companyName = (app.companies as unknown as { name: string } | null)?.name ?? ""
+  type CompanyRow = { name: string; company_users: { profiles: { full_name: string; email: string } }[] }
+  const companyRow = (app.companies as unknown as CompanyRow | null)
+  const companyName = companyRow?.name ?? ""
   const productName = (app.products as unknown as { name: string } | null)?.name ?? ""
-  const clientProfile = (
-    app.company_users as unknown as { profiles: { full_name: string; email: string } }[]
-  )?.[0]?.profiles
+  const clientProfile = companyRow?.company_users?.[0]?.profiles
   const clientName = clientProfile?.full_name ?? ""
   const clientEmail = clientProfile?.email ?? ""
 
