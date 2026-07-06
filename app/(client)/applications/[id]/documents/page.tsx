@@ -62,7 +62,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   },
   {
     title: "Datos solicitados",
-    codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc"],
+    codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc", "pf_curp", "pf_rfc"],
   },
   {
     title: "Adicionales",

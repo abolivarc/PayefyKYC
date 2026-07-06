@@ -61,7 +61,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
   { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
   { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
-  { title: "Datos solicitados", codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc"] },
+  { title: "Datos solicitados", codes: ["shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc", "pf_curp", "pf_rfc"] },
   { title: "Adicionales", codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"] },
 ]
 
@@ -464,6 +464,7 @@ export default async function ReviewPage({
                         templateName={g.name}
                         initialIsValidated={g.displayStatus === "approved"}
                         isRequired={g.isRequired}
+                        value={primaryDoc.file_name}
                       />
                     )
                   })}
@@ -551,6 +552,7 @@ export default async function ReviewPage({
                             templateName={tmpl.name}
                             initialIsValidated={codeDocs[0].status === "approved"}
                             isRequired={tmpl.is_required}
+                            value={codeDocs[0].file_name}
                           />
                         )
                       }
