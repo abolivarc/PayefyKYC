@@ -1,11 +1,11 @@
 import Link from "next/link"
-import { signInEmployee } from "@/app/(auth)/actions"
+import { requestAdminPasswordReset } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default async function AdminLoginPage({
+export default async function AdminForgotPasswordPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string; success?: string }>
@@ -15,7 +15,7 @@ export default async function AdminLoginPage({
   return (
     <div className="space-y-4">
       <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
-        Accede con tu cuenta institucional
+        Ingresa tu correo institucional y te enviaremos un enlace para restablecer tu contraseña.
       </p>
 
       {error && (
@@ -30,7 +30,7 @@ export default async function AdminLoginPage({
         </Alert>
       )}
 
-      <form action={signInEmployee} className="space-y-4">
+      <form action={requestAdminPasswordReset} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-white/80">
             Correo electrónico
@@ -39,26 +39,9 @@ export default async function AdminLoginPage({
             id="email"
             name="email"
             type="email"
-            placeholder="nombre@payefy.com"
+            placeholder="nombre@payefy.me"
             autoComplete="email"
             required
-            style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
-            className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-white/80">
-            Contraseña
-          </Label>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
-            required
-            minLength={8}
             style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
             className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
@@ -69,13 +52,13 @@ export default async function AdminLoginPage({
           className="w-full font-semibold"
           style={{ background: "#AEFF99", color: "#004238" }}
         >
-          Acceder
+          Enviar enlace
         </Button>
       </form>
 
       <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-        <Link href="/admin/forgot-password" className="hover:text-white/80 transition-colors">
-          ¿Olvidaste tu contraseña?
+        <Link href="/admin/login" className="hover:text-white/80 transition-colors">
+          ← Regresar al inicio de sesión
         </Link>
       </p>
     </div>

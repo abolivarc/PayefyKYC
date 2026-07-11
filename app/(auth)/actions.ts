@@ -214,6 +214,66 @@ export async function requestPasswordReset(formData: FormData) {
   )
 }
 
+export async function requestAdminPasswordReset(formData: FormData) {
+  const email = formData.get("email") as string
+
+  if (!email || !email.includes("@")) {
+    redirect(
+      "/admin/forgot-password?error=" +
+        encodeURIComponent("Correo electrónico inválido.")
+    )
+  }
+
+  const supabase = await createClient()
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery&next=/admin/reset-password`
+
+  await supabase.auth.resetPasswordForEmail(email, { redirectTo })
+
+  redirect(
+    "/admin/forgot-password?success=" +
+      encodeURIComponent(
+        "Si ese correo está registrado, recibirás un enlace en breve."
+      )
+  )
+}
+
+export async function updateAdminPassword(formData: FormData) {
+  const password = formData.get("password") as string
+  const confirm = formData.get("confirm_password") as string
+
+  if (!password || password.length < 8) {
+    redirect(
+      "/admin/reset-password?error=" +
+        encodeURIComponent("La contraseña debe tener al menos 8 caracteres.")
+    )
+  }
+
+  if (password !== confirm) {
+    redirect(
+      "/admin/reset-password?error=" +
+        encodeURIComponent("Las contraseñas no coinciden.")
+    )
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase.auth.updateUser({ password })
+
+  if (error) {
+    redirect(
+      "/admin/reset-password?error=" +
+        encodeURIComponent(
+          "No se pudo actualizar la contraseña. El enlace puede haber expirado."
+        )
+    )
+  }
+
+  revalidatePath("/", "layout")
+  redirect(
+    "/admin/login?success=" +
+      encodeURIComponent("Contraseña actualizada. Ya puedes iniciar sesión.")
+  )
+}
+
 export async function updatePassword(formData: FormData) {
   const password = formData.get("password") as string
   const confirm = formData.get("confirm_password") as string

@@ -90,6 +90,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const destination = type === "recovery" ? "/reset-password" : next
+  const destination = type === "recovery"
+    ? (searchParams.get("next") ?? "/reset-password")
+    : next
   return NextResponse.redirect(`${origin}${destination}`)
 }

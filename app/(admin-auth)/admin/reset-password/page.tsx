@@ -1,21 +1,20 @@
-import Link from "next/link"
-import { signInEmployee } from "@/app/(auth)/actions"
+import { updateAdminPassword } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default async function AdminLoginPage({
+export default async function AdminResetPasswordPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>
+  searchParams: Promise<{ error?: string }>
 }) {
-  const { error, success } = await searchParams
+  const { error } = await searchParams
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
-        Accede con tu cuenta institucional
+        Elige una nueva contraseña para tu cuenta institucional.
       </p>
 
       {error && (
@@ -24,39 +23,34 @@ export default async function AdminLoginPage({
         </Alert>
       )}
 
-      {success && (
-        <Alert style={{ background: "rgba(174,255,153,0.12)", border: "1px solid rgba(174,255,153,0.3)" }}>
-          <AlertDescription style={{ color: "#AEFF99" }}>{success}</AlertDescription>
-        </Alert>
-      )}
-
-      <form action={signInEmployee} className="space-y-4">
+      <form action={updateAdminPassword} className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-white/80">
-            Correo electrónico
+          <Label htmlFor="password" className="text-white/80">
+            Nueva contraseña
           </Label>
           <Input
-            id="email"
-            name="email"
-            type="email"
-            placeholder="nombre@payefy.com"
-            autoComplete="email"
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
             required
+            minLength={8}
             style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
             className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-white/80">
-            Contraseña
+          <Label htmlFor="confirm_password" className="text-white/80">
+            Confirmar contraseña
           </Label>
           <Input
-            id="password"
-            name="password"
+            id="confirm_password"
+            name="confirm_password"
             type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
+            placeholder="Repite la contraseña"
+            autoComplete="new-password"
             required
             minLength={8}
             style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
@@ -69,15 +63,9 @@ export default async function AdminLoginPage({
           className="w-full font-semibold"
           style={{ background: "#AEFF99", color: "#004238" }}
         >
-          Acceder
+          Guardar nueva contraseña
         </Button>
       </form>
-
-      <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-        <Link href="/admin/forgot-password" className="hover:text-white/80 transition-colors">
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </p>
     </div>
   )
 }
