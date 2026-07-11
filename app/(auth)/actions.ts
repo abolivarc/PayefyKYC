@@ -221,7 +221,7 @@ export async function requestAdminPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery&next=%2Fadmin%2Freset-password`
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/admin-callback`
 
   await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
