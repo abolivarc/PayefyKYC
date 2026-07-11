@@ -2,10 +2,18 @@
 
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/send"
 import { emailPasswordReset } from "@/lib/email/templates/password-reset"
+
+async function getAppUrl() {
+  const headerStore = await headers()
+  const host = headerStore.get("host") ?? "payefy.com.mx"
+  const proto = host.startsWith("localhost") ? "http" : "https"
+  return `${proto}://${host}`
+}
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string
@@ -201,7 +209,8 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`
+  const appUrl = await getAppUrl()
+  const redirectTo = `${appUrl}/auth/callback?type=recovery`
   await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
   redirect(
@@ -221,7 +230,8 @@ export async function requestAdminPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/admin-callback`
+  const appUrl = await getAppUrl()
+  const redirectTo = `${appUrl}/auth/admin-callback`
 
   await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 

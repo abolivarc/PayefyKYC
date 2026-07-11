@@ -25,12 +25,6 @@ export async function GET(request: NextRequest) {
     | null
   const next = searchParams.get("next") ?? "/dashboard"
 
-  if (!token_hash || !type) {
-    return NextResponse.redirect(
-      `${origin}/login?error=${encodeURIComponent("Enlace inválido o expirado.")}`
-    )
-  }
-
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -48,6 +42,28 @@ export async function GET(request: NextRequest) {
       },
     }
   )
+
+  // PKCE flow (Supabase sends ?code=xxx)
+  const code = searchParams.get("code")
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) {
+      return NextResponse.redirect(
+        `${origin}/login?error=${encodeURIComponent(
+          "El enlace expiró o ya fue usado. Solicita uno nuevo."
+        )}`
+      )
+    }
+    const destination = type === "recovery" ? (searchParams.get("next") ?? "/reset-password") : next
+    return NextResponse.redirect(`${origin}${destination}`)
+  }
+
+  // OTP flow (token_hash + type)
+  if (!token_hash || !type) {
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent("Enlace inválido o expirado.")}`
+    )
+  }
 
   const { error } = await supabase.auth.verifyOtp({ token_hash, type })
 
