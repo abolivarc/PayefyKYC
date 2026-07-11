@@ -3,6 +3,9 @@
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createAdminClient } from "@supabase/supabase-js"
+import { sendEmail } from "@/lib/email/send"
+import { emailPasswordReset } from "@/lib/email/templates/password-reset"
 
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string
@@ -194,23 +197,16 @@ export async function requestPasswordReset(formData: FormData) {
   const email = formData.get("email") as string
 
   if (!email || !email.includes("@")) {
-    redirect(
-      "/forgot-password?error=" +
-        encodeURIComponent("Correo electrónico inválido.")
-    )
+    redirect("/forgot-password?error=" + encodeURIComponent("Correo electrónico inválido."))
   }
 
   const supabase = await createClient()
   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery`
-
-  // Siempre muestra éxito para no revelar si el email existe
   await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
   redirect(
     "/forgot-password?success=" +
-      encodeURIComponent(
-        "Si ese correo está registrado, recibirás un enlace en breve."
-      )
+      encodeURIComponent("Si ese correo está registrado, recibirás un enlace en breve.")
   )
 }
 
@@ -225,7 +221,7 @@ export async function requestAdminPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
-  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery&next=/admin/reset-password`
+  const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?type=recovery&next=%2Fadmin%2Freset-password`
 
   await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
