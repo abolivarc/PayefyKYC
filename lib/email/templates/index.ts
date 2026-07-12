@@ -259,6 +259,52 @@ export function emailRequestDocsToClient({
   </div>`)
 }
 
+export function emailDocumentUploaded({
+  companyName,
+  documentName,
+  applicationUrl,
+}: {
+  companyName: string
+  documentName: string
+  applicationUrl: string
+}): string {
+  return wrap(`
+  ${header("Actividad")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Nueva actividad de cliente</h2>
+    <p><strong>${companyName}</strong> acaba de subir un documento a su expediente.</p>
+    <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:40%;">Empresa</td><td style="padding:8px;border:1px solid #e5e7eb;">${companyName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Documento</td><td style="padding:8px;border:1px solid #e5e7eb;">${documentName}</td></tr>
+    </table>
+    <div style="margin:24px 0;">${btn(applicationUrl, "Revisar expediente")}</div>
+    ${footer()}
+  </div>`)
+}
+
+export function emailDocumentChangesUploaded({
+  companyName,
+  documentName,
+  applicationUrl,
+}: {
+  companyName: string
+  documentName: string
+  applicationUrl: string
+}): string {
+  return wrap(`
+  ${header("Cambios")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:#0f766e;margin-top:0;">Cliente respondió a cambios solicitados</h2>
+    <p><strong>${companyName}</strong> actualizó su expediente en respuesta a los cambios solicitados.</p>
+    <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:40%;">Empresa</td><td style="padding:8px;border:1px solid #e5e7eb;">${companyName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Documento actualizado</td><td style="padding:8px;border:1px solid #e5e7eb;">${documentName}</td></tr>
+    </table>
+    <div style="margin:24px 0;">${btn(applicationUrl, "Revisar expediente")}</div>
+    ${footer()}
+  </div>`)
+}
+
 export function emailContractToClient({
   companyName,
   clientName,

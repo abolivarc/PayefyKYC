@@ -2,10 +2,12 @@
 
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { emailDocsSubmitted } from "@/lib/email/templates"
+import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 
 // ─────────────────────────────────────
@@ -516,23 +518,22 @@ export async function submitApplication(applicationId: string) {
     name: string
     internal_reviewer_email: string | null
   } | null
-  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
+  const headerStore = await headers()
+  const host = headerStore.get("host") ?? "payefy.com.mx"
+  const proto = host.startsWith("localhost") ? "http" : "https"
+  const appUrl = `${proto}://${host}/admin/applications/${applicationId}/review`
 
-  if (product?.internal_reviewer_email && process.env.RESEND_API_KEY) {
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    await resend.emails
-      .send({
-        from: process.env.RESEND_FROM_EMAIL ?? "onboarding@payefy.com.mx",
-        to: product.internal_reviewer_email,
-        subject: `[PayefyKYC] Nueva solicitud: ${company?.legal_name ?? ""}`,
-        html: emailDocsSubmitted({
-          companyName: company?.legal_name ?? "",
-          productName: product?.name ?? "",
-          reviewerName: "Equipo Payefy",
-          applicationUrl: appUrl,
-        }),
-      })
-      .catch(() => {})
+  if (product?.internal_reviewer_email) {
+    await sendEmail({
+      to: product.internal_reviewer_email,
+      subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
+      html: emailDocsSubmitted({
+        companyName: company?.legal_name ?? "",
+        productName: product?.name ?? "",
+        reviewerName: "Equipo Payefy",
+        applicationUrl: appUrl,
+      }),
+    }).catch(() => {})
   }
 
   await logAudit({

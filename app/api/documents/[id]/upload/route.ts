@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
+import { sendEmail } from "@/lib/email/send"
+import { emailDocumentUploaded, emailDocumentChangesUploaded } from "@/lib/email/templates"
 
 const ALLOWED_MIME = new Set([
   "application/pdf",
@@ -134,6 +136,53 @@ export async function POST(
       { status: 500 }
     )
   }
+
+  // ── 7. Email notification (fire-and-forget) ─────────────────────────────
+  ;(async () => {
+    try {
+      const { data: fullDoc } = await serviceClient
+        .from("documents")
+        .select(`
+          document_templates (name),
+          applications (
+            status,
+            companies (legal_name),
+            products (internal_reviewer_email)
+          )
+        `)
+        .eq("id", documentId)
+        .single()
+
+      const appData = (fullDoc?.applications as unknown) as {
+        status: string
+        companies: { legal_name: string } | null
+        products: { internal_reviewer_email: string | null } | null
+      } | null
+      const docTemplate = (fullDoc?.document_templates as unknown) as { name: string } | null
+      const reviewerEmail = appData?.products?.internal_reviewer_email
+
+      if (!reviewerEmail) return
+
+      const host = req.headers.get("host") ?? "payefy.com.mx"
+      const proto = host.startsWith("localhost") ? "http" : "https"
+      const applicationUrl = `${proto}://${host}/admin/applications/${doc.application_id}/review`
+      const companyName = appData?.companies?.legal_name ?? ""
+      const documentName = docTemplate?.name ?? file.name
+      const isChanges = ["changes_requested", "provider_changes_requested"].includes(appData?.status ?? "")
+
+      await sendEmail({
+        to: reviewerEmail,
+        subject: isChanges
+          ? `[PayefyKYC] Cambios respondidos: ${companyName}`
+          : `[PayefyKYC] Nueva actividad: ${companyName}`,
+        html: isChanges
+          ? emailDocumentChangesUploaded({ companyName, documentName, applicationUrl })
+          : emailDocumentUploaded({ companyName, documentName, applicationUrl }),
+      })
+    } catch (e) {
+      console.error("[DOCS UPLOAD] email notification error:", e)
+    }
+  })()
 
   return NextResponse.json({ success: true, storagePath, fileName: file.name })
 }
