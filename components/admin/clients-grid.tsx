@@ -109,7 +109,7 @@ function CardMenu({ company, apps, isSuperAdmin }: { company: Company; apps: App
       {open && (
         <div
           role="menu"
-          className="absolute right-0 bottom-full mb-1.5 w-44 bg-card border border-border rounded-md shadow z-50 overflow-hidden py-0.5"
+          className="absolute right-0 top-full mt-1.5 w-44 bg-card border border-border rounded-md shadow z-50 overflow-hidden py-0.5"
           onClick={(e) => e.stopPropagation()}
         >
           {apps[0] && (
@@ -260,7 +260,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
             return (
               <div
                 key={company.id}
-                className="group relative flex flex-col overflow-hidden hover:shadow-[0_6px_24px_rgba(15,42,34,.12)] transition-shadow duration-200"
+                className="group relative flex flex-col hover:shadow-[0_6px_24px_rgba(15,42,34,.12)] transition-shadow duration-200"
                 style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22 }}
               >
                 {/* Cover link */}
@@ -272,7 +272,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                 />
 
                 {/* Top accent stripe */}
-                <div className="h-[3px] shrink-0" style={{ background: stripe }} />
+                <div className="h-[3px] shrink-0" style={{ background: stripe, borderRadius: "22px 22px 0 0" }} />
 
                 {/* Card body */}
                 <div className="p-5 flex flex-col gap-3 flex-1">
