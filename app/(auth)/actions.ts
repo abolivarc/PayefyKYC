@@ -185,6 +185,8 @@ export async function signUp(formData: FormData) {
   if (error) {
     const msg = error.message.toLowerCase().includes("already registered")
       ? "Este correo ya está registrado. Inicia sesión en su lugar."
+      : error.status === 429 || error.message.includes("security purposes") || error.message.includes("rate limit")
+      ? "Ya enviamos un enlace de confirmación a ese correo. Revisa tu bandeja de entrada (incluyendo spam)."
       : "No se pudo crear la cuenta. Intenta de nuevo."
     redirect("/register?error=" + encodeURIComponent(msg))
   }
