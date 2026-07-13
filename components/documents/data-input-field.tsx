@@ -115,7 +115,7 @@ export function DataInputField({
             if (e.key === "Enter") handleSave()
           }}
           placeholder={isApproved ? "—" : "Escribe aquí…"}
-          disabled={isApproved || isPending}
+          disabled={isPending}
           style={{
             flex: 1,
             fontSize: 13,
@@ -123,12 +123,12 @@ export function DataInputField({
             border: "1px solid #E4ECE7",
             borderRadius: 7,
             outline: "none",
-            background: isApproved ? "#F3F7F4" : "#fff",
+            background: "#fff",
             color: "#0F2A22",
             fontFamily: "inherit",
           }}
         />
-        {!isApproved && (
+        {(
           <button
             onClick={handleSave}
             disabled={!hasValue || !dirty || isPending}
