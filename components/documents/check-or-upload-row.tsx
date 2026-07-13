@@ -50,7 +50,9 @@ export function CheckOrUploadRow({
   const satisfied = isChecked || status !== "pending_upload"
   const displayKey = isChecked ? "approved" : status
   const cfg = STATUS[displayKey] ?? STATUS.pending_upload
-  const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
+  const accept = fileFormat === "jpg"
+    ? "image/*,application/pdf"
+    : "application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
 
   async function handleCheckChange(checked: boolean) {
     setError(null)

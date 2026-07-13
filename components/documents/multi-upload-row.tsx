@@ -49,7 +49,9 @@ export function MultiUploadRow({
   const inputRef = useRef<HTMLInputElement>(null)
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
 
-  const accept = fileFormat === "jpg" ? "image/*" : "application/pdf"
+  const accept = fileFormat === "jpg"
+    ? "image/*,application/pdf"
+    : "application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
