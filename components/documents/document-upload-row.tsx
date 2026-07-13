@@ -66,9 +66,7 @@ export function DocumentUploadRow({
   const [clientNote, setClientNote] = useState(initialClientNotes ?? "")
   const [noteSaved, setNoteSaved] = useState(false)
 
-  const accept = fileFormat === "jpg"
-    ? "image/*,application/pdf"
-    : "application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
+  const accept = "*"
   const expired = EXPIRY_CODES.has(templateCode) && isDocumentExpired(currentUploadedAt)
   const displayKey = expired ? "expired" : status
   const cfg = STATUS[displayKey] ?? STATUS.pending_upload

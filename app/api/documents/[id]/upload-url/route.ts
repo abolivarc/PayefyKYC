@@ -10,8 +10,13 @@ const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
+  "image/webp",
   "image/heic",
   "image/heif",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 ])
 const MAX_BYTES = 100 * 1024 * 1024 // 100 MB
 
