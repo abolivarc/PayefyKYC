@@ -2,35 +2,84 @@
 
 import { useRef, useState } from "react"
 import Link from "next/link"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { termsOpmSchema, type TermsOpmValues } from "@/lib/validations/terms-opm"
 import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface Props {
   appId: string
   documentId: string
-  templateUrl?: string | null
   initialFileName?: string | null
+  defaultCompanyName?: string
 }
 
-export function TermsAndConditionsForm({ appId, documentId, templateUrl, initialFileName }: Props) {
+export function TermsAndConditionsForm({
+  appId,
+  documentId,
+  initialFileName,
+  defaultCompanyName,
+}: Props) {
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [generated, setGenerated] = useState(false)
+
   const [uploading, setUploading] = useState(false)
   const [uploadedName, setUploadedName] = useState<string | null>(initialFileName ?? null)
   const [uploadError, setUploadError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const form = useForm<TermsOpmValues>({
+    resolver: zodResolver(termsOpmSchema),
+    defaultValues: {
+      company_legal_name: defaultCompanyName ?? "",
+      signer_full_name: "",
+      signing_date: new Date().toISOString().slice(0, 10),
+    },
+  })
+
+  async function handleGenerate(data: TermsOpmValues) {
+    setGenerating(true)
+    setGenerateError(null)
+    try {
+      const res = await fetch("/api/pdf/terms-and-conditions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (!res.ok) {
+        const json = await res.json()
+        setGenerateError(json.error ?? "Error al generar el documento")
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      const safeName = data.company_legal_name
+        .replace(/[^a-zA-Z0-9\s]/g, "")
+        .trim()
+        .replace(/\s+/g, "_")
+      a.href = url
+      a.download = `terminos_condiciones_${safeName}.docx`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      setGenerated(true)
+    } catch {
+      setGenerateError("Error de conexión")
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    // HEIC/HEIF (fotos de iPhone en formato nativo) — el bucket no las acepta.
-    if (
-      file.type === "image/heic" ||
-      file.type === "image/heif" ||
-      /\.(heic|heif)$/i.test(file.name)
-    ) {
-      setUploadError("Las fotos en formato HEIC (iPhone) no están soportadas. Ábrelas en Fotos → exportar como JPEG y sube el JPG.")
-      return
-    }
     setUploadError(null)
     setUploading(true)
     const result = await uploadDocumentFile(documentId, file)
@@ -43,11 +92,12 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
+      {/* Banner de estado */}
       {uploadedName ? (
         <Alert>
           <AlertDescription>
-            ✅ Términos y condiciones firmados subidos correctamente. El documento está en revisión.
+            ✅ Documento firmado subido correctamente. El documento está en revisión.
           </AlertDescription>
         </Alert>
       ) : (
@@ -58,54 +108,104 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
           <span style={{ fontSize: 20, lineHeight: 1.4 }}>⚠️</span>
           <div>
             <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
-              Este documento aún NO está validado
+              Requiere documento firmado
             </p>
             <p className="text-sm" style={{ color: "#92400E" }}>
-              Descarga los términos y condiciones, fírmalos y sube la copia firmada para que cuente como entregado.
+              Genera el documento pre-llenado o sube directamente la versión firmada si ya la tienes.
             </p>
           </div>
         </div>
       )}
 
-      {/* Paso 1 – Descargar */}
-      <div className="rounded-xl border p-4 space-y-2">
-        <p className="text-sm font-semibold">Paso 1 — Descarga, imprime y firma</p>
-        <p className="text-sm text-muted-foreground">
-          Abre el documento, imprímelo, fírmalo a mano con tinta y escanéalo o fótografialo.
-        </p>
-        {templateUrl ? (
-          <a
-            href={templateUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={buttonVariants({ variant: "outline", size: "sm" })}
-          >
-            Descargar TYC (.pdf)
-          </a>
-        ) : (
-          <p className="text-xs text-muted-foreground italic">
-            Solicita el documento a tu gestor de cuenta.
+      {/* Opción A — Generar pre-llenado */}
+      <div className="rounded-xl border p-4 space-y-4">
+        <div>
+          <p className="text-sm font-semibold">Opción A — Generar y descargar pre-llenado</p>
+          <p className="text-sm text-muted-foreground">
+            Captura los datos, descarga el documento con los datos integrados, imprímelo, fírmalo a mano y escanéalo.
           </p>
+        </div>
+
+        {generateError && (
+          <Alert variant="destructive">
+            <AlertDescription>{generateError}</AlertDescription>
+          </Alert>
         )}
+        {generated && (
+          <Alert>
+            <AlertDescription>
+              ✅ Documento descargado. Imprímelo, fírmalo y súbelo en la sección de abajo.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="company_legal_name">Razón social</Label>
+            <Input
+              id="company_legal_name"
+              {...form.register("company_legal_name")}
+              placeholder="Empresa Ejemplo S.A. de C.V."
+            />
+            {form.formState.errors.company_legal_name && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.company_legal_name.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signer_full_name">Nombre del representante legal</Label>
+            <Input
+              id="signer_full_name"
+              {...form.register("signer_full_name")}
+              placeholder="Nombre Apellido Apellido"
+            />
+            {form.formState.errors.signer_full_name && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.signer_full_name.message}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signing_date">Fecha</Label>
+            <Input id="signing_date" type="date" {...form.register("signing_date")} />
+            {form.formState.errors.signing_date && (
+              <p className="text-xs text-destructive">
+                {form.formState.errors.signing_date.message}
+              </p>
+            )}
+          </div>
+
+          <Button type="submit" variant="outline" disabled={generating}>
+            {generating ? "Generando…" : "Generar y descargar (.docx)"}
+          </Button>
+        </form>
       </div>
 
-      {/* Paso 2 – Subir firmado */}
+      {/* Opción B / Paso 2 — Subir firmado */}
       <div
         className="rounded-xl border-2 p-4 space-y-2"
         style={uploadedName ? {} : { borderColor: "#F59E0B" }}
       >
         <p className="text-sm font-semibold">
-          Paso 2 — Sube la versión firmada{" "}
+          {generated ? "Paso 2 — " : "Opción B — "}
+          Subir documento firmado y escaneado
           {!uploadedName && (
-            <span style={{ color: "#B45309" }}>(requerido para completar)</span>
+            <span style={{ color: "#B45309" }}> (requerido para completar)</span>
           )}
         </p>
         <p className="text-sm text-muted-foreground">
-          Sube el PDF o imagen del documento ya firmado.
+          {generated
+            ? "Sube la versión que acabas de imprimir y firmar."
+            : "Si ya tienes el documento firmado (PDF, foto o escaneo), súbelo directamente."}
         </p>
 
         {uploadedName ? (
-          <p className="text-sm font-medium" style={{ color: "#047857" }}>✅ {uploadedName}</p>
+          <p className="text-sm font-medium" style={{ color: "#047857" }}>
+            ✅ {uploadedName}
+          </p>
         ) : (
           <>
             <input
@@ -115,12 +215,8 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
               className="hidden"
               onChange={handleUpload}
             />
-            <Button
-              size="sm"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? "Subiendo…" : "Subir TYC firmado"}
+            <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+              {uploading ? "Subiendo…" : "Subir documento firmado"}
             </Button>
           </>
         )}

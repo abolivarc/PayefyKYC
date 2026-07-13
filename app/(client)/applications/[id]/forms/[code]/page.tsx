@@ -30,9 +30,9 @@ export default async function FormPage({
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  // Pre-fetch company name for terms_opm form
+  // Pre-fetch company name for terms_opm and terms_and_conditions forms
   let companyName: string | undefined
-  if (code === "terms_opm") {
+  if (code === "terms_opm" || code === "terms_and_conditions") {
     const { data: app } = await admin
       .from("applications")
       .select("companies(legal_name)")
@@ -82,8 +82,8 @@ export default async function FormPage({
         <TermsAndConditionsForm
           appId={appId}
           documentId={tycDocumentId}
-          templateUrl={process.env.NEXT_PUBLIC_TYC_TEMPLATE_URL ?? null}
           initialFileName={tycFileName}
+          defaultCompanyName={companyName}
         />
       )}
     </div>
