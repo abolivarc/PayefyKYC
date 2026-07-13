@@ -111,7 +111,7 @@ export function TermsAndConditionsForm({ appId, documentId, templateUrl, initial
             <input
               ref={fileRef}
               type="file"
-              accept="application/pdf,image/jpeg,image/png"
+              accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
               className="hidden"
               onChange={handleUpload}
             />

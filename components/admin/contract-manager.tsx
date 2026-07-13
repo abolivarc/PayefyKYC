@@ -124,7 +124,7 @@ function PayefyRow({
               <input
                 ref={fileRef}
                 type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
+                accept=".pdf,.jpg,.jpeg,.png,.heic,.heif"
                 style={{ display: "none" }}
                 disabled={uploading}
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}
@@ -168,7 +168,7 @@ function PayefyRow({
             <input
               ref={fileRef}
               type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
+              accept=".pdf,.jpg,.jpeg,.png,.heic,.heif"
               style={{ display: "none" }}
               disabled={uploading}
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleUpload(f) }}

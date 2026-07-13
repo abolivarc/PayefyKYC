@@ -928,7 +928,7 @@ function UploadForm({ appId, onBack }: { appId: string; onBack: () => void }) {
           <FilePicker
             label="Organigrama empresarial (opcional)"
             hint="Diagrama de estructura corporativa en PDF o imagen."
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept=".pdf,.jpg,.jpeg,.png,.heic,.heif"
             file={orgFile}
             onChange={setOrgFile}
             onClear={() => setOrgFile(null)}

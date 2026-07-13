@@ -146,7 +146,7 @@ export function BeneficialOwnerForm({ appId }: Props) {
               <input
                 ref={signedFileRef}
                 type="file"
-                accept="application/pdf,image/jpeg,image/png,image/webp"
+                accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
                 className="hidden"
                 onChange={handleSignedUpload}
               />

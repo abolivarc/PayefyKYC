@@ -10,6 +10,8 @@ const ALLOWED_MIME = new Set([
   "application/pdf",
   "image/jpeg",
   "image/png",
+  "image/heic",
+  "image/heif",
 ])
 const MAX_BYTES = 100 * 1024 * 1024 // 100 MB
 
