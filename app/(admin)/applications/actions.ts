@@ -337,6 +337,39 @@ export async function validateDataCheck(
 }
 
 // ─────────────────────────────────────
+// Editar valor de un campo data_check (solo admin)
+// ─────────────────────────────────────
+export async function updateDataCheckValue(
+  documentId: string,
+  value: string,
+  applicationId: string
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const trimmed = value.trim()
+  const { error } = await adminDb()
+    .from("documents")
+    .update({ file_name: trimmed || null })
+    .eq("id", documentId)
+
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: user.id,
+    action: "document_validated",
+    entityType: "document",
+    entityId: documentId,
+    changes: { file_name: trimmed },
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
 // Toggle completion_override en una application
 // ─────────────────────────────────────
 export async function toggleCompletionOverride(
