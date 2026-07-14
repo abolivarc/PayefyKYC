@@ -21,7 +21,7 @@ const STATUS_CONFIG: Record<DocStatus, { label: string; bg: string; color: strin
 }
 
 interface DocItem {
-  id: string
+  id: string | null  // null = slot visible pero sin registro en DB aún
   status: DocStatus
   fileName: string | null
 }
@@ -37,7 +37,7 @@ interface Props {
   templateName: string
   templateInstructions: string | null
   fileFormat: string
-  initialDocs: DocItem[]
+  initialDocs: { id: string; status: DocStatus; fileName: string | null }[]
 }
 
 function buildPairs(docs: DocItem[]): DocPair[] {
@@ -63,8 +63,9 @@ export function MultiUploadRow({
   const inputRef = useRef<HTMLInputElement>(null)
   const [activeDocId, setActiveDocId] = useState<string | null>(null)
 
-  function openPicker(docId: string) {
-    setActiveDocId(docId)
+  function openPicker(docId: string | null, pairIdx?: number) {
+    // If docId is null this is a reverso placeholder — use sentinel "new-reverso:N"
+    setActiveDocId(docId ?? `new-reverso:${pairIdx ?? 0}`)
     inputRef.current?.click()
   }
 
@@ -75,6 +76,38 @@ export function MultiUploadRow({
     e.target.value = ""
     const docId = activeDocId
     startTransition(async () => {
+      // If docId is the sentinel "new-reverso:N", create the DB record first
+      if (docId.startsWith("new-reverso:")) {
+        const pairIdx = parseInt(docId.split(":")[1], 10)
+        const created = await addExtraDocument(applicationId, templateId)
+        if (created?.error || !created?.documentId) {
+          setError(created?.error ?? "No se pudo crear el slot")
+          return
+        }
+        // Replace the placeholder id with the real one before uploading
+        const realId = created.documentId
+        setPairs((prev) =>
+          prev.map((p, i) =>
+            i === pairIdx && p.reverso
+              ? { ...p, reverso: { ...p.reverso, id: realId } }
+              : p
+          )
+        )
+        const result = await uploadDocumentFile(realId, file)
+        if (!result.success) {
+          setError(result.error ?? "Error al subir el archivo")
+        } else {
+          setPairs((prev) =>
+            prev.map((p, i) =>
+              i === pairIdx && p.reverso
+                ? { ...p, reverso: { ...p.reverso, id: realId, status: "pending_review", fileName: file.name } }
+                : p
+            )
+          )
+        }
+        return
+      }
+
       const result = await uploadDocumentFile(docId, file)
       if (!result.success) {
         setError(result.error ?? "Error al subir el archivo")
@@ -92,16 +125,13 @@ export function MultiUploadRow({
     })
   }
 
-  async function handleAddReverso(pairIdx: number) {
-    startTransition(async () => {
-      const result = await addExtraDocument(applicationId, templateId)
-      if (result?.error) {
-        setError(result.error)
-      } else if (result?.documentId) {
-        const newDoc: DocItem = { id: result.documentId, status: "pending_upload", fileName: null }
-        setPairs((prev) => prev.map((p, i) => i === pairIdx ? { ...p, reverso: newDoc } : p))
-      }
-    })
+  function handleAddReverso(pairIdx: number) {
+    // Add a UI placeholder; DB record created only on actual file pick
+    setPairs((prev) =>
+      prev.map((p, i) =>
+        i === pairIdx ? { ...p, reverso: { id: null, status: "pending_upload", fileName: null } } : p
+      )
+    )
   }
 
   async function handleAddPerson() {
@@ -116,7 +146,12 @@ export function MultiUploadRow({
     })
   }
 
-  const allDocs = pairs.flatMap((p) => p.reverso ? [p.frente, p.reverso] : [p.frente])
+  // Exclude null-id reverso placeholders (not yet in DB) from the counter
+  const allDocs = pairs.flatMap((p) => {
+    const docs = [p.frente]
+    if (p.reverso?.id) docs.push(p.reverso)
+    return docs
+  })
   const uploadedCount = allDocs.filter((d) => d.status !== "pending_upload").length
   const showPersonLabel = pairs.length > 1
 
@@ -160,7 +195,7 @@ export function MultiUploadRow({
               doc={pair.frente}
               label={pair.reverso !== null ? "Frente" : "Frente / Único"}
               isPending={isPending}
-              onUpload={openPicker}
+              onUpload={(id) => openPicker(id, pairIdx)}
             />
 
             {/* Reverso slot or add button */}
@@ -170,7 +205,7 @@ export function MultiUploadRow({
                   doc={pair.reverso}
                   label="Reverso"
                   isPending={isPending}
-                  onUpload={openPicker}
+                  onUpload={(id) => openPicker(id, pairIdx)}
                 />
               </div>
             ) : (
@@ -213,7 +248,7 @@ function SlotRow({
   doc: DocItem
   label: string
   isPending: boolean
-  onUpload: (id: string) => void
+  onUpload: (id: string | null) => void
 }) {
   const cfg = STATUS_CONFIG[doc.status] ?? STATUS_CONFIG.pending_upload
   return (

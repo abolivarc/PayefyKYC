@@ -288,7 +288,8 @@ export default async function DocumentsPage({
   const total = allGroupDocs.length
   const done = allGroupDocs.filter((d) => {
     if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
-    if (d.template.field_type === "data_check") return d.status === "approved"
+    // data_check: contar como completo en cuanto el cliente guardó un valor (pending_review o approved)
+    if (d.template.field_type === "data_check") return d.status !== "pending_upload"
     if (EXPIRY_CODES.has(d.template.code) && isDocumentExpired(d.uploaded_at)) return false
     return ["approved", "pending_review"].includes(d.status)
   }).length
@@ -296,14 +297,18 @@ export default async function DocumentsPage({
 
   // 11. ¿Todos los required listos para enviar?
   const requiredGroups = categories.flatMap((c) => c.groups).filter((g) => g.is_required)
-  const allRequiredReady = requiredGroups.every((g) =>
-    g.docs.every((d) => {
+  const allRequiredReady = requiredGroups.every((g) => {
+    // Multi-upload: basta con que al menos un doc esté subido (reversos y extras son opcionales)
+    if (g.isMulti) {
+      return g.docs.some((d) => ["pending_review", "approved"].includes(d.status))
+    }
+    return g.docs.every((d) => {
       if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
       if (d.template.field_type === "data_check") return true
       if (EXPIRY_CODES.has(d.template.code) && isDocumentExpired(d.uploaded_at)) return false
       return ["pending_review", "approved"].includes(d.status)
     })
-  )
+  })
 
   const product = (app.products as unknown) as { name: string; code: string } | null
 
