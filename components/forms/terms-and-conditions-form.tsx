@@ -111,18 +111,57 @@ export function TermsAndConditionsForm({
               Requiere documento firmado
             </p>
             <p className="text-sm" style={{ color: "#92400E" }}>
-              Genera el documento pre-llenado o sube directamente la versión firmada si ya la tienes.
+              Sube el documento firmado si ya lo tienes, o genera uno pre-llenado para imprimirlo y firmarlo.
             </p>
           </div>
         </div>
       )}
 
-      {/* Opción A — Generar pre-llenado */}
+      {/* Opción A — Subir firmado (primero, más común) */}
+      <div
+        className="rounded-xl border-2 p-4 space-y-3"
+        style={uploadedName ? { borderColor: "#1f7a4d" } : { borderColor: "#004238" }}
+      >
+        <p className="text-sm font-semibold">
+          Opción A — Subir documento firmado y escaneado
+          {!uploadedName && (
+            <span style={{ color: "#B45309" }}> (requerido para completar)</span>
+          )}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Si ya tienes el documento firmado (PDF, foto o escaneo), súbelo aquí directamente.
+        </p>
+
+        {uploadedName ? (
+          <p className="text-sm font-medium" style={{ color: "#047857" }}>
+            ✅ {uploadedName}
+          </p>
+        ) : (
+          <>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="*"
+              className="hidden"
+              onChange={handleUpload}
+            />
+            <Button disabled={uploading} onClick={() => fileRef.current?.click()}>
+              {uploading ? "Subiendo…" : "Subir documento firmado"}
+            </Button>
+          </>
+        )}
+
+        {uploadError && (
+          <p className="text-xs text-destructive">{uploadError}</p>
+        )}
+      </div>
+
+      {/* Opción B — Generar pre-llenado */}
       <div className="rounded-xl border p-4 space-y-4">
         <div>
-          <p className="text-sm font-semibold">Opción A — Generar y descargar pre-llenado</p>
+          <p className="text-sm font-semibold">Opción B — Generar y descargar pre-llenado</p>
           <p className="text-sm text-muted-foreground">
-            Captura los datos, descarga el documento con los datos integrados, imprímelo, fírmalo a mano y escanéalo.
+            Captura los datos, descarga el documento con los datos ya integrados, imprímelo, fírmalo y súbelo arriba.
           </p>
         </div>
 
@@ -134,7 +173,7 @@ export function TermsAndConditionsForm({
         {generated && (
           <Alert>
             <AlertDescription>
-              ✅ Documento descargado. Imprímelo, fírmalo y súbelo en la sección de abajo.
+              ✅ Documento descargado. Imprímelo, fírmalo y súbelo en la sección de arriba.
             </AlertDescription>
           </Alert>
         )}
@@ -171,59 +210,12 @@ export function TermsAndConditionsForm({
           <div className="space-y-2">
             <Label htmlFor="signing_date">Fecha</Label>
             <Input id="signing_date" type="date" {...form.register("signing_date")} />
-            {form.formState.errors.signing_date && (
-              <p className="text-xs text-destructive">
-                {form.formState.errors.signing_date.message}
-              </p>
-            )}
           </div>
 
           <Button type="submit" variant="outline" disabled={generating}>
             {generating ? "Generando…" : "Generar y descargar (.docx)"}
           </Button>
         </form>
-      </div>
-
-      {/* Opción B / Paso 2 — Subir firmado */}
-      <div
-        className="rounded-xl border-2 p-4 space-y-2"
-        style={uploadedName ? {} : { borderColor: "#F59E0B" }}
-      >
-        <p className="text-sm font-semibold">
-          {generated ? "Paso 2 — " : "Opción B — "}
-          Subir documento firmado y escaneado
-          {!uploadedName && (
-            <span style={{ color: "#B45309" }}> (requerido para completar)</span>
-          )}
-        </p>
-        <p className="text-sm text-muted-foreground">
-          {generated
-            ? "Sube la versión que acabas de imprimir y firmar."
-            : "Si ya tienes el documento firmado (PDF, foto o escaneo), súbelo directamente."}
-        </p>
-
-        {uploadedName ? (
-          <p className="text-sm font-medium" style={{ color: "#047857" }}>
-            ✅ {uploadedName}
-          </p>
-        ) : (
-          <>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="application/pdf,image/jpeg,image/png,image/heic,image/heif,.heic,.heif"
-              className="hidden"
-              onChange={handleUpload}
-            />
-            <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              {uploading ? "Subiendo…" : "Subir documento firmado"}
-            </Button>
-          </>
-        )}
-
-        {uploadError && (
-          <p className="text-xs text-destructive">{uploadError}</p>
-        )}
       </div>
 
       <Link
