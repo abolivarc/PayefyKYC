@@ -184,6 +184,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                     currentStatus={doc.status}
                     fileFormat={group.file_format}
                     isForm={group.is_form}
+                    supportsDirectUpload={group.templateCode === "terms_and_conditions"}
                     fileName={doc.file_name}
                     uploadedAt={doc.uploaded_at}
                     isShared={group.isShared}

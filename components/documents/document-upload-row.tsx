@@ -32,6 +32,7 @@ interface Props {
   currentStatus: DocStatus
   fileFormat: string
   isForm: boolean
+  supportsDirectUpload?: boolean
   fileName: string | null
   uploadedAt?: string | null
   isShared?: boolean
@@ -48,6 +49,7 @@ export function DocumentUploadRow({
   currentStatus,
   fileFormat,
   isForm,
+  supportsDirectUpload = false,
   fileName,
   uploadedAt,
   isShared,
@@ -199,21 +201,56 @@ export function DocumentUploadRow({
           )}
 
           {isForm ? (
-            <Link
-              href={`/applications/${applicationId}/forms/${templateCode}`}
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                lineHeight: 1.5,
-                padding: "2px 8px",
-                borderRadius: 5,
-                textDecoration: "none",
-                background: needsAction ? "#004238" : status === "changes_requested" ? "#b91c1c" : "#F3F7F4",
-                color: needsAction ? "#A8F898" : status === "changes_requested" ? "#fff" : "#5B7168",
-              }}
-            >
-              {needsAction ? "Llenar" : status === "changes_requested" ? "Corregir" : "Editar"}
-            </Link>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <Link
+                href={`/applications/${applicationId}/forms/${templateCode}`}
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  lineHeight: 1.5,
+                  padding: "2px 8px",
+                  borderRadius: 5,
+                  textDecoration: "none",
+                  background: needsAction && !supportsDirectUpload ? "#004238" : "#F3F7F4",
+                  color: needsAction && !supportsDirectUpload ? "#A8F898" : "#5B7168",
+                }}
+              >
+                {needsAction ? "Generar" : "Editar"}
+              </Link>
+              {supportsDirectUpload && (
+                <>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept={accept}
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  <button
+                    onClick={() => inputRef.current?.click()}
+                    disabled={isPending}
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      lineHeight: 1.5,
+                      padding: "2px 8px",
+                      borderRadius: 5,
+                      border: "none",
+                      background: needsAction ? "#004238" : status === "changes_requested" ? "#b91c1c" : "#F3F7F4",
+                      color: needsAction ? "#A8F898" : status === "changes_requested" ? "#fff" : "#5B7168",
+                      cursor: "pointer",
+                      opacity: isPending ? 0.5 : 1,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 3,
+                    }}
+                  >
+                    {isPending && <Spinner size={9} />}
+                    {isPending ? "…" : needsAction ? "Subir" : "Cambiar"}
+                  </button>
+                </>
+              )}
+            </div>
           ) : (
             <>
               <input
