@@ -6,9 +6,10 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
-import { emailDocsSubmitted } from "@/lib/email/templates"
+import { emailDocsSubmitted, emailExpedienteToTransfer } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
+import JSZip from "jszip"
 
 // ─────────────────────────────────────
 // Crear empresa + applications + documents iniciales
@@ -508,7 +509,7 @@ export async function submitApplication(applicationId: string) {
   const { data: app } = await supabase
     .from("applications")
     .select(
-      "id, company_id, companies(legal_name), products(name, internal_reviewer_email)"
+      "id, company_id, companies(legal_name), products(name, code, internal_reviewer_email)"
     )
     .eq("id", applicationId)
     .single()
@@ -516,6 +517,7 @@ export async function submitApplication(applicationId: string) {
   const company = (app?.companies as unknown) as { legal_name: string } | null
   const product = (app?.products as unknown) as {
     name: string
+    code: string
     internal_reviewer_email: string | null
   } | null
   const headerStore = await headers()
@@ -534,6 +536,66 @@ export async function submitApplication(applicationId: string) {
         applicationUrl: appUrl,
       }),
     }).catch(() => {})
+  }
+
+  // ZIP + correo a Francisco cuando el producto es Tarjetas
+  if (product?.code === "cards") {
+    try {
+      const adminClient = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!
+      )
+
+      const { data: docRows } = await adminClient
+        .from("documents")
+        .select("storage_path, file_name, document_templates(name)")
+        .eq("application_id", applicationId)
+        .not("storage_path", "is", null)
+
+      if (docRows?.length) {
+        const zip = new JSZip()
+
+        for (const doc of docRows) {
+          if (!doc.storage_path || !doc.file_name) continue
+          const { data: blob } = await adminClient.storage
+            .from("kyc-documents")
+            .download(doc.storage_path)
+          if (!blob) continue
+          const arrayBuf = await blob.arrayBuffer()
+          const templateName =
+            (doc.document_templates as unknown as { name: string } | null)?.name ??
+            doc.file_name
+          const ext = doc.file_name.split(".").pop() ?? "pdf"
+          const safeName = templateName.replace(/[/\\:*?"<>|]/g, "_").trim()
+          zip.file(`${safeName}.${ext}`, arrayBuf)
+        }
+
+        const zipBase64 = await zip.generateAsync({ type: "base64" })
+        const safeCompany = (company?.legal_name ?? "empresa")
+          .replace(/[/\\:*?"<>|]/g, "_")
+          .trim()
+
+        await sendEmail({
+          to: "francisco.sosa@payefy.me",
+          subject: `[PayefyKYC] Nuevo expediente Tarjetas: ${company?.legal_name ?? ""}`,
+          html: emailExpedienteToTransfer({
+            companyName: company?.legal_name ?? "",
+            productName: product?.name ?? "Tarjetas",
+            transferRecipientName: "Francisco",
+          }),
+          attachments: [
+            {
+              filename: `expediente_${safeCompany}.zip`,
+              content: zipBase64,
+            },
+          ],
+        }).catch((e) =>
+          console.error("[SUBMIT] zip email send error:", e)
+        )
+      }
+    } catch (e) {
+      console.error("[SUBMIT] zip generation error:", e)
+    }
   }
 
   await logAudit({

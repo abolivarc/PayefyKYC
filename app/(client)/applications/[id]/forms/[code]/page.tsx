@@ -42,14 +42,14 @@ export default async function FormPage({
     companyName = company?.legal_name ?? undefined
   }
 
-  // Pre-fetch documentId for terms_and_conditions (no PDF generation step)
-  let tycDocumentId: string | null = null
-  let tycFileName: string | null = null
-  if (code === "terms_and_conditions") {
+  // Pre-fetch documentId for terms_opm and terms_and_conditions
+  let formDocumentId: string | null = null
+  let formFileName: string | null = null
+  if (code === "terms_and_conditions" || code === "terms_opm") {
     const { data: tmpl } = await admin
       .from("document_templates")
       .select("id")
-      .eq("code", "terms_and_conditions")
+      .eq("code", code)
       .single()
     if (tmpl) {
       const { data: doc } = await admin
@@ -58,10 +58,10 @@ export default async function FormPage({
         .eq("application_id", appId)
         .eq("template_id", tmpl.id)
         .single()
-      tycDocumentId = doc?.id ?? null
-      tycFileName = doc?.file_name ?? null
+      formDocumentId = doc?.id ?? null
+      formFileName = doc?.file_name ?? null
     }
-    if (!tycDocumentId) return notFound()
+    if (!formDocumentId) return notFound()
   }
 
   return (
@@ -75,14 +75,19 @@ export default async function FormPage({
       {code === "beneficial_owner" && (
         <BeneficialOwnerForm appId={appId} />
       )}
-      {code === "terms_opm" && (
-        <TermsOpmForm appId={appId} defaultCompanyName={companyName} />
+      {code === "terms_opm" && formDocumentId && (
+        <TermsOpmForm
+          appId={appId}
+          documentId={formDocumentId}
+          initialFileName={formFileName}
+          defaultCompanyName={companyName}
+        />
       )}
-      {code === "terms_and_conditions" && tycDocumentId && (
+      {code === "terms_and_conditions" && formDocumentId && (
         <TermsAndConditionsForm
           appId={appId}
-          documentId={tycDocumentId}
-          initialFileName={tycFileName}
+          documentId={formDocumentId}
+          initialFileName={formFileName}
           defaultCompanyName={companyName}
         />
       )}

@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { termsOpmSchema, type TermsOpmValues } from "@/lib/validations/terms-opm"
+import { uploadDocumentFile } from "@/lib/documents/upload"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,14 +13,20 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface Props {
   appId: string
+  documentId: string
+  initialFileName?: string | null
   defaultCompanyName?: string
 }
 
-export function TermsOpmForm({ appId, defaultCompanyName }: Props) {
-  const [submitting, setSubmitting] = useState(false)
-  const [success, setSuccess] = useState(false)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
-  const [serverError, setServerError] = useState<string | null>(null)
+export function TermsOpmForm({ appId, documentId, initialFileName, defaultCompanyName }: Props) {
+  const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState<string | null>(null)
+  const [generated, setGenerated] = useState(false)
+
+  const [uploading, setUploading] = useState(false)
+  const [uploadedName, setUploadedName] = useState<string | null>(initialFileName ?? null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<TermsOpmValues>({
     resolver: zodResolver(termsOpmSchema),
@@ -30,134 +37,166 @@ export function TermsOpmForm({ appId, defaultCompanyName }: Props) {
     },
   })
 
-  async function onSubmit(data: TermsOpmValues) {
-    setSubmitting(true)
-    setServerError(null)
+  async function handleGenerate(data: TermsOpmValues) {
+    setGenerating(true)
+    setGenerateError(null)
     try {
       const res = await fetch("/api/pdf/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "terms_opm",
-          applicationId: appId,
-          formData: data,
-        }),
+        body: JSON.stringify({ type: "terms_opm", applicationId: appId, formData: data }),
       })
       const json = await res.json()
       if (!res.ok || json.error) {
-        setServerError(json.error ?? "Error al generar el documento")
-      } else {
-        setSuccess(true)
-        setDownloadUrl(json.downloadUrl ?? null)
+        setGenerateError(json.error ?? "Error al generar el documento")
+        return
       }
+      if (json.downloadUrl) {
+        const a = document.createElement("a")
+        a.href = json.downloadUrl
+        a.target = "_blank"
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+      }
+      setGenerated(true)
     } catch {
-      setServerError("Error de conexión")
+      setGenerateError("Error de conexión")
     } finally {
-      setSubmitting(false)
+      setGenerating(false)
     }
   }
 
-  if (success) {
-    return (
-      <div className="space-y-4">
-        <Alert>
-          <AlertDescription>
-            ✅ El documento fue generado y guardado en tu expediente.
-          </AlertDescription>
-        </Alert>
-        <p className="text-sm text-muted-foreground">
-          Descárgalo, imprímelo, fírmalo a mano, escanéalo y súbelo firmado en
-          el expediente.
-        </p>
-        <div className="flex gap-3">
-          {downloadUrl && (
-            <a
-              href={downloadUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={buttonVariants({ variant: "outline" })}
-            >
-              Descargar T&C OPM (.docx)
-            </a>
-          )}
-          <Link
-            href={`/applications/${appId}/documents`}
-            className={buttonVariants({ variant: "default" })}
-          >
-            Regresar al expediente
-          </Link>
-        </div>
-      </div>
-    )
+  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploadError(null)
+    setUploading(true)
+    const result = await uploadDocumentFile(documentId, file)
+    setUploading(false)
+    if (!result.success) {
+      setUploadError(result.error ?? "Error al subir el archivo")
+    } else {
+      setUploadedName(file.name)
+    }
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {serverError && (
-        <Alert variant="destructive">
-          <AlertDescription>{serverError}</AlertDescription>
+    <div className="space-y-6">
+      {/* Banner de estado */}
+      {uploadedName ? (
+        <Alert>
+          <AlertDescription>
+            ✅ Documento firmado subido correctamente. El documento está en revisión.
+          </AlertDescription>
         </Alert>
+      ) : (
+        <div
+          className="rounded-xl border-2 px-4 py-3 flex gap-3 items-start"
+          style={{ borderColor: "#F59E0B", background: "#FFFBEB" }}
+        >
+          <span style={{ fontSize: 20, lineHeight: 1.4 }}>⚠️</span>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: "#92400E" }}>
+              Requiere documento firmado
+            </p>
+            <p className="text-sm" style={{ color: "#92400E" }}>
+              Sube el documento firmado si ya lo tienes, o genera uno pre-llenado para imprimirlo y firmarlo.
+            </p>
+          </div>
+        </div>
       )}
 
-      <p className="text-sm text-muted-foreground">
-        Captura los datos del firmante. El documento se genera pre-llenado con el
-        texto completo de los Términos y Condiciones de OPM — solo necesitas
-        descargarlo, imprimirlo y firmarlo.
-      </p>
+      {/* Opción A — Subir firmado (primero) */}
+      <div
+        className="rounded-xl border-2 p-4 space-y-3"
+        style={uploadedName ? { borderColor: "#1f7a4d" } : { borderColor: "#004238" }}
+      >
+        <p className="text-sm font-semibold">
+          Opción A — Subir documento firmado y escaneado
+          {!uploadedName && (
+            <span style={{ color: "#B45309" }}> (requerido para completar)</span>
+          )}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          Si ya tienes el documento firmado (PDF, foto o escaneo), súbelo aquí directamente.
+        </p>
 
-      <div className="space-y-2">
-        <Label htmlFor="company_legal_name">Razón social de la empresa</Label>
-        <Input
-          id="company_legal_name"
-          {...form.register("company_legal_name")}
-          placeholder="Empresa Ejemplo S.A. de C.V."
-        />
-        {form.formState.errors.company_legal_name && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.company_legal_name.message}
-          </p>
+        {uploadedName ? (
+          <p className="text-sm font-medium" style={{ color: "#047857" }}>✅ {uploadedName}</p>
+        ) : (
+          <>
+            <input ref={fileRef} type="file" accept="*" className="hidden" onChange={handleUpload} />
+            <Button disabled={uploading} onClick={() => fileRef.current?.click()}>
+              {uploading ? "Subiendo…" : "Subir documento firmado"}
+            </Button>
+          </>
         )}
+
+        {uploadError && <p className="text-xs text-destructive">{uploadError}</p>}
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="signer_full_name">Nombre completo del representante legal</Label>
-        <Input
-          id="signer_full_name"
-          {...form.register("signer_full_name")}
-          placeholder="Nombre Apellido Apellido"
-        />
-        {form.formState.errors.signer_full_name && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.signer_full_name.message}
+      {/* Opción B — Generar pre-llenado */}
+      <div className="rounded-xl border p-4 space-y-4">
+        <div>
+          <p className="text-sm font-semibold">Opción B — Generar y descargar pre-llenado</p>
+          <p className="text-sm text-muted-foreground">
+            Captura los datos, descarga el documento con los datos ya integrados, imprímelo, fírmalo y súbelo arriba.
           </p>
+        </div>
+
+        {generateError && (
+          <Alert variant="destructive">
+            <AlertDescription>{generateError}</AlertDescription>
+          </Alert>
         )}
+        {generated && (
+          <Alert>
+            <AlertDescription>
+              ✅ Documento descargado. Imprímelo, fírmalo y súbelo en la sección de arriba.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <form onSubmit={form.handleSubmit(handleGenerate)} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="company_legal_name">Razón social</Label>
+            <Input
+              id="company_legal_name"
+              {...form.register("company_legal_name")}
+              placeholder="Empresa Ejemplo S.A. de C.V."
+            />
+            {form.formState.errors.company_legal_name && (
+              <p className="text-xs text-destructive">{form.formState.errors.company_legal_name.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signer_full_name">Nombre del representante legal</Label>
+            <Input
+              id="signer_full_name"
+              {...form.register("signer_full_name")}
+              placeholder="Nombre Apellido Apellido"
+            />
+            {form.formState.errors.signer_full_name && (
+              <p className="text-xs text-destructive">{form.formState.errors.signer_full_name.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="signing_date">Fecha</Label>
+            <Input id="signing_date" type="date" {...form.register("signing_date")} />
+          </div>
+
+          <Button type="submit" variant="outline" disabled={generating}>
+            {generating ? "Generando…" : "Generar y descargar (.docx)"}
+          </Button>
+        </form>
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="signing_date">Fecha de firma</Label>
-        <Input
-          id="signing_date"
-          type="date"
-          {...form.register("signing_date")}
-        />
-        {form.formState.errors.signing_date && (
-          <p className="text-xs text-destructive">
-            {form.formState.errors.signing_date.message}
-          </p>
-        )}
-      </div>
-
-      <div className="flex gap-3">
-        <Link
-          href={`/applications/${appId}/documents`}
-          className={buttonVariants({ variant: "outline" })}
-        >
-          Cancelar
-        </Link>
-        <Button type="submit" disabled={submitting}>
-          {submitting ? "Generando documento…" : "Generar T&C OPM"}
-        </Button>
-      </div>
-    </form>
+      <Link href={`/applications/${appId}/documents`} className={buttonVariants({ variant: "outline" })}>
+        Regresar al expediente
+      </Link>
+    </div>
   )
 }
