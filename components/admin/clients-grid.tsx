@@ -2,10 +2,10 @@
 
 import { useMemo, useState, useRef, useEffect } from "react"
 import Link from "next/link"
-import { Search, FolderOpen, LayoutGrid, List, MoreHorizontal } from "lucide-react"
+import { Search, FolderOpen, LayoutGrid, List, MoreHorizontal, Trash2 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
-import { DeleteClientButton } from "@/components/admin/delete-client-button"
+import { DeleteClientDialog } from "@/components/admin/delete-client-button"
 
 type App = {
   id: string
@@ -77,6 +77,7 @@ function cardAccent(apps: App[]): { stripe: string; avatarBg: string; avatarColo
 /* ── Per-card ⋯ dropdown ─────────────────────────────────────────── */
 function CardMenu({ company, apps, isSuperAdmin }: { company: Company; apps: App[]; isSuperAdmin: boolean }) {
   const [open, setOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -123,11 +124,28 @@ function CardMenu({ company, apps, isSuperAdmin }: { company: Company; apps: App
             </Link>
           )}
           {isSuperAdmin && (
-            <div role="menuitem" className="border-t border-border mt-0.5 pt-0.5 px-1 pb-1" onClick={() => setOpen(false)}>
-              <DeleteClientButton companyId={company.id} legalName={company.legal_name} taxId={company.tax_id ?? ""} />
-            </div>
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => { setOpen(false); setDeleteOpen(true) }}
+              className="flex w-full items-center gap-2 px-3 min-h-[44px] text-sm text-destructive hover:bg-destructive/5 transition-colors border-t border-border"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Eliminar
+            </button>
           )}
         </div>
+      )}
+
+      {/* Fuera del menú desplegable: sobrevive al cierre del menú */}
+      {isSuperAdmin && (
+        <DeleteClientDialog
+          companyId={company.id}
+          legalName={company.legal_name}
+          taxId={company.tax_id ?? ""}
+          open={deleteOpen}
+          onClose={() => setDeleteOpen(false)}
+        />
       )}
     </div>
   )
