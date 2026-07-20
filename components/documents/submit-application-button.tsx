@@ -3,7 +3,10 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { submitApplication } from "@/app/(client)/applications/actions"
+import {
+  submitApplication,
+  resendExpedienteEmail,
+} from "@/app/(client)/applications/actions"
 
 interface Props {
   applicationId: string
@@ -21,12 +24,47 @@ export function SubmitApplicationButton({
     error?: string
     success?: boolean
   } | null>(null)
+  const [resending, setResending] = useState(false)
+  const [resendResult, setResendResult] = useState<{
+    error?: string
+    success?: boolean
+  } | null>(null)
+
+  async function handleResend() {
+    setResending(true)
+    setResendResult(null)
+    const res = await resendExpedienteEmail(applicationId)
+    setResendResult(res)
+    setResending(false)
+  }
 
   if (alreadySubmitted) {
     return (
-      <p className="text-sm text-emerald-700 font-medium">
-        ✓ Expediente enviado para revisión
-      </p>
+      <div className="space-y-2">
+        <p className="text-sm text-emerald-700 font-medium">
+          ✓ Expediente enviado para revisión
+        </p>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleResend}
+          disabled={resending}
+          className="flex items-center gap-1.5"
+        >
+          {resending && <Spinner size={13} />}
+          {resending ? "Reenviando…" : "Reenviar por correo"}
+        </Button>
+        {resendResult?.success && (
+          <p className="text-xs text-emerald-700">
+            ✓ Correo reenviado al equipo de revisión.
+          </p>
+        )}
+        {resendResult?.error && (
+          <p className="text-xs text-destructive">
+            No se pudo reenviar: {resendResult.error}
+          </p>
+        )}
+      </div>
     )
   }
 

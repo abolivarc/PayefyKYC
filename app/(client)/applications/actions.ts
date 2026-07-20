@@ -505,8 +505,40 @@ export async function submitApplication(applicationId: string) {
 
   if (error) return { error: error.message }
 
-  // Obtener datos para notificación al reviewer
-  const { data: app } = await supabase
+  // Notificar al reviewer del producto (+ ZIP si es Tarjetas).
+  // En el submit no bloqueamos si el correo falla — el expediente ya quedó enviado.
+  const emailResult = await dispatchExpedienteEmails(applicationId)
+  if (emailResult.error) {
+    console.error("[SUBMIT] email dispatch error:", emailResult.error)
+  }
+
+  await logAudit({
+    actorId: user.id,
+    action: "application_submitted",
+    entityType: "application",
+    entityId: applicationId,
+    changes: { from: "draft", to: "documents_pending" },
+  })
+
+  revalidatePath(`/applications/${applicationId}/documents`)
+  revalidatePath("/dashboard")
+  return { success: true }
+}
+
+// ─────────────────────────────────────
+// Envío de correos del expediente al reviewer del producto
+// (cards → notificación + ZIP a francisco.sosa; terminals → notificación a e.lopez)
+// Compartido entre submitApplication y resendExpedienteEmail.
+// ─────────────────────────────────────
+async function dispatchExpedienteEmails(
+  applicationId: string
+): Promise<{ error?: string }> {
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: app } = await adminClient
     .from("applications")
     .select(
       "id, company_id, companies(legal_name), products(name, code, internal_reviewer_email)"
@@ -514,19 +546,24 @@ export async function submitApplication(applicationId: string) {
     .eq("id", applicationId)
     .single()
 
-  const company = (app?.companies as unknown) as { legal_name: string } | null
-  const product = (app?.products as unknown) as {
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const company = (app.companies as unknown) as { legal_name: string } | null
+  const product = (app.products as unknown) as {
     name: string
     code: string
     internal_reviewer_email: string | null
   } | null
+
   const headerStore = await headers()
   const host = headerStore.get("host") ?? "payefy.com.mx"
   const proto = host.startsWith("localhost") ? "http" : "https"
   const appUrl = `${proto}://${host}/admin/applications/${applicationId}/review`
 
+  const errors: string[] = []
+
   if (product?.internal_reviewer_email) {
-    await sendEmail({
+    const { error: notifyErr } = await sendEmail({
       to: product.internal_reviewer_email,
       subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
       html: emailDocsSubmitted({
@@ -535,17 +572,13 @@ export async function submitApplication(applicationId: string) {
         reviewerName: "Equipo Payefy",
         applicationUrl: appUrl,
       }),
-    }).catch(() => {})
+    })
+    if (notifyErr) errors.push(`Aviso a ${product.internal_reviewer_email}: ${notifyErr}`)
   }
 
-  // ZIP + correo a Francisco cuando el producto es Tarjetas
+  // ZIP completo del expediente cuando el producto es Tarjetas
   if (product?.code === "cards") {
     try {
-      const adminClient = createAdminClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-      )
-
       const { data: docRows } = await adminClient
         .from("documents")
         .select("storage_path, file_name, document_templates(name)")
@@ -554,6 +587,7 @@ export async function submitApplication(applicationId: string) {
 
       if (docRows?.length) {
         const zip = new JSZip()
+        const usedNames = new Map<string, number>()
 
         for (const doc of docRows) {
           if (!doc.storage_path || !doc.file_name) continue
@@ -567,7 +601,11 @@ export async function submitApplication(applicationId: string) {
             doc.file_name
           const ext = doc.file_name.split(".").pop() ?? "pdf"
           const safeName = templateName.replace(/[/\\:*?"<>|]/g, "_").trim()
-          zip.file(`${safeName}.${ext}`, arrayBuf)
+          // Sufijo numérico para plantillas con varios archivos (JSZip sobrescribe nombres repetidos)
+          const count = (usedNames.get(safeName) ?? 0) + 1
+          usedNames.set(safeName, count)
+          const finalName = count > 1 ? `${safeName} (${count}).${ext}` : `${safeName}.${ext}`
+          zip.file(finalName, arrayBuf)
         }
 
         const zipBase64 = await zip.generateAsync({ type: "base64" })
@@ -575,7 +613,7 @@ export async function submitApplication(applicationId: string) {
           .replace(/[/\\:*?"<>|]/g, "_")
           .trim()
 
-        await sendEmail({
+        const { error: zipErr } = await sendEmail({
           to: "francisco.sosa@payefy.me",
           subject: `[PayefyKYC] Nuevo expediente Tarjetas: ${company?.legal_name ?? ""}`,
           html: emailExpedienteToTransfer({
@@ -589,25 +627,62 @@ export async function submitApplication(applicationId: string) {
               content: zipBase64,
             },
           ],
-        }).catch((e) =>
-          console.error("[SUBMIT] zip email send error:", e)
-        )
+        })
+        if (zipErr) errors.push(`ZIP a francisco.sosa@payefy.me: ${zipErr}`)
       }
     } catch (e) {
-      console.error("[SUBMIT] zip generation error:", e)
+      errors.push(`Error generando ZIP: ${(e as Error).message}`)
     }
   }
 
+  return errors.length ? { error: errors.join(" · ") } : {}
+}
+
+// ─────────────────────────────────────
+// Reenviar el correo del expediente (botón "Reenviar" del cliente)
+// ─────────────────────────────────────
+export async function resendExpedienteEmail(applicationId: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const adminClient = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+  const { data: app } = await adminClient
+    .from("applications")
+    .select("company_id, status")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+  if (app.status === "draft") {
+    return { error: "El expediente aún no ha sido enviado a revisión" }
+  }
+
+  const { data: membership } = await supabase
+    .from("company_users")
+    .select("id")
+    .eq("company_id", app.company_id)
+    .eq("user_id", user.id)
+    .single()
+  if (!membership) return { error: "Sin acceso" }
+
+  // A diferencia del submit, aquí SÍ reportamos el error al usuario:
+  // el propósito del botón es confirmar que el correo salió.
+  const result = await dispatchExpedienteEmails(applicationId)
+  if (result.error) return { error: result.error }
+
   await logAudit({
     actorId: user.id,
-    action: "application_submitted",
+    action: "expediente_reenviado",
     entityType: "application",
     entityId: applicationId,
-    changes: { from: "draft", to: "documents_pending" },
+    metadata: { source: "client_portal" },
   })
 
-  revalidatePath(`/applications/${applicationId}/documents`)
-  revalidatePath("/dashboard")
   return { success: true }
 }
 
