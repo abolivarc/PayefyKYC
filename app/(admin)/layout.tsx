@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { AdminSidebar } from "@/components/layout/admin-sidebar"
 
@@ -21,7 +22,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, email, role")
+      .select("full_name, email, role, must_change_password")
       .eq("id", user.id)
       .single()
 
@@ -29,6 +30,12 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       fullName = profile.full_name
       email = profile.email
       role = profile.role
+
+      // Primer ingreso con contraseña temporal → configurar contraseña.
+      // La página vive en el grupo (admin-auth), fuera de este layout: sin loop.
+      const mustChange = (profile as unknown as { must_change_password?: boolean })
+        .must_change_password
+      if (mustChange) redirect("/admin/cambiar-contrasena")
     }
   }
 
