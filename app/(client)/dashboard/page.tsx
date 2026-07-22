@@ -245,12 +245,23 @@ export default async function ClientDashboardPage() {
                     </div>
 
                     {/* Action */}
-                    <Link
-                      href={`/applications/${app.id}/documents`}
-                      className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold bg-success-tint text-success border border-success/20 hover:bg-mint-tint transition-colors"
-                    >
-                      Ver expediente →
-                    </Link>
+                    <div className="shrink-0 flex items-center gap-2 flex-wrap">
+                      {app.status === "activated" && (
+                        <Link
+                          href={`/applications/${app.id}/status`}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold transition-opacity hover:opacity-90"
+                          style={{ background: "#004238", color: "#AEFF99" }}
+                        >
+                          Solicitar {product?.code === "cards" ? "tarjetas" : "terminales"} →
+                        </Link>
+                      )}
+                      <Link
+                        href={`/applications/${app.id}/documents`}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-semibold bg-success-tint text-success border border-success/20 hover:bg-mint-tint transition-colors"
+                      >
+                        Ver expediente →
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )

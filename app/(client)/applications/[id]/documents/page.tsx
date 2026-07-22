@@ -336,6 +336,38 @@ export default async function DocumentsPage({
         {/* StageStepper */}
         <StageStepper status={app.status} />
 
+        {/* CTA pedido de producto (cuenta activa) */}
+        {app.status === "activated" && (
+          <div
+            className="flex items-center gap-5 mb-5 flex-wrap"
+            style={{
+              background: "#004238",
+              borderRadius: 22,
+              padding: 20,
+              boxShadow: "0 1px 2px rgba(15,42,34,.04), 0 1px 3px rgba(15,42,34,.06)",
+            }}
+          >
+            <div className="flex-1" style={{ minWidth: 200 }}>
+              <h3
+                className="font-bold"
+                style={{ fontFamily: "var(--font-display)", fontSize: 16, color: "#AEFF99", margin: "0 0 3px" }}
+              >
+                Tu cuenta está activa ✓
+              </h3>
+              <p className="text-sm" style={{ color: "#D7E5DF", margin: 0 }}>
+                Ya puedes solicitar tus {product?.code === "cards" ? "tarjetas" : "terminales"} y recibirlas en tu dirección.
+              </p>
+            </div>
+            <Link
+              href={`/applications/${appId}/status`}
+              className="shrink-0 inline-flex items-center gap-1.5 px-4 py-2.5 rounded-md text-sm font-semibold transition-opacity hover:opacity-90"
+              style={{ background: "#AEFF99", color: "#004238" }}
+            >
+              Solicitar {product?.code === "cards" ? "tarjetas" : "terminales"} →
+            </Link>
+          </div>
+        )}
+
         {/* Progress card */}
         <div
           className="flex items-center gap-5 mb-5 flex-wrap"
