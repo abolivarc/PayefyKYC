@@ -6,7 +6,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
-import { emailDocsSubmitted, emailExpedienteToTransfer } from "@/lib/email/templates"
+import { emailDocsSubmitted, emailExpedienteCompleto } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
@@ -562,22 +562,12 @@ async function dispatchExpedienteEmails(
 
   const errors: string[] = []
 
-  if (product?.internal_reviewer_email) {
-    const { error: notifyErr } = await sendEmail({
-      to: product.internal_reviewer_email,
-      subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
-      html: emailDocsSubmitted({
-        companyName: company?.legal_name ?? "",
-        productName: product?.name ?? "",
-        reviewerName: "Equipo Payefy",
-        applicationUrl: appUrl,
-      }),
-    })
-    if (notifyErr) errors.push(`Aviso a ${product.internal_reviewer_email}: ${notifyErr}`)
-  }
-
-  // ZIP completo del expediente cuando el producto es Tarjetas
   if (product?.code === "cards") {
+    // Tarjetas: UN solo correo — aviso con botón a la plataforma + ZIP adjunto
+    const to = product.internal_reviewer_email ?? "francisco.sosa@payefy.me"
+    let attachments: { filename: string; content: string }[] | undefined
+    let zipAttached = false
+
     try {
       const { data: docRows } = await adminClient
         .from("documents")
@@ -612,27 +602,42 @@ async function dispatchExpedienteEmails(
         const safeCompany = (company?.legal_name ?? "empresa")
           .replace(/[/\\:*?"<>|]/g, "_")
           .trim()
-
-        const { error: zipErr } = await sendEmail({
-          to: "francisco.sosa@payefy.me",
-          subject: `[PayefyKYC] Nuevo expediente Tarjetas: ${company?.legal_name ?? ""}`,
-          html: emailExpedienteToTransfer({
-            companyName: company?.legal_name ?? "",
-            productName: product?.name ?? "Tarjetas",
-            transferRecipientName: "Francisco",
-          }),
-          attachments: [
-            {
-              filename: `expediente_${safeCompany}.zip`,
-              content: zipBase64,
-            },
-          ],
-        })
-        if (zipErr) errors.push(`ZIP a francisco.sosa@payefy.me: ${zipErr}`)
+        attachments = [
+          { filename: `expediente_${safeCompany}.zip`, content: zipBase64 },
+        ]
+        zipAttached = true
       }
     } catch (e) {
+      // Sin ZIP no bloqueamos el aviso: el correo sale igual con el botón
       errors.push(`Error generando ZIP: ${(e as Error).message}`)
     }
+
+    const { error: sendErr } = await sendEmail({
+      to,
+      subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
+      html: emailExpedienteCompleto({
+        companyName: company?.legal_name ?? "",
+        productName: product?.name ?? "Tarjetas",
+        reviewerName: "Francisco",
+        applicationUrl: appUrl,
+        zipAttached,
+      }),
+      attachments,
+    })
+    if (sendErr) errors.push(`Correo a ${to}: ${sendErr}`)
+  } else if (product?.internal_reviewer_email) {
+    // Otros productos (Terminales): solo el aviso con botón
+    const { error: notifyErr } = await sendEmail({
+      to: product.internal_reviewer_email,
+      subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
+      html: emailDocsSubmitted({
+        companyName: company?.legal_name ?? "",
+        productName: product?.name ?? "",
+        reviewerName: "Equipo Payefy",
+        applicationUrl: appUrl,
+      }),
+    })
+    if (notifyErr) errors.push(`Aviso a ${product.internal_reviewer_email}: ${notifyErr}`)
   }
 
   return errors.length ? { error: errors.join(" · ") } : {}

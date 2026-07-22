@@ -87,9 +87,12 @@ export default async function AdminDashboardPage() {
     .order("uploaded_at", { ascending: true })
     .limit(50)
 
+  // Solo solicitudes con algo pendiente: los comercios ya activados,
+  // rechazados o archivados no aportan nada aquí (viven en Clientes/Seguimiento)
   const { data: recentApps } = await supabase
     .from("applications")
     .select("id, status, updated_at, companies(legal_name), products(name, code)")
+    .not("status", "in", "(activated,rejected,archived)")
     .order("updated_at", { ascending: false })
     .limit(8)
 
@@ -183,12 +186,12 @@ export default async function AdminDashboardPage() {
             <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
               <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--admin-border, #E7ECF1)", background: "var(--admin-surface-2, #FBFCFD)" }}>
                 <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
-                  Solicitudes recientes
+                  Solicitudes en curso
                 </h2>
               </div>
               {!recentApps?.length ? (
                 <p style={{ padding: "20px", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", margin: 0 }}>
-                  Aún no hay solicitudes registradas.
+                  No hay solicitudes pendientes — todo al día ✓
                 </p>
               ) : (
                 <div style={{ overflowX: "auto" }}>

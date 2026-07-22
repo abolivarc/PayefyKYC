@@ -120,6 +120,35 @@ export function emailDocsSubmitted({
   </div>`)
 }
 
+// Correo único para el reviewer de Tarjetas: aviso + botón a la plataforma
+// + expediente ZIP adjunto (sustituye a los dos correos separados).
+export function emailExpedienteCompleto({
+  companyName,
+  productName,
+  reviewerName,
+  applicationUrl,
+  zipAttached,
+}: {
+  companyName: string
+  productName: string
+  reviewerName: string
+  applicationUrl: string
+  zipAttached: boolean
+}): string {
+  return wrap(`
+  ${header("Revisión")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Nueva solicitud lista para revisión</h2>
+    <p>Hola ${reviewerName},</p>
+    <p>La empresa <strong>${companyName}</strong> ha enviado su expediente completo para el producto <strong>${productName}</strong> y está lista para revisión.</p>
+    <div style="margin:24px 0;">${btn(applicationUrl, "Revisar en la plataforma")}</div>
+    ${zipAttached
+      ? `<p style="color:#6b7280;font-size:13px;">O si lo prefieres, el expediente completo viene adjunto a este correo como archivo ZIP.</p>`
+      : `<p style="color:#6b7280;font-size:13px;">No fue posible adjuntar el ZIP del expediente; los documentos están disponibles en la plataforma.</p>`}
+    ${footer()}
+  </div>`)
+}
+
 export function emailChangesRequested({
   companyName,
   clientName,
