@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
-import { FileText, Clock, CheckCircle, AlertCircle, KanbanSquare, Building2 } from "lucide-react"
+import { FileText, Clock, CheckCircle, AlertCircle, KanbanSquare, Building2, ShoppingBag } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { Badge } from "@/components/ui/badge"
@@ -95,6 +95,14 @@ export default async function AdminDashboardPage() {
     .not("status", "in", "(activated,rejected,archived)")
     .order("updated_at", { ascending: false })
     .limit(8)
+
+  // Pedidos de producto sin cerrar (tarjetas / terminales)
+  const { data: openOrders } = await supabase
+    .from("product_orders")
+    .select("id, product_code, quantity, status, created_at, companies(legal_name)")
+    .neq("status", "closed")
+    .order("created_at", { ascending: true })
+    .limit(20)
 
   const apps = allApps ?? []
   const total = apps.length
@@ -245,6 +253,55 @@ export default async function AdminDashboardPage() {
 
           {/* Right column */}
           <div className="space-y-5">
+            {/* Pedidos pendientes */}
+            {(openOrders?.length ?? 0) > 0 && (
+              <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid #FDE1B8", borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
+                <div style={{ padding: "14px 20px", borderBottom: "1px solid #FDE1B8", background: "#FFF7EA", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 14, fontWeight: 600, color: "#B45309", display: "flex", alignItems: "center", gap: 7 }}>
+                    <ShoppingBag size={15} />
+                    Pedidos pendientes
+                  </h2>
+                  <span style={{ background: "#D97706", color: "#fff", borderRadius: 999, fontSize: 11, fontWeight: 800, padding: "2px 8px" }}>
+                    {openOrders!.length}
+                  </span>
+                </div>
+                <div style={{ padding: "10px 12px" }}>
+                  {openOrders!.map((order) => {
+                    const company = (order.companies as unknown) as { legal_name: string } | null
+                    const productLabel = order.product_code === "cards" ? "Tarjetas" : order.product_code === "terminals" ? "Terminales" : order.product_code
+                    const statusLabel = order.status === "requested" ? "Solicitado" : order.status === "invoiced" ? "Facturado" : order.status === "shipped" ? "Enviado" : order.status
+                    const timeAgo = formatDistanceToNow(new Date(order.created_at), { addSuffix: true, locale: es })
+                    return (
+                      <Link
+                        key={order.id}
+                        href="/admin/tracking/orders"
+                        className="no-underline"
+                        style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 8px", borderRadius: 10, transition: "background .15s", marginBottom: 2 }}
+                      >
+                        <span style={{
+                          width: 28, height: 28, borderRadius: "50%",
+                          background: "#D97706", color: "#fff",
+                          fontSize: 12, fontWeight: 800,
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          {order.quantity}
+                        </span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {company?.legal_name ?? "Empresa"}
+                          </p>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                            {productLabel} · {statusLabel} · {timeAgo}
+                          </p>
+                        </div>
+                        <span style={{ fontSize: 11, color: "#B45309", fontWeight: 700, flexShrink: 0 }}>Ver →</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Pending docs inbox */}
             <div style={{ background: "var(--admin-surface, #fff)", border: `1px solid ${totalPendingDocs > 0 ? "#C7D9FF" : "var(--admin-border, #E7ECF1)"}`, borderRadius: 16, boxShadow: "0 1px 2px rgba(16,30,45,.05)", overflow: "hidden" }}>
               <div style={{ padding: "14px 20px", borderBottom: `1px solid ${totalPendingDocs > 0 ? "#C7D9FF" : "var(--admin-border, #E7ECF1)"}`, background: totalPendingDocs > 0 ? "#EFF4FF" : "var(--admin-surface-2, #FBFCFD)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
