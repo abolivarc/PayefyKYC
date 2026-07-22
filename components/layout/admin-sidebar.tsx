@@ -12,6 +12,7 @@ import {
   BarChart2,
   ShoppingBag,
   PieChart,
+  UserRound,
   LogOut,
   Menu,
   X,
@@ -48,6 +49,7 @@ const NAV = [
   { href: "/admin/leads", label: "Leads", icon: Users },
   { href: "/admin/tracking/orders", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/reportes", label: "Reportes", icon: PieChart },
+  { href: "/admin/perfil", label: "Mi cuenta", icon: UserRound },
 ]
 
 interface Props {
