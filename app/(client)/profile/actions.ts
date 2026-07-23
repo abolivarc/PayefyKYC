@@ -73,6 +73,19 @@ export async function changeAccountEmail(
 
   const admin = adminDb()
 
+  // El correo debe ser único: si ya pertenece a otra cuenta, avisar claro
+  // (GoTrue devuelve un genérico "Error updating user" en este caso)
+  const { data: taken } = await admin
+    .from("profiles")
+    .select("id")
+    .ilike("email", email)
+    .neq("id", user.id)
+    .limit(1)
+    .maybeSingle()
+  if (taken) {
+    return { error: "Ese correo ya está registrado en otra cuenta de la plataforma" }
+  }
+
   // Cambio inmediato vía service role (sin correos de confirmación,
   // que dependen de un canal de email operativo)
   const { error: authErr } = await admin.auth.admin.updateUserById(user.id, {
@@ -80,8 +93,8 @@ export async function changeAccountEmail(
     email_confirm: true,
   })
   if (authErr) {
-    if (/already|registered|exists/i.test(authErr.message)) {
-      return { error: "Ese correo ya está registrado en otra cuenta" }
+    if (/already|registered|exists|duplicate|error updating user/i.test(authErr.message)) {
+      return { error: "Ese correo ya está registrado en otra cuenta de la plataforma" }
     }
     return { error: authErr.message }
   }
