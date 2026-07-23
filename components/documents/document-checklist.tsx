@@ -1,5 +1,9 @@
 import { DocumentUploadRow } from "./document-upload-row"
 import { MultiUploadRow } from "./multi-upload-row"
+import { PhotosUploadRow } from "./photos-upload-row"
+
+// Códigos que usan la cuadrícula de fotos (4 campos + agregar más)
+const PHOTO_CODES = new Set(["business_photos", "pf_business_photos"])
 import { CheckOrUploadRow } from "./check-or-upload-row"
 import { DataInputField } from "./data-input-field"
 
@@ -132,6 +136,27 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
               }}
             >
               {uploadGroups.map((group) => {
+                if (PHOTO_CODES.has(group.templateCode)) {
+                  return (
+                    <div
+                      key={group.templateCode}
+                      style={{ gridColumn: "1 / -1" }}
+                    >
+                      <PhotosUploadRow
+                        applicationId={applicationId}
+                        templateId={group.templateId}
+                        templateName={group.templateName}
+                        templateInstructions={group.templateInstructions}
+                        initialDocs={group.docs.map((d) => ({
+                          id: d.id,
+                          status: d.status,
+                          fileName: d.file_name,
+                        }))}
+                      />
+                    </div>
+                  )
+                }
+
                 if (group.isMulti) {
                   return (
                     <div

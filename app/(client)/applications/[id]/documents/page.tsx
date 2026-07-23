@@ -15,7 +15,14 @@ import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { AdditionalDocRow } from "@/components/documents/additional-doc-row"
 
-const MULTI_UPLOAD_CODES = new Set(["shareholder_id", "administrator_id", "legal_rep_id"])
+const MULTI_UPLOAD_CODES = new Set([
+  "shareholder_id",
+  "administrator_id",
+  "legal_rep_id",
+  // Fotos del negocio: 4 campos (2 exterior, 2 interior) + extras
+  "business_photos",
+  "pf_business_photos",
+])
 
 // Ordered category display — entries with no matching docs are hidden automatically
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
