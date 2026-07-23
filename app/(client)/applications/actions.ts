@@ -6,7 +6,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
-import { emailDocsSubmitted, emailExpedienteCompleto } from "@/lib/email/templates"
+import { emailExpedienteCompleto } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
@@ -555,8 +555,9 @@ export async function submitApplication(applicationId: string) {
 }
 
 // ─────────────────────────────────────
-// Envío de correos del expediente al reviewer del producto
-// (cards → notificación + ZIP a francisco.sosa; terminals → notificación a e.lopez)
+// Envío del correo del expediente al reviewer del producto: un solo correo
+// con botón a la plataforma + ZIP con toda la documentación.
+// (cards → francisco.sosa; terminals → e.lopez)
 // Compartido entre submitApplication y resendExpedienteEmail.
 // ─────────────────────────────────────
 async function dispatchExpedienteEmails(
@@ -591,8 +592,10 @@ async function dispatchExpedienteEmails(
 
   const errors: string[] = []
 
-  if (product?.code === "cards") {
-    // Tarjetas: UN solo correo — aviso con botón a la plataforma + ZIP adjunto
+  if (product?.internal_reviewer_email || product?.code === "cards") {
+    // UN solo correo al revisor del producto — aviso con botón a la
+    // plataforma + ZIP adjunto con toda la documentación
+    // (cards → francisco.sosa, terminals → e.lopez)
     const to = product.internal_reviewer_email ?? "francisco.sosa@payefy.me"
     let attachments: { filename: string; content: string }[] | undefined
     let zipAttached = false
@@ -646,27 +649,14 @@ async function dispatchExpedienteEmails(
       subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
       html: emailExpedienteCompleto({
         companyName: company?.legal_name ?? "",
-        productName: product?.name ?? "Tarjetas",
-        reviewerName: "Francisco",
+        productName: product?.name ?? "",
+        reviewerName: product?.code === "cards" ? "Francisco" : "Equipo Payefy",
         applicationUrl: appUrl,
         zipAttached,
       }),
       attachments,
     })
     if (sendErr) errors.push(`Correo a ${to}: ${sendErr}`)
-  } else if (product?.internal_reviewer_email) {
-    // Otros productos (Terminales): solo el aviso con botón
-    const { error: notifyErr } = await sendEmail({
-      to: product.internal_reviewer_email,
-      subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
-      html: emailDocsSubmitted({
-        companyName: company?.legal_name ?? "",
-        productName: product?.name ?? "",
-        reviewerName: "Equipo Payefy",
-        applicationUrl: appUrl,
-      }),
-    })
-    if (notifyErr) errors.push(`Aviso a ${product.internal_reviewer_email}: ${notifyErr}`)
   }
 
   return errors.length ? { error: errors.join(" · ") } : {}
