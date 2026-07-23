@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { signOut } from "@/app/(auth)/actions"
 import { NotificationBell } from "@/components/layout/notification-bell"
 
@@ -23,14 +24,17 @@ export function UserNav({ email, fullName }: UserNavProps) {
     <div className="flex items-center gap-2">
       <NotificationBell variant="light" />
 
-      {/* Company pill / user display */}
-      <div
-        className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold"
+      {/* Chip del usuario → editar perfil (nombre, correo, contraseña) */}
+      <Link
+        href="/profile"
+        title="Editar mi perfil"
+        className="flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-semibold transition-all hover:brightness-125"
         style={{
           background: "rgba(255,255,255,0.08)",
           border: "1px solid rgba(255,255,255,0.16)",
           color: "#fff",
           maxWidth: 220,
+          textDecoration: "none",
         }}
       >
         <span
@@ -39,8 +43,10 @@ export function UserNav({ email, fullName }: UserNavProps) {
         >
           {initials}
         </span>
-        <span className="truncate text-xs" style={{ maxWidth: 140 }}>{display}</span>
-      </div>
+        <span className="truncate text-xs hidden sm:inline" style={{ maxWidth: 140 }}>
+          {display}
+        </span>
+      </Link>
 
       <form action={signOut}>
         <button

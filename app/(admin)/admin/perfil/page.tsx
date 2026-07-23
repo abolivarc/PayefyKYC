@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import {
+  ProfileInfoCard,
   ChangeEmailCard,
   ChangePasswordCard,
 } from "@/components/account/account-security-forms"
@@ -16,7 +17,7 @@ export default async function AdminProfilePage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name")
+    .select("full_name, phone")
     .eq("id", user.id)
     .single()
 
@@ -41,6 +42,10 @@ export default async function AdminProfilePage() {
         </p>
       </header>
       <div style={{ padding: "0 32px 40px", maxWidth: 560 }} className="space-y-5">
+        <ProfileInfoCard
+          initialName={profile?.full_name ?? ""}
+          initialPhone={profile?.phone ?? ""}
+        />
         <ChangeEmailCard currentEmail={user.email ?? "—"} />
         <ChangePasswordCard />
       </div>

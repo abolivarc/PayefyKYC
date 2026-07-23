@@ -9,9 +9,90 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   changeAccountEmail,
   changeAccountPassword,
+  updateProfileInfo,
 } from "@/app/(client)/profile/actions"
 
 type Feedback = { type: "ok" | "err"; msg: string } | null
+
+// ─── Datos personales (nombre y teléfono) ────────────────────────
+export function ProfileInfoCard({
+  initialName,
+  initialPhone,
+}: {
+  initialName: string
+  initialPhone: string
+}) {
+  const [name, setName] = useState(initialName)
+  const [phone, setPhone] = useState(initialPhone)
+  const [feedback, setFeedback] = useState<Feedback>(null)
+  const [isPending, startTransition] = useTransition()
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    setFeedback(null)
+    startTransition(async () => {
+      const res = await updateProfileInfo(name, phone)
+      if (res.error) {
+        setFeedback({ type: "err", msg: res.error })
+      } else {
+        setFeedback({ type: "ok", msg: "Datos actualizados correctamente." })
+      }
+    })
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Información personal</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-name">Nombre completo</Label>
+            <Input
+              id="profile-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Tu nombre y apellidos"
+              autoComplete="name"
+              required
+              disabled={isPending}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="profile-phone">Teléfono</Label>
+            <Input
+              id="profile-phone"
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="55 1234 5678"
+              autoComplete="tel"
+              disabled={isPending}
+            />
+          </div>
+          {feedback && (
+            <p
+              className={`text-sm ${feedback.type === "ok" ? "text-emerald-700" : "text-destructive"}`}
+              role="alert"
+            >
+              {feedback.type === "ok" ? "✓ " : ""}
+              {feedback.msg}
+            </p>
+          )}
+          <Button
+            type="submit"
+            disabled={isPending || !name.trim()}
+            className="flex items-center gap-1.5"
+          >
+            {isPending && <Spinner size={13} />}
+            {isPending ? "Guardando…" : "Guardar datos"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
 
 // ─── Cambiar correo ──────────────────────────────────────────────
 export function ChangeEmailCard({ currentEmail }: { currentEmail: string }) {

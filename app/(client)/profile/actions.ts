@@ -26,6 +26,30 @@ async function verifyCurrentPassword(email: string, password: string) {
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 // ─────────────────────────────────────
+// Actualizar datos personales (nombre y teléfono)
+// ─────────────────────────────────────
+export async function updateProfileInfo(fullName: string, phone: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const name = fullName.trim()
+  if (!name) return { error: "El nombre no puede estar vacío" }
+
+  const { error } = await adminDb()
+    .from("profiles")
+    .update({ full_name: name, phone: phone.trim() || null })
+    .eq("id", user.id)
+  if (error) return { error: error.message }
+
+  revalidatePath("/profile")
+  revalidatePath("/admin/perfil")
+  return { success: true }
+}
+
+// ─────────────────────────────────────
 // Cambiar correo de la cuenta
 // ─────────────────────────────────────
 export async function changeAccountEmail(
