@@ -522,14 +522,18 @@ function WizardContent() {
                     <div style={sectionHeadStyle}>Modalidad de la terminal</div>
                     <div>
                       <label htmlFor="terminal_type_select" style={labelStyle}>
-                        Modalidad{" "}
-                        <span style={{ color: T.textSubtle, fontWeight: 500 }}>(opcional)</span>
+                        Modalidad <span style={{ color: T.req }}>*</span>
                       </label>
+                      <p style={{ fontSize: 12, color: T.textMuted, margin: "0 0 6px" }}>
+                        Con tarjeta presente pediremos fotos del negocio; con
+                        e-commerce o link de pago, la URL de tu sitio.
+                      </p>
                       <div style={{ position: "relative" }}>
                         <select
                           id="terminal_type_select"
                           value={terminalType}
                           onChange={(e) => setTerminalType(e.target.value)}
+                          required
                           style={{ ...inputStyle, appearance: "none", WebkitAppearance: "none" }}
                         >
                           <option value="">Selecciona una modalidad</option>

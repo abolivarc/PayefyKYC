@@ -35,6 +35,14 @@ export async function createApplications(formData: FormData) {
     )
   }
 
+  // La modalidad define qué documentos se piden (fotos vs URL del sitio)
+  if (products.includes("terminals") && !terminalType) {
+    redirect(
+      "/applications/new?error=" +
+        encodeURIComponent("Selecciona la modalidad de la terminal")
+    )
+  }
+
   // 1. Detectar si el cliente ya tiene empresa (flujo de invitación de lead)
   const { data: existingMembership } = await supabase
     .from("company_users")
@@ -128,12 +136,8 @@ export async function createApplications(formData: FormData) {
       .eq("product_id", product.id)
 
     let templates = allTemplates ?? []
-    if (product.code === "terminals" && personType) {
-      if (personType === "persona_fisica") {
-        templates = templates.filter((t) => t.code.startsWith("pf_"))
-      } else {
-        templates = templates.filter((t) => !t.code.startsWith("pf_"))
-      }
+    if (product.code === "terminals") {
+      templates = filterTerminalTemplates(templates, personType, terminalType)
     }
 
     console.log("[CREATE DEBUG] templates found:", templates.length, "for product:", product.id, "personType:", personType, "error:", tmplErr?.message)
@@ -168,6 +172,31 @@ export async function createApplications(formData: FormData) {
 
   revalidatePath("/dashboard")
   redirect(firstAppId ? `/applications/${firstAppId}/documents` : "/dashboard")
+}
+
+// Filtra las plantillas de terminales según tipo de persona y modalidad:
+// - persona física usa las plantillas pf_*, moral las demás
+// - tarjeta presente: no se pide URL del sitio; e-commerce/link: no se piden
+//   fotos del negocio; ambas (o sin modalidad): se piden las dos
+function filterTerminalTemplates<T extends { code: string }>(
+  templates: T[],
+  personType: string | null,
+  terminalType: string | null
+): T[] {
+  let result =
+    personType === "persona_fisica"
+      ? templates.filter((t) => t.code.startsWith("pf_"))
+      : templates.filter((t) => !t.code.startsWith("pf_"))
+
+  const PHOTO_CODES = ["business_photos", "pf_business_photos"]
+  const URL_CODES = ["website_url", "pf_website_url"]
+
+  if (terminalType === "card_present") {
+    result = result.filter((t) => !URL_CODES.includes(t.code))
+  } else if (terminalType === "ecommerce") {
+    result = result.filter((t) => !PHOTO_CODES.includes(t.code))
+  }
+  return result
 }
 
 // ─────────────────────────────────────
@@ -214,14 +243,14 @@ export async function addProductToCompany(
   if (productCode === "terminals") {
     const { data: co } = await supabase
       .from("companies")
-      .select("person_type")
+      .select("person_type, terminal_type")
       .eq("id", companyId)
       .single()
-    if (co?.person_type === "persona_fisica") {
-      templates = templates.filter((t) => t.code.startsWith("pf_"))
-    } else {
-      templates = templates.filter((t) => !t.code.startsWith("pf_"))
-    }
+    templates = filterTerminalTemplates(
+      templates,
+      co?.person_type ?? null,
+      co?.terminal_type ?? null
+    )
   }
 
   if (templates.length) {
