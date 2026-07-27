@@ -8,8 +8,8 @@ import { createNotification } from "@/lib/notifications"
 import { emailChangesRequested, emailApproved, emailDocumentApproved } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 
-// Copia interna cuando se piden cambios en solicitudes de terminales
-const TERMINALS_CHANGES_CC = "a.santibanez@payefy.me"
+// Copia interna cuando se piden cambios en cualquier expediente
+const CHANGES_CC = "a.santibanez@payefy.me"
 
 function adminDb() {
   return createAdminClient(
@@ -158,21 +158,21 @@ export async function requestDocumentChanges(
     })
   }
 
-  // Terminales: copia interna a Alejandro (salvo que él mismo pida los cambios)
-  if (product?.code === "terminals") {
+  // Copia interna a Alejandro en cualquier producto (salvo que él mismo pida los cambios)
+  {
     const { data: actor } = await supabase
       .from("profiles")
       .select("email, full_name")
       .eq("id", user.id)
       .single()
 
-    if (actor?.email?.toLowerCase() !== TERMINALS_CHANGES_CC) {
+    if (actor?.email?.toLowerCase() !== CHANGES_CC) {
       const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
       await sendEmail({
-        to: TERMINALS_CHANGES_CC,
-        subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (Terminales)`,
+        to: CHANGES_CC,
+        subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (${product?.name ?? "—"})`,
         html: `
-          <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> solicitó cambios en el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "Terminales"}).</p>
+          <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> solicitó cambios en el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "—"}).</p>
           <p><strong>Observaciones enviadas al cliente:</strong></p>
           <p style="background:#FDF1E6;border-left:3px solid #c9772f;padding:10px 14px;white-space:pre-wrap;">${notes}</p>
           <p><a href="${reviewUrl}">Ver el expediente en la plataforma</a></p>
