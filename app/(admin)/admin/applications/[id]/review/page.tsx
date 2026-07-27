@@ -57,7 +57,7 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
-  { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner", "terms_opm"] },
+  { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner", "terms_opm", "operational_info", "pf_operational_info"] },
   { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "organigrama", "efirma", "cif", "company_address_proof", "inscription_rpc", "pf_address_proof"] },
   { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
   { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },

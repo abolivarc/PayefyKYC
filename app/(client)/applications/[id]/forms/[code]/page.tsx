@@ -4,15 +4,25 @@ import { ComplementaryInfoForm } from "@/components/forms/complementary-info-for
 import { BeneficialOwnerForm } from "@/components/forms/beneficial-owner-form"
 import { TermsOpmForm } from "@/components/forms/terms-opm-form"
 import { TermsAndConditionsForm } from "@/components/forms/terms-and-conditions-form"
+import { OperationalInfoForm } from "@/components/forms/operational-info-form"
 
 const FORM_TITLES: Record<string, string> = {
   complementary_info: "Información complementaria",
   beneficial_owner: "Constancia de Beneficiario Controlador",
   terms_opm: "Términos y Condiciones OPM",
   terms_and_conditions: "Términos y condiciones firmados",
+  operational_info: "Datos operativos del comercio",
+  pf_operational_info: "Datos operativos del comercio",
 }
 
-const VALID_CODES = new Set(["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions"])
+const VALID_CODES = new Set([
+  "complementary_info",
+  "beneficial_owner",
+  "terms_opm",
+  "terms_and_conditions",
+  "operational_info",
+  "pf_operational_info",
+])
 
 export default async function FormPage({
   params,
@@ -91,6 +101,61 @@ export default async function FormPage({
           defaultCompanyName={companyName}
         />
       )}
+      {(code === "operational_info" || code === "pf_operational_info") && (
+        <OperationalInfoFormLoader appId={appId} code={code} />
+      )}
     </div>
+  )
+}
+
+// Prellenado del cuestionario operativo: respuestas previas (para editar),
+// modalidad de la empresa y correo del operador.
+async function OperationalInfoFormLoader({
+  appId,
+  code,
+}: {
+  appId: string
+  code: string
+}) {
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: app } = await admin
+    .from("applications")
+    .select("product_id, companies(terminal_type, operator_email)")
+    .eq("id", appId)
+    .single()
+  const company = (app?.companies as unknown) as {
+    terminal_type: string | null
+    operator_email: string | null
+  } | null
+
+  let initialData: Record<string, string> = {}
+  if (company?.terminal_type) initialData.operativa = company.terminal_type
+  if (company?.operator_email) initialData.contactEmail = company.operator_email
+
+  // Respuestas previas (si ya lo contestó y quiere corregir)
+  const { data: tmpl } = await admin
+    .from("document_templates")
+    .select("id")
+    .eq("code", code)
+    .eq("product_id", app?.product_id ?? "")
+    .single()
+  if (tmpl) {
+    const { data: submission } = await admin
+      .from("form_submissions")
+      .select("form_data")
+      .eq("application_id", appId)
+      .eq("template_id", tmpl.id)
+      .maybeSingle()
+    if (submission?.form_data) {
+      initialData = { ...initialData, ...(submission.form_data as Record<string, string>) }
+    }
+  }
+
+  return (
+    <OperationalInfoForm appId={appId} templateCode={code} initialData={initialData} />
   )
 }

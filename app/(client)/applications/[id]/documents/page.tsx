@@ -28,7 +28,7 @@ const MULTI_UPLOAD_CODES = new Set([
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   {
     title: "Formularios digitales",
-    codes: ["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions"],
+    codes: ["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions", "operational_info", "pf_operational_info"],
   },
   {
     title: "Documentos de la empresa",
