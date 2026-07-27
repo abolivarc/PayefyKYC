@@ -6,6 +6,10 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
 import { emailChangesRequested, emailApproved, emailDocumentApproved } from "@/lib/email/templates"
+import { sendEmail } from "@/lib/email/send"
+
+// Copia interna cuando se piden cambios en solicitudes de terminales
+const TERMINALS_CHANGES_CC = "a.santibanez@payefy.me"
 
 function adminDb() {
   return createAdminClient(
@@ -116,7 +120,7 @@ export async function requestDocumentChanges(
 
   const { data: app } = await supabase
     .from("applications")
-    .select("company_id, companies(legal_name), products(name)")
+    .select("company_id, companies(legal_name), products(name, code)")
     .eq("id", applicationId)
     .single()
 
@@ -132,6 +136,7 @@ export async function requestDocumentChanges(
     email: string
   } | null
   const company = (app?.companies as unknown) as { legal_name: string } | null
+  const product = (app?.products as unknown) as { name: string; code: string } | null
   const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
 
   if (member?.user_id && profile) {
@@ -151,6 +156,29 @@ export async function requestDocumentChanges(
         applicationUrl: appUrl,
       }),
     })
+  }
+
+  // Terminales: copia interna a Alejandro (salvo que él mismo pida los cambios)
+  if (product?.code === "terminals") {
+    const { data: actor } = await supabase
+      .from("profiles")
+      .select("email, full_name")
+      .eq("id", user.id)
+      .single()
+
+    if (actor?.email?.toLowerCase() !== TERMINALS_CHANGES_CC) {
+      const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
+      await sendEmail({
+        to: TERMINALS_CHANGES_CC,
+        subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (Terminales)`,
+        html: `
+          <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> solicitó cambios en el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "Terminales"}).</p>
+          <p><strong>Observaciones enviadas al cliente:</strong></p>
+          <p style="background:#FDF1E6;border-left:3px solid #c9772f;padding:10px 14px;white-space:pre-wrap;">${notes}</p>
+          <p><a href="${reviewUrl}">Ver el expediente en la plataforma</a></p>
+        `,
+      }).catch(() => {})
+    }
   }
 
   await logAudit({
