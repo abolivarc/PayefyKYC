@@ -24,8 +24,8 @@ const LINE = "#E4ECE7"     // bordes
 const CANVAS = "#F4F8F6"   // fondos suaves
 
 const LOGO = "/proposals/payefy-logo-dark.png"
-const TERMINAL_IMG = "/proposals/pinpad-mini.png"
-const CARD_IMG = "/proposals/payefy-card.png"
+const TERMINAL_IMG = "/proposals/terminal-smart.png"
+const TERMINAL_VERTICAL_IMG = "/proposals/terminal-card-vertical.png"
 
 const rateWithIVA = (rate: number) => (rate * IVA_RATE).toFixed(2)
 
@@ -132,7 +132,7 @@ function CoverPage({
               {data.mccCode ? ` · MCC ${data.mccCode}` : ""}
             </p>
           </div>
-          <img src={TERMINAL_IMG} alt="Terminal Payefy" style={{ height: "52mm", objectFit: "contain" }} />
+          <img src={TERMINAL_IMG} alt="Terminal Payefy" style={{ width: "84mm", objectFit: "contain", marginTop: "8mm", flexShrink: 0 }} />
         </div>
       </div>
 
@@ -460,7 +460,7 @@ function DispersionPage({
               desde la app. <strong style={{ color: INK }}>Tú sigues facturando normalmente.</strong>
             </p>
           </div>
-          <img src={CARD_IMG} alt="Tarjeta Payefy" style={{ height: "30mm", objectFit: "contain" }} />
+          <img src={TERMINAL_VERTICAL_IMG} alt="Terminal con tarjeta Payefy" style={{ height: "50mm", objectFit: "contain", flexShrink: 0 }} />
         </div>
 
         {/* Precios */}
@@ -563,6 +563,185 @@ function DispersionPage({
   )
 }
 
+// ─── Requisitos de documentación (fuente: payefy_requisitos v14.4) ───
+const TERMINALS_PF = [
+  "Identificación oficial (vigente)",
+  "Comprobante de domicilio (no mayor a 2 meses)",
+  "Constancia de situación fiscal (no mayor a 2 meses)",
+  "Estado de cuenta (no mayor a 2 meses)",
+]
+const TERMINALS_PM = [
+  "Acta constitutiva",
+  "Inscripción en el Registro Público de Comercio",
+  "Identificación del representante legal (vigente)",
+  "Comprobante de domicilio (no mayor a 2 meses)",
+  "Constancia de situación fiscal (no mayor a 2 meses)",
+  "Estado de cuenta (no mayor a 2 meses)",
+]
+const TERMINALS_DATA_PF = ["Número de teléfono", "Correo electrónico"]
+const TERMINALS_DATA_PM = [
+  "Número de teléfono",
+  "Correo electrónico",
+  "RFC del representante legal",
+]
+
+const CARD_DOCS = [
+  "Acta constitutiva de la empresa",
+  "Última actualización del acta (si aplica)",
+  "Poder legal (si aplica)",
+  "Constancia e.firma de la empresa",
+  "CIF de la empresa",
+  "Comprobante de domicilio de la empresa",
+  "ID de accionistas con 25%+ de acciones",
+  "ID oficial de representantes legales",
+  "Prueba de vida de rep. legales (selfie con ID)",
+  "Declaración anual o mensual",
+  "Opinión de cumplimiento del SAT",
+  "Identificación de administradores",
+  "Términos y condiciones firmados de forma autógrafa",
+  "Carta de constancia de beneficiario controlador",
+]
+const CARD_DATA = [
+  "CURP de accionistas",
+  "RFC de accionistas",
+  "CURP de representantes legales",
+  "RFC de representantes legales",
+]
+
+function ReqList({
+  title,
+  items,
+  numbered = true,
+  dense = false,
+}: {
+  title: string
+  items: string[]
+  numbered?: boolean
+  dense?: boolean
+}) {
+  return (
+    <div>
+      <p style={{ margin: "0 0 7px", fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: DEEP }}>
+        {title}
+      </p>
+      {items.map((t, i) => (
+        <div key={t} className="flex items-start gap-2" style={{ marginBottom: dense ? 3.5 : 5 }}>
+          {numbered ? (
+            <span style={{ width: 15, height: 15, borderRadius: 5, background: CANVAS, color: DEEP, fontSize: 8.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1 }}>
+              {i + 1}
+            </span>
+          ) : (
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: GREEN, flexShrink: 0, marginTop: 5.5 }} />
+          )}
+          <span style={{ fontSize: dense ? 10 : 10.8, color: "#3E5049", lineHeight: 1.4 }}>{t}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── PÁGINA · Documentación requerida ────────────────────────────
+function DocsPage({
+  data,
+  page,
+  total,
+}: {
+  data: Partial<ProposalData>
+  page: number
+  total: number
+}) {
+  const isMoral = data.entityType === "moral"
+  const isCardPresent = data.productType === "terminales"
+  const hasDispersion = data.hasDispersionCards
+  const dense = !!hasDispersion
+
+  const docs = isMoral ? TERMINALS_PM : TERMINALS_PF
+  const datos = isMoral ? TERMINALS_DATA_PM : TERMINALS_DATA_PF
+
+  return (
+    <>
+      <RunningHead eyebrow="Documentación" page={page} total={total} />
+      <div className="flex-1 px-[14mm] pt-[8mm] flex flex-col">
+        <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 23, fontWeight: 800, letterSpacing: "-.025em", color: INK }}>
+          Lo que necesitamos para tu alta
+        </h2>
+        <p style={{ margin: "6px 0 0", fontSize: 12, color: GRAY, lineHeight: 1.5 }}>
+          Todo se carga en línea desde <strong style={{ color: DEEP }}>payefy.com.mx</strong> con
+          tu correo registrado. Te avisamos si falta algo.
+        </p>
+
+        {/* Terminal */}
+        <div style={{ marginTop: "7mm", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
+          <div style={{ background: DEEP, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#fff" }}>
+              Terminal Payefy
+            </p>
+            <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: MINT }}>
+              {isMoral ? "Persona Moral" : "Persona Física"} · {isCardPresent ? "Tarjeta presente" : "E-commerce"}
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
+            <ReqList title="Documentos" items={docs} dense={dense} />
+            <div>
+              <ReqList title="Datos que te pediremos" items={datos} numbered={false} dense={dense} />
+              <div style={{ marginTop: 10, background: "#F0FAF3", border: "1px solid #CBEFDB", borderRadius: 10, padding: "9px 12px" }}>
+                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GREEN }}>
+                  Según tu modalidad
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 10.8, color: "#3E5049", lineHeight: 1.4 }}>
+                  {isCardPresent
+                    ? "2 fotos del interior y 2 del exterior de tu negocio"
+                    : "URL de tu sitio web o link de pago"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Payefy Card (dispersión) */}
+        {hasDispersion && (
+          <div style={{ marginTop: "6mm", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
+            <div style={{ background: CANVAS, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: INK }}>
+                Payefy Card · Dispersión con tarjetas
+              </p>
+              <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GRAY }}>
+                Solo Persona Moral mexicana
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
+              <ReqList title="Documentos" items={CARD_DOCS} dense />
+              <div>
+                <ReqList title="Datos que te pediremos" items={CARD_DATA} numbered={false} dense />
+                <div style={{ marginTop: 10, background: CANVAS, borderRadius: 10, padding: "9px 12px" }}>
+                  <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GRAY }}>
+                    Adicional
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontSize: 10.5, color: "#3E5049", lineHeight: 1.4 }}>
+                    Excel de información complementaria (te lo enviamos para llenar)
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notas de formato */}
+        <div style={{ marginTop: "auto", marginBottom: "5mm", borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
+          <p style={{ margin: 0, fontSize: 9.5, color: GRAY, lineHeight: 1.55 }}>
+            · Documentos en <strong style={{ color: INK }}>PDF</strong>; fotos e identificaciones en{" "}
+            <strong style={{ color: INK }}>JPG</strong>. Las identificaciones deben ir en foto, por ambos lados.
+            <br />
+            · Cada escritura constitutiva y otorgamiento de poderes debe estar inscrito en el
+            Registro Público de la Propiedad y el Comercio.
+          </p>
+        </div>
+      </div>
+      <Foot />
+    </>
+  )
+}
+
 // ─── PÁGINA FINAL · Siguientes pasos ─────────────────────────────
 function ClosingPage({
   data,
@@ -573,25 +752,7 @@ function ClosingPage({
   page: number
   total: number
 }) {
-  const isMoral = data.entityType === "moral"
-  const monthlyVolume = data.monthlyVolume || 0
-  const comodato = monthlyVolume >= 300000
-
-  const docs = isMoral
-    ? [
-        "Acta constitutiva",
-        "Poder notarial del representante legal",
-        "INE del representante legal",
-        "Constancia de Situación Fiscal (máx. 2 meses)",
-        "Comprobante de domicilio (máx. 2 meses)",
-        "Estado de cuenta bancario",
-      ]
-    : [
-        "Identificación oficial (INE o pasaporte)",
-        "Constancia de Situación Fiscal (máx. 2 meses)",
-        "Comprobante de domicilio (máx. 2 meses)",
-        "Estado de cuenta bancario",
-      ]
+  const comodato = (data.monthlyVolume || 0) >= 300000
 
   return (
     <>
@@ -601,10 +762,9 @@ function ClosingPage({
           Empezar toma menos de lo que crees
         </h2>
 
-        {/* Pasos */}
         <div className="flex gap-3" style={{ marginTop: "7mm" }}>
           {[
-            { n: "1", t: "Nos envías tus documentos", s: "Desde la plataforma, en línea" },
+            { n: "1", t: "Cargas tus documentos", s: "En línea, desde la plataforma" },
             { n: "2", t: "Validamos tu expediente", s: "Te avisamos si falta algo" },
             { n: "3", t: "Recibes tu terminal", s: "Y empiezas a cobrar" },
           ].map((s) => (
@@ -618,26 +778,17 @@ function ClosingPage({
           ))}
         </div>
 
-        {/* Documentos */}
-        <p style={{ margin: "9mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
-          Documentos que necesitamos · {isMoral ? "Persona moral" : "Persona física"}
-        </p>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-2">
-          {[...docs, "2 fotos del exterior del comercio", "2 fotos del interior del comercio"].map((t) => (
-            <div key={t} className="flex items-start gap-2">
-              <span style={{ width: 16, height: 16, borderRadius: 5, border: `1.5px solid ${LINE}`, flexShrink: 0, marginTop: 1 }} />
-              <span style={{ fontSize: 11.5, color: "#3E5049", lineHeight: 1.45 }}>{t}</span>
-            </div>
-          ))}
-        </div>
-
         {comodato && (
-          <p style={{ margin: "6mm 0 0", fontSize: 11, color: GREEN, fontWeight: 600 }}>
-            ✓ Por tu volumen calificas para terminal en comodato, sin renta mensual.
-          </p>
+          <div style={{ marginTop: "7mm", background: "#F0FAF3", border: "1px solid #CBEFDB", borderRadius: 14, padding: "13px 16px" }}>
+            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: GREEN }}>
+              ✓ Por tu volumen calificas para terminal en comodato
+            </p>
+            <p style={{ margin: "3px 0 0", fontSize: 11, color: GRAY }}>
+              Sin renta mensual mientras mantengas tu operación con Payefy.
+            </p>
+          </div>
         )}
 
-        {/* CTA */}
         <div
           className="mt-auto mb-[6mm]"
           style={{ background: DEEP, borderRadius: 20, padding: "22px 26px", position: "relative", overflow: "hidden" }}
@@ -670,7 +821,9 @@ function ClosingPage({
 export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
   const calc = calculateProposal(data)
   const hasDispersion = data.hasDispersionCards
-  const total = hasDispersion ? 4 : 3
+  // Portada · Tasas · [Payefy Card] · Documentación · Siguientes pasos
+  const total = hasDispersion ? 5 : 4
+  const docsPage = hasDispersion ? 4 : 3
 
   return (
     <div id="proposal-document" className="bg-white">
@@ -687,6 +840,10 @@ export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
           <DispersionPage data={data} calc={calc} page={3} total={total} />
         </div>
       )}
+
+      <div className={pageClass}>
+        <DocsPage data={data} page={docsPage} total={total} />
+      </div>
 
       <div className={pageClass}>
         <ClosingPage data={data} page={total} total={total} />
