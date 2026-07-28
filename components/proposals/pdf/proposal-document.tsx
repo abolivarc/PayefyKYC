@@ -26,6 +26,7 @@ const CANVAS = "#F4F8F6"   // fondos suaves
 const LOGO = "/proposals/payefy-logo-dark.png"
 const TERMINAL_IMG = "/proposals/terminal-smart.png"
 const TERMINAL_VERTICAL_IMG = "/proposals/terminal-card-vertical.png"
+const CARD_IMG = "/proposals/payefy-card.png"
 
 const rateWithIVA = (rate: number) => (rate * IVA_RATE).toFixed(2)
 
@@ -460,7 +461,7 @@ function DispersionPage({
               desde la app. <strong style={{ color: INK }}>Tú sigues facturando normalmente.</strong>
             </p>
           </div>
-          <img src={TERMINAL_VERTICAL_IMG} alt="Terminal con tarjeta Payefy" style={{ height: "50mm", objectFit: "contain", flexShrink: 0 }} />
+          <img src={CARD_IMG} alt="Tarjeta Payefy" style={{ height: "32mm", objectFit: "contain", flexShrink: 0 }} />
         </div>
 
         {/* Precios */}
@@ -652,8 +653,10 @@ function DocsPage({
 }) {
   const isMoral = data.entityType === "moral"
   const isCardPresent = data.productType === "terminales"
-  const hasDispersion = data.hasDispersionCards
-  const dense = !!hasDispersion
+  // El bloque de Tarjeta Payefy aplica si la propuesta incluye ese producto
+  // o si se contrató la dispersión con tarjetas.
+  const showCardBlock = !!data.includesCards || !!data.hasDispersionCards
+  const dense = showCardBlock
 
   const docs = isMoral ? TERMINALS_PM : TERMINALS_PF
   const datos = isMoral ? TERMINALS_DATA_PM : TERMINALS_DATA_PF
@@ -698,17 +701,23 @@ function DocsPage({
           </div>
         </div>
 
-        {/* Payefy Card (dispersión) */}
-        {hasDispersion && (
+        {/* Tarjeta Payefy */}
+        {showCardBlock && (
           <div style={{ marginTop: "6mm", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
             <div style={{ background: CANVAS, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: INK }}>
-                Payefy Card · Dispersión con tarjetas
+                {data.includesCards ? "Tarjeta Payefy" : "Payefy Card · Dispersión con tarjetas"}
               </p>
-              <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GRAY }}>
+              <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: isMoral ? GRAY : "#B4443A" }}>
                 Solo Persona Moral mexicana
               </p>
             </div>
+            {!isMoral && (
+              <p style={{ margin: 0, padding: "8px 16px", fontSize: 10.5, color: "#B4443A", background: "#FDF3F2", borderBottom: `1px solid ${LINE}`, lineHeight: 1.4 }}>
+                Nota: este producto requiere constituirse como persona moral mexicana.
+                Los requisitos de abajo aplicarían una vez constituida la empresa.
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
               <ReqList title="Documentos" items={CARD_DOCS} dense />
               <div>

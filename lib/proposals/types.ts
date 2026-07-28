@@ -20,6 +20,10 @@ export interface ProposalData {
   monthlyVolume: number
   averageTicket?: number
 
+  // ¿La propuesta también incluye Tarjeta Payefy (línea de crédito)?
+  // Define qué requisitos de KYC se listan en el documento.
+  includesCards?: boolean
+
   // Contacto
   contactName: string
   contactEmail: string

@@ -108,6 +108,36 @@ export function Step1BusinessInfo({ data, updateData }: StepProps) {
         </div>
       </div>
 
+      {/* Tarjeta Payefy — define los requisitos de KYC de la propuesta */}
+      <button
+        type="button"
+        onClick={() => updateData({ includesCards: !data.includesCards })}
+        className={`w-full flex items-center gap-3 p-4 rounded-lg border-2 text-left transition-all ${
+          data.includesCards
+            ? "border-[#004238] bg-[#F0FAF3]"
+            : "border-gray-200 hover:border-[#004238]/40 hover:bg-gray-50"
+        }`}
+      >
+        <span
+          className={`w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 ${
+            data.includesCards ? "bg-[#004238] border-[#004238]" : "border-gray-300"
+          }`}
+        >
+          {data.includesCards && (
+            <span className="text-[#AEFF99] text-xs font-black leading-none">✓</span>
+          )}
+        </span>
+        <span className="flex-1">
+          <span className="block text-sm font-medium text-gray-800">
+            También le interesa Tarjeta Payefy
+          </span>
+          <span className="block text-xs text-gray-500 mt-0.5">
+            Línea de crédito empresarial. Al marcarlo, la propuesta lista también
+            los requisitos de ese producto (solo persona moral mexicana).
+          </span>
+        </span>
+      </button>
+
       <div className="grid gap-5">
         {/* Nombre del negocio */}
         <div className="space-y-2">
