@@ -321,16 +321,21 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                     )}
                   </div>
 
-                  {/* Status chips */}
-                  <div className="relative z-10 flex flex-col gap-1.5 pointer-events-none mt-auto">
+                  {/* Status chips — cada solicitud lleva a su propio expediente */}
+                  <div className="relative z-10 flex flex-col gap-1.5 mt-auto">
                     {apps.length === 0 ? (
-                      <span className="text-xs" style={{ color: "#8A9E94" }}>Sin solicitudes</span>
+                      <span className="text-xs pointer-events-none" style={{ color: "#8A9E94" }}>Sin solicitudes</span>
                     ) : (
                       apps.map((app) => {
                         const prod = app.products?.code ? PRODUCT_MAP[app.products.code] : null
                         const st = STATUS_MAP[app.status] ?? STATUS_MAP.draft
                         return (
-                          <div key={app.id} className="flex items-center gap-1.5 flex-wrap">
+                          <Link
+                            key={app.id}
+                            href={`/admin/applications/${app.id}/review`}
+                            className="flex items-center gap-1.5 flex-wrap rounded-md hover:opacity-80 transition-opacity"
+                            title={`Revisar expediente de ${prod?.label ?? "producto"}`}
+                          >
                             {prod && (
                               <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${prod.chip}`}>
                                 {prod.label}
@@ -340,7 +345,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.pip}`} />
                               {st.label}
                             </span>
-                          </div>
+                          </Link>
                         )
                       })
                     )}

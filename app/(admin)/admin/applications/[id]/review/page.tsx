@@ -177,6 +177,13 @@ export default async function ReviewPage({
   if (!appResult.data) return notFound()
 
   const app = appResult.data
+
+  // Otras solicitudes de la misma empresa (cuando el cliente pidió ambos productos)
+  const { data: siblingApps } = await admin
+    .from("applications")
+    .select("id, status, products(name, code)")
+    .eq("company_id", app.company_id)
+    .neq("id", appId)
   const company = (app.companies as unknown) as { legal_name: string; tax_id: string; contact_email?: string; person_type?: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
@@ -330,6 +337,38 @@ export default async function ReviewPage({
               {personTypeLabel && <span> · {personTypeLabel}</span>}
               {product?.name && <span> · {product.name}</span>}
             </p>
+
+            {/* Otras solicitudes de esta empresa */}
+            {(siblingApps ?? []).length > 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
+                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  Este cliente también tiene:
+                </span>
+                {(siblingApps ?? []).map((sib) => {
+                  const sibProduct = (sib.products as unknown) as { name: string; code: string } | null
+                  const sibStyle = STATUS_COLORS[sib.status] ?? STATUS_COLORS.draft
+                  return (
+                    <Link
+                      key={sib.id}
+                      href={`/admin/applications/${sib.id}/review`}
+                      style={{
+                        display: "inline-flex", alignItems: "center", gap: 6,
+                        fontSize: 12, fontWeight: 600, textDecoration: "none",
+                        padding: "4px 10px", borderRadius: 999,
+                        background: sibStyle.bg, color: sibStyle.color,
+                        border: `1px solid ${sibStyle.border}`,
+                      }}
+                    >
+                      {sibProduct?.name ?? "Otro producto"}
+                      <span style={{ opacity: 0.75, fontWeight: 500 }}>
+                        · {STATUS_LABELS[sib.status] ?? sib.status}
+                      </span>
+                      <span aria-hidden>→</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </div>
           {/* Action buttons */}
           <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
