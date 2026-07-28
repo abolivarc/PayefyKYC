@@ -3,13 +3,21 @@ import Link from "next/link"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
+import { RequestGeneralChangesButton } from "@/components/admin/request-general-changes-button"
 
 export const metadata = { title: "Cambios solicitados | Payefy Admin" }
 
 const ACTION_LABELS: Record<string, string> = {
   document_changes_requested: "Cambios solicitados",
   document_rejected: "Documento rechazado",
+  application_changes_requested: "Comentario general",
 }
+
+const CHANGE_ACTIONS = [
+  "document_changes_requested",
+  "document_rejected",
+  "application_changes_requested",
+]
 
 const DOC_STATUS: Record<string, { label: string; bg: string; color: string; border: string }> = {
   changes_requested: { label: "Pendiente de corregir", bg: "#FFF7ED", color: "#92400E", border: "#FCEBD2" },
@@ -43,7 +51,7 @@ export default async function ChangesPage({
   const { data: logs } = await admin
     .from("audit_logs")
     .select("id, action, created_at, entity_id, metadata, profiles(full_name, email)")
-    .in("action", ["document_changes_requested", "document_rejected"])
+    .in("action", CHANGE_ACTIONS)
     .filter("metadata->>application_id", "eq", appId)
     .order("created_at", { ascending: false })
 
@@ -81,13 +89,15 @@ export default async function ChangesPage({
   const product = (app.products as unknown) as { name: string } | null
 
   const pendientes = rows.filter((r) => {
+    if (r.action === "application_changes_requested") return false
     const st = docInfo.get(r.entity_id)?.status
     return st === "changes_requested" || st === "rejected"
   }).length
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
-      <header style={{ padding: "24px 32px 16px" }}>
+      <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 16, padding: "24px 32px 16px", flexWrap: "wrap" }}>
+        <div>
         <Link
           href={`/admin/applications/${appId}/review`}
           className="hover:text-[#0F1B2A] transition-colors"
@@ -114,6 +124,11 @@ export default async function ChangesPage({
             </>
           )}
         </p>
+        </div>
+        <RequestGeneralChangesButton
+          applicationId={appId}
+          companyName={company?.legal_name ?? "este cliente"}
+        />
       </header>
 
       <div style={{ padding: "0 32px 40px", maxWidth: 860 }}>
@@ -122,14 +137,19 @@ export default async function ChangesPage({
             <p style={{ margin: 0, fontSize: 14, color: "var(--admin-text-muted, #5A6B7B)" }}>
               No se han solicitado cambios en este expediente.
             </p>
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--admin-text-subtle, #8A99A8)" }}>
+              Usa &ldquo;Solicitar cambios en general&rdquo; para escribirle al cliente
+              sobre el expediente completo.
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {rows.map((log) => {
+              const isGeneral = log.action === "application_changes_requested"
               const info = docInfo.get(log.entity_id)
               const st = DOC_STATUS[info?.status ?? ""] ?? DOC_STATUS.pending_upload
               const isRejection = log.action === "document_rejected"
-              const stripe = isRejection ? "#B91C1C" : "#c9772f"
+              const stripe = isRejection ? "#B91C1C" : isGeneral ? "#1D4ED8" : "#c9772f"
               const dateStr = format(new Date(log.created_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })
               const timeAgo = formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: es })
 
@@ -151,15 +171,17 @@ export default async function ChangesPage({
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: "var(--admin-text, #0F1B2A)" }}>
-                        {info?.name ?? "Documento"}
+                        {isGeneral ? "Todo el expediente" : (info?.name ?? "Documento")}
                       </span>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: stripe, background: isRejection ? "#FEF2F2" : "#FDF1E6", borderRadius: 999, padding: "2px 8px" }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: stripe, background: isRejection ? "#FEF2F2" : isGeneral ? "#EFF4FF" : "#FDF1E6", borderRadius: 999, padding: "2px 8px" }}>
                         {ACTION_LABELS[log.action] ?? log.action}
                       </span>
                     </div>
-                    <span style={{ fontSize: 11, fontWeight: 700, background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: 999, padding: "3px 10px", whiteSpace: "nowrap" }}>
-                      {st.label}
-                    </span>
+                    {!isGeneral && (
+                      <span style={{ fontSize: 11, fontWeight: 700, background: st.bg, color: st.color, border: `1px solid ${st.border}`, borderRadius: 999, padding: "3px 10px", whiteSpace: "nowrap" }}>
+                        {st.label}
+                      </span>
+                    )}
                   </div>
 
                   {log.metadata?.notes && (

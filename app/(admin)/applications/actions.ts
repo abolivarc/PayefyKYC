@@ -426,3 +426,107 @@ export async function toggleCompletionOverride(
   revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
+
+// ─────────────────────────────────────
+// Solicitar cambios generales del expediente (comentario libre al cliente)
+// A diferencia de requestDocumentChanges, no se ata a un documento: es un
+// mensaje al cliente sobre el expediente completo.
+// ─────────────────────────────────────
+export async function requestGeneralChanges(
+  applicationId: string,
+  notes: string
+): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const message = notes.trim()
+  if (!message) return { error: "Escribe el mensaje para el cliente" }
+
+  const admin = adminDb()
+
+  const { data: app } = await admin
+    .from("applications")
+    .select("company_id, status, companies(legal_name), products(name, code)")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const company = (app.companies as unknown) as { legal_name: string } | null
+  const product = (app.products as unknown) as { name: string; code: string } | null
+
+  // El expediente pasa a "cambios solicitados" salvo que ya esté cerrado
+  if (!["activated", "rejected", "archived"].includes(app.status)) {
+    await admin
+      .from("applications")
+      .update({ status: "changes_requested" })
+      .eq("id", applicationId)
+  }
+
+  const { data: member } = await admin
+    .from("company_users")
+    .select("user_id, profiles(full_name, email)")
+    .eq("company_id", app.company_id as string)
+    .limit(1)
+    .single()
+
+  const profile = (member?.profiles as unknown) as {
+    full_name: string
+    email: string
+  } | null
+
+  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
+
+  if (member?.user_id && profile) {
+    await createNotification({
+      recipientId: member.user_id,
+      type: "changes_requested",
+      title: "Tu expediente requiere cambios",
+      message,
+      relatedApplicationId: applicationId,
+      emailTo: profile.email,
+      emailSubject: "[PayefyKYC] Tu expediente requiere cambios",
+      emailHtml: emailChangesRequested({
+        companyName: company?.legal_name ?? "",
+        clientName: profile.full_name,
+        notes: message,
+        applicationUrl: appUrl,
+      }),
+    })
+  }
+
+  // Copia interna (salvo que la escriba el propio destinatario)
+  const { data: actor } = await admin
+    .from("profiles")
+    .select("email, full_name")
+    .eq("id", user.id)
+    .single()
+
+  if (actor?.email?.toLowerCase() !== CHANGES_CC) {
+    const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
+    await sendEmail({
+      to: CHANGES_CC,
+      subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (${product?.name ?? "—"})`,
+      html: `
+        <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> envió un comentario general sobre el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "—"}).</p>
+        <p><strong>Mensaje enviado al cliente:</strong></p>
+        <p style="background:#FDF1E6;border-left:3px solid #c9772f;padding:10px 14px;white-space:pre-wrap;">${message}</p>
+        <p><a href="${reviewUrl}">Ver el expediente en la plataforma</a></p>
+      `,
+    }).catch(() => {})
+  }
+
+  await logAudit({
+    actorId: user.id,
+    action: "application_changes_requested",
+    entityType: "application",
+    entityId: applicationId,
+    metadata: { notes: message, application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/changes`)
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
