@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { format, formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { RequestGeneralChangesButton } from "@/components/admin/request-general-changes-button"
+import { ChangesActions } from "@/components/admin/changes-actions"
 
 export const metadata = { title: "Cambios solicitados | Payefy Admin" }
 
@@ -125,10 +126,13 @@ export default async function ChangesPage({
           )}
         </p>
         </div>
-        <RequestGeneralChangesButton
-          applicationId={appId}
-          companyName={company?.legal_name ?? "este cliente"}
-        />
+        <div className="flex items-center gap-2 flex-wrap">
+          <ChangesActions applicationId={appId} hasChanges={rows.length > 0} />
+          <RequestGeneralChangesButton
+            applicationId={appId}
+            companyName={company?.legal_name ?? "este cliente"}
+          />
+        </div>
       </header>
 
       <div style={{ padding: "0 32px 40px", maxWidth: 860 }}>
