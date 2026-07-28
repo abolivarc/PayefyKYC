@@ -18,8 +18,8 @@ export default async function ChangePasswordPage() {
           Configura tu contraseña
         </h2>
         <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
-          Tu cuenta se creó con una contraseña temporal. Te recomendamos
-          establecer una nueva para proteger tu acceso.
+          Tu cuenta se creó con una contraseña temporal. Establece la tuya para
+          entrar a la plataforma.
         </p>
       </div>
       <ChangePasswordForm />

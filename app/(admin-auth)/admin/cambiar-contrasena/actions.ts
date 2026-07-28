@@ -29,26 +29,17 @@ export async function changeOwnPassword(newPassword: string) {
     return { error: error.message }
   }
 
-  await adminDb()
+  const { data: profile } = await adminDb()
     .from("profiles")
     .update({ must_change_password: false })
     .eq("id", user.id)
+    .select("role")
+    .single()
 
-  redirect("/admin/dashboard")
-}
-
-// "Conservar mi contraseña actual": solo limpia el flag y continúa.
-export async function keepCurrentPassword() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { error: "No autenticado" }
-
-  await adminDb()
-    .from("profiles")
-    .update({ must_change_password: false })
-    .eq("id", user.id)
-
-  redirect("/admin/dashboard")
+  // El agente comercial no tiene dashboard general
+  redirect(
+    (profile as unknown as { role?: string } | null)?.role === "sales_agent"
+      ? "/admin/proposals"
+      : "/admin/dashboard"
+  )
 }

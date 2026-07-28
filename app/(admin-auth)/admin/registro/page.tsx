@@ -23,7 +23,9 @@ export default async function AdminRegisterPage({
   return (
     <div className="space-y-4">
       <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
-        Crea tu cuenta con tu correo <strong style={{ color: "#AEFF99" }}>@payefy.me</strong>
+        Crea tu cuenta con tu correo{" "}
+        <strong style={{ color: "#AEFF99" }}>@payefy.me</strong> o{" "}
+        <strong style={{ color: "#AEFF99" }}>@apuesteria.com</strong>
       </p>
 
       {error && (
@@ -57,7 +59,7 @@ export default async function AdminRegisterPage({
             id="email"
             name="email"
             type="email"
-            placeholder="nombre@payefy.me"
+            placeholder="nombre@payefy.me o nombre@apuesteria.com"
             autoComplete="email"
             required
             style={inputStyle}

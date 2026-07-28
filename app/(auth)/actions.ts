@@ -170,10 +170,10 @@ export async function signInEmployee(formData: FormData) {
   redirect("/admin/dashboard")
 }
 
-// Alta propia del equipo interno: solo correos @payefy.me.
-// Entra como agente comercial (solo ve su propio trabajo); un Super Admin
-// puede subirle el rol después desde /admin/usuarios.
-const STAFF_EMAIL_DOMAIN = "@payefy.me"
+// Alta propia del equipo interno: solo correos corporativos de Payefy y de
+// Apuestería (empresa hermana). Entra como agente comercial (solo ve su
+// propio trabajo); un Super Admin puede subirle el rol después.
+const STAFF_EMAIL_DOMAINS = ["@payefy.me", "@apuesteria.com"]
 
 export async function signUpEmployee(formData: FormData) {
   const fullName = ((formData.get("fullName") as string) ?? "").trim()
@@ -186,8 +186,10 @@ export async function signUpEmployee(formData: FormData) {
   if (!fullName || !email || !password) {
     fail("Todos los campos son requeridos")
   }
-  if (!email.endsWith(STAFF_EMAIL_DOMAIN)) {
-    fail(`Solo se pueden crear cuentas con un correo ${STAFF_EMAIL_DOMAIN}`)
+  if (!STAFF_EMAIL_DOMAINS.some((d) => email.endsWith(d))) {
+    fail(
+      `Solo se pueden crear cuentas con un correo ${STAFF_EMAIL_DOMAINS.join(" o ")}`
+    )
   }
   if (password.length < 8) {
     fail("La contraseña debe tener al menos 8 caracteres")

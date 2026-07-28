@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { changeOwnPassword, keepCurrentPassword } from "./actions"
+import { changeOwnPassword } from "./actions"
 
 const darkInput = {
   background: "rgba(255,255,255,0.08)",
@@ -35,14 +35,6 @@ export function ChangePasswordForm() {
     startTransition(async () => {
       const result = await changeOwnPassword(password)
       // Si no hubo redirect, hubo error
-      if (result?.error) setError(result.error)
-    })
-  }
-
-  function handleKeep() {
-    setError(null)
-    startTransition(async () => {
-      const result = await keepCurrentPassword()
       if (result?.error) setError(result.error)
     })
   }
@@ -104,15 +96,10 @@ export function ChangePasswordForm() {
         {isPending ? "Guardando…" : "Guardar contraseña nueva"}
       </Button>
 
-      <button
-        type="button"
-        onClick={handleKeep}
-        disabled={isPending}
-        className="w-full text-center text-sm py-2 rounded-md transition-colors"
-        style={{ color: "rgba(255,255,255,0.5)" }}
-      >
-        Conservar mi contraseña actual
-      </button>
+      <p className="text-xs text-center" style={{ color: "rgba(255,255,255,0.4)" }}>
+        Por seguridad, la contraseña temporal que te compartieron deja de
+        funcionar en cuanto guardes la tuya.
+      </p>
     </form>
   )
 }

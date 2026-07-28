@@ -80,7 +80,7 @@ export default async function AdminLoginPage({
       </p>
 
       <p className="text-center text-sm pt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-        ¿Eres del equipo Payefy?{" "}
+        ¿Eres del equipo Payefy o Apuestería?{" "}
         <Link href="/admin/registro" className="font-semibold hover:text-white/80 transition-colors" style={{ color: "#AEFF99" }}>
           Crea tu cuenta
         </Link>
