@@ -114,12 +114,11 @@ const SECTIONS: { title: string; hint?: string; fields: Field[] }[] = [
 
 const ALL_KEYS = SECTIONS.flatMap((s) => s.fields.map((f) => f.key))
 
-function todayLong() {
-  return new Date().toLocaleDateString("es-MX", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  })
+// La carátula firmada usa DD/MM/AAAA
+function todayShort() {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, "0")
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)}/${d.getFullYear()}`
 }
 
 interface Props {
@@ -176,7 +175,7 @@ export function AmexCoverForm({ appId, documentId, initialData, initialFileName 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           applicationId: appId,
-          data: { ...form, fechaFirma: todayLong() },
+          data: { ...form, fechaFirma: todayShort() },
         }),
       })
       const json = await res.json()

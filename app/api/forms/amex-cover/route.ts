@@ -64,7 +64,7 @@ export async function POST(request: Request) {
 
   const { data: app } = await service
     .from("applications")
-    .select("id, company_id, product_id, amex_conditions")
+    .select("id, company_id, product_id, amex_conditions, companies(terminal_type)")
     .eq("id", applicationId)
     .single()
   if (!app) return NextResponse.json({ error: "Solicitud no encontrada" }, { status: 404 })
@@ -110,7 +110,12 @@ export async function POST(request: Request) {
     const templateBuffer = readFileSync(
       join(process.cwd(), "public/templates/caratula_amex.docx")
     )
-    const conditions = (app.amex_conditions ?? {}) as AmexConditions
+    // La modalidad ya la eligió al crear la solicitud: marca las casillas solo
+    const terminalType = ((app.companies as unknown) as { terminal_type: string | null } | null)?.terminal_type
+    const conditions: AmexConditions = {
+      modalidad: terminalType,
+      ...((app.amex_conditions ?? {}) as AmexConditions),
+    }
     const bytes = await generateAmexCoverDocx(templateBuffer, data, conditions)
 
     // Las respuestas quedan guardadas para poder corregir y regenerar

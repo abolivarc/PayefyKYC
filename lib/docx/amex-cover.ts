@@ -79,11 +79,16 @@ export interface AmexConditions {
   clabe?: string | null
   terminales?: string | null
   terminalesRenta?: string | null
+  /** card_present | ecommerce | both — marca las casillas de modalidad */
+  modalidad?: string | null
+  sitioWeb?: string | null
+  facturacionTicket?: string | null
 }
 
-// Constantes del agregador, tal como vienen en el encabezado de la plantilla
-const AGREGADOR = "SERVICIOS BROXEL, S.A.P.I. DE C.V."
-const AGREGADOR_REP = "CARLOS ALBERTO REYES PÉREZ"
+// Bloque de firmas: va a nombre de Payefy (el preámbulo de la plantilla
+// menciona a Broxel como agregador, pero quien firma es Payefy).
+const AGREGADOR = "PAYEFY"
+const AGREGADOR_REP = "ELIZABETH LOPEZ"
 
 const XML_ESCAPES: Record<string, string> = {
   "&": "&amp;",
@@ -154,7 +159,9 @@ export async function generateAmexCoverDocx(
   // 2) Condiciones comerciales (no usan [*], son casillas de la plantilla)
   xml = fillConditions(xml, conditions)
 
-  zip.file("word/document.xml", xml)
+  // createFolders:false evita que JSZip agregue una entrada "word/" que la
+  // plantilla original no tiene: el .docx queda con las mismas 12 entradas.
+  zip.file("word/document.xml", xml, { createFolders: false })
   return zip.generateAsync({ type: "uint8array" })
 }
 
@@ -186,6 +193,34 @@ function fillConditions(xml: string, c: AmexConditions): string {
       const v = boxes[boxIdx]
       boxIdx += 1
       return v ? `| ${esc(String(v).trim())} |` : m
+    })
+  )(out)
+
+  // Modalidad: las tres casillas [_] son, en orden,
+  // Presencial-No, Presencial-Sí y E-commerce-No.
+  // Word puede partir una casilla entre dos runs ("[_" y "]"), así que el
+  // patrón tolera etiquetas intermedias y solo cambia el guion bajo por X:
+  // las etiquetas se conservan tal cual.
+  if (c.modalidad) {
+    const presencial = c.modalidad === "card_present" || c.modalidad === "both"
+    const ecommerce = c.modalidad === "ecommerce" || c.modalidad === "both"
+    const marks = [!presencial, presencial, !ecommerce]
+    let m = 0
+    out = out.replace(/\[_((?:<[^>]*>)*)\]/g, (orig, tags: string) => {
+      const mark = marks[m]
+      m += 1
+      return mark ? `[X${tags}]` : orig
+    })
+  }
+
+  // Sitio web y facturación: campos [____] largos, en ese orden
+  const longFields = [c.facturacionTicket, c.sitioWeb]
+  let lf = 0
+  out = inText((t) =>
+    t.replace(/\[_{6,}\]/g, (orig) => {
+      const v = longFields[lf]
+      lf += 1
+      return v ? `[ ${esc(String(v).trim())} ]` : orig
     })
   )(out)
 
