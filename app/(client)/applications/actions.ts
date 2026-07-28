@@ -555,6 +555,147 @@ export async function submitApplication(applicationId: string) {
 }
 
 // ─────────────────────────────────────
+// Archivos que van en el ZIP de una solicitud: los documentos de esta
+// solicitud MÁS los heredados de otra solicitud de la misma empresa (mismo
+// código de plantilla). Cuando el cliente pide ambos productos, cada
+// expediente viaja completo aunque el archivo se haya subido en el otro.
+async function collectExpedienteFiles(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+  applicationId: string,
+  companyId: string
+): Promise<{ storage_path: string; file_name: string; templateName: string }[]> {
+  const { data: appRow } = await adminClient
+    .from("applications")
+    .select("product_id")
+    .eq("id", applicationId)
+    .single()
+  const productId = (appRow as unknown as { product_id?: string } | null)?.product_id
+  if (!productId) return []
+
+  // Códigos que pertenecen a este producto
+  const { data: templates } = await adminClient
+    .from("document_templates")
+    .select("id, code, name")
+    .eq("product_id", productId)
+  const codeToName = new Map<string, string>()
+  const templateRows = (templates ?? []) as unknown as { code: string; name: string }[]
+  for (const t of templateRows) codeToName.set(t.code, t.name)
+
+  // Todos los documentos de la empresa (cualquier solicitud) con archivo
+  const { data: appIdsRows } = await adminClient
+    .from("applications")
+    .select("id")
+    .eq("company_id", companyId)
+  const appIds = ((appIdsRows ?? []) as unknown as { id: string }[]).map((a) => a.id)
+
+  const { data: docs } = await adminClient
+    .from("documents")
+    .select("application_id, storage_path, file_name, document_templates(code, name)")
+    .in("application_id", appIds)
+    .not("storage_path", "is", null)
+
+  const out: { storage_path: string; file_name: string; templateName: string }[] = []
+  const seen = new Set<string>()
+
+  const docRows = (docs ?? []) as unknown as {
+    application_id: string
+    storage_path: string | null
+    file_name: string | null
+    document_templates: { code: string; name: string } | null
+  }[]
+
+  for (const d of docRows) {
+    if (!d.storage_path || !d.file_name) continue
+    const tmpl = (d.document_templates as unknown) as { code: string; name: string } | null
+
+    // Documentos adicionales (sin plantilla): solo los de esta solicitud
+    if (!tmpl) {
+      if (d.application_id === applicationId) {
+        out.push({ storage_path: d.storage_path, file_name: d.file_name, templateName: d.file_name })
+      }
+      continue
+    }
+
+    // Solo códigos que apliquen a este producto (propios o heredados)
+    const name = codeToName.get(tmpl.code)
+    if (!name) continue
+
+    // Evitar duplicados: preferir el archivo de esta solicitud
+    const key = `${tmpl.code}::${d.storage_path}`
+    if (seen.has(key)) continue
+    seen.add(key)
+
+    out.push({ storage_path: d.storage_path, file_name: d.file_name, templateName: name })
+  }
+
+  return out
+}
+
+// Hoja PDF con los datos capturados (data_check) y la modalidad de la terminal.
+// Se incluye en el ZIP del expediente porque esos datos no son archivos.
+async function buildDatosSolicitadosPdf(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  adminClient: any,
+  applicationId: string,
+  companyId: string,
+  productName: string | null
+): Promise<Uint8Array | null> {
+  const { generateDataPdf } = await import("@/lib/documents/generate-data-pdf")
+
+  const { data: company } = await adminClient
+    .from("companies")
+    .select("legal_name, tax_id, person_type, terminal_type")
+    .eq("id", companyId)
+    .single()
+
+  const { data: docs } = await adminClient
+    .from("documents")
+    .select("status, file_name, document_templates(name, field_type, sort_order)")
+    .eq("application_id", applicationId)
+
+  const rows = ((docs ?? []) as unknown as {
+    status: string
+    file_name: string | null
+    document_templates: { name: string; field_type: string; sort_order: number } | null
+  }[])
+    .filter((d) => d.document_templates?.field_type === "data_check")
+    .sort(
+      (a, b) =>
+        (a.document_templates?.sort_order ?? 999) - (b.document_templates?.sort_order ?? 999)
+    )
+    .map((d) => ({
+      label: d.document_templates?.name ?? "Dato",
+      value: d.file_name,
+      status: d.status,
+    }))
+
+  const co = (company as unknown) as {
+    legal_name?: string
+    tax_id?: string | null
+    person_type?: string | null
+    terminal_type?: string | null
+  } | null
+
+  // Sin datos capturados y sin modalidad no aporta nada
+  if (rows.length === 0 && !co?.terminal_type) return null
+
+  return generateDataPdf({
+    companyName: co?.legal_name ?? "Empresa",
+    taxId: co?.tax_id ?? null,
+    personType: co?.person_type ?? null,
+    productName,
+    terminalType: co?.terminal_type ?? null,
+    applicationId,
+    exportDate: new Date().toLocaleDateString("es-MX", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    }),
+    fields: rows,
+  })
+}
+
 // Envío del correo del expediente al reviewer del producto: un solo correo
 // con botón a la plataforma + ZIP con toda la documentación.
 // (cards → francisco.sosa; terminals → e.lopez)
@@ -601,11 +742,7 @@ async function dispatchExpedienteEmails(
     let zipAttached = false
 
     try {
-      const { data: docRows } = await adminClient
-        .from("documents")
-        .select("storage_path, file_name, document_templates(name)")
-        .eq("application_id", applicationId)
-        .not("storage_path", "is", null)
+      const docRows = await collectExpedienteFiles(adminClient, applicationId, app.company_id)
 
       if (docRows?.length) {
         const zip = new JSZip()
@@ -618,11 +755,8 @@ async function dispatchExpedienteEmails(
             .download(doc.storage_path)
           if (!blob) continue
           const arrayBuf = await blob.arrayBuffer()
-          const templateName =
-            (doc.document_templates as unknown as { name: string } | null)?.name ??
-            doc.file_name
           const ext = doc.file_name.split(".").pop() ?? "pdf"
-          const safeName = templateName.replace(/[/\\:*?"<>|]/g, "_").trim()
+          const safeName = doc.templateName.replace(/[/\\:*?"<>|]/g, "_").trim()
           // Sufijo numérico para plantillas con varios archivos (JSZip sobrescribe nombres repetidos)
           const count = (usedNames.get(safeName) ?? 0) + 1
           usedNames.set(safeName, count)
@@ -630,12 +764,32 @@ async function dispatchExpedienteEmails(
           zip.file(finalName, arrayBuf)
         }
 
+        // Hoja de datos capturados (CURP, RFC, contacto) + modalidad de la
+        // terminal: son campos de texto, no archivos, así que sin esta hoja
+        // el revisor no los vería en el ZIP.
+        try {
+          const dataPdf = await buildDatosSolicitadosPdf(
+            adminClient,
+            applicationId,
+            app.company_id,
+            product?.name ?? null
+          )
+          if (dataPdf) zip.file("DATOS_SOLICITADOS.pdf", dataPdf)
+        } catch {
+          /* el ZIP sale igual sin la hoja de datos */
+        }
+
         const zipBase64 = await zip.generateAsync({ type: "base64" })
         const safeCompany = (company?.legal_name ?? "empresa")
           .replace(/[/\\:*?"<>|]/g, "_")
           .trim()
+        // El nombre del ZIP incluye el producto: si el cliente pidió ambos,
+        // cada revisor recibe un archivo claramente distinguible
+        const safeProduct = (product?.name ?? "expediente")
+          .replace(/[/\\:*?"<>|]/g, "_")
+          .trim()
         attachments = [
-          { filename: `expediente_${safeCompany}.zip`, content: zipBase64 },
+          { filename: `expediente_${safeCompany}_${safeProduct}.zip`, content: zipBase64 },
         ]
         zipAttached = true
       }

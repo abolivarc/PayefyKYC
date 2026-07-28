@@ -11,9 +11,16 @@ export type DataPdfInput = {
   taxId: string | null
   personType: string | null
   productName: string | null
+  terminalType?: string | null // card_present | ecommerce | both
   applicationId: string
   exportDate: string
   fields: DataField[]
+}
+
+export const TERMINAL_TYPE_LABELS: Record<string, string> = {
+  card_present: "Tarjeta Presente (POS fisica)",
+  ecommerce: "E-commerce / Link de pago",
+  both: "Tarjeta Presente + E-commerce",
 }
 
 const GREEN_DARK = rgb(0, 0.259, 0.22)   // #004238
@@ -80,6 +87,15 @@ export async function generateDataPdf(input: DataPdfInput): Promise<Uint8Array> 
   if (subtitleParts.length > 0) {
     page.drawText(subtitleParts.join("  ·  "), { x: marginX, y, size: 10, font: fontRegular, color: GREY_TEXT })
     y -= 14
+  }
+
+  // Modalidad de la terminal — dato clave para el alta (POS / e-commerce / link)
+  if (input.terminalType) {
+    const label = TERMINAL_TYPE_LABELS[input.terminalType] ?? input.terminalType
+    page.drawText(`Modalidad: ${clampToWinAnsi(label)}`, {
+      x: marginX, y, size: 10, font: fontBold, color: GREEN_MID,
+    })
+    y -= 15
   }
 
   page.drawText(`ID: ${input.applicationId}  ·  Exportado: ${input.exportDate}`, {
