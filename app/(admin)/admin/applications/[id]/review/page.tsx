@@ -184,6 +184,15 @@ export default async function ReviewPage({
     .select("id, status, products(name, code)")
     .eq("company_id", app.company_id)
     .neq("id", appId)
+
+  // Cambios solicitados en este expediente (para el badge del botón).
+  // Se registran con entity_id = documento, por eso se filtra por metadata.
+  const { count: rawChangesCount } = await admin
+    .from("audit_logs")
+    .select("id", { count: "exact", head: true })
+    .in("action", ["document_changes_requested", "document_rejected"])
+    .filter("metadata->>application_id", "eq", appId)
+  const changesCount = rawChangesCount ?? 0
   const company = (app.companies as unknown) as { legal_name: string; tax_id: string; contact_email?: string; person_type?: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
@@ -376,6 +385,24 @@ export default async function ReviewPage({
             <ExportExpedienteButton applicationId={appId} />
             {/* Feature 4: completion override toggle */}
             <CompletionOverrideButton applicationId={appId} initialValue={completionOverride} />
+            <Link
+              href={`/admin/applications/${appId}/changes`}
+              className="transition-all"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13, fontWeight: 600, borderRadius: 9,
+                background: changesCount > 0 ? "#FFF7ED" : "transparent",
+                border: `1px solid ${changesCount > 0 ? "#FCEBD2" : "var(--admin-border, #E7ECF1)"}`,
+                color: changesCount > 0 ? "#92400E" : "var(--admin-text-muted, #5A6B7B)", textDecoration: "none" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              Cambios solicitados
+              {changesCount > 0 && (
+                <span style={{ background: "#92400E", color: "#fff", borderRadius: 999, fontSize: 11, fontWeight: 800, padding: "1px 7px" }}>
+                  {changesCount}
+                </span>
+              )}
+            </Link>
             <Link
               href={`/admin/applications/${appId}/audit`}
               className="hover:bg-[#F6F8FA] hover:text-[#0F1B2A] transition-all"
