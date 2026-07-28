@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { getStaffContext } from "@/lib/auth/staff"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ReviewDocumentRow } from "@/components/documents/review-document-row"
 import { AdminFullStatusSelector } from "@/components/admin/admin-full-status-selector"
@@ -144,6 +145,11 @@ export default async function ReviewPage({
   params: Promise<{ id: string }>
 }) {
   const { id: appId } = await params
+
+  // El agente comercial no revisa: se le manda a su vista de seguimiento
+  const staffCtx = await getStaffContext()
+  if (staffCtx?.isAgent) redirect(`/admin/applications/${appId}/seguimiento`)
+
   const supabase = await createClient()
   const admin = createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

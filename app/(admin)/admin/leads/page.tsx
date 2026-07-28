@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns"
 import { es } from "date-fns/locale"
 import { NewLeadForm } from "@/components/admin/new-lead-form"
 import Link from "next/link"
+import { getStaffContext } from "@/lib/auth/staff"
 
 type LeadStatus = "invitado" | "registrado" | "en_proceso"
 
@@ -35,7 +36,9 @@ export default async function LeadsPage() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const admin = createAdminClient(url, key)
 
-  const { data: leads } = await admin
+  // El agente comercial solo ve los leads que él dio de alta
+  const ctx = await getStaffContext()
+  let query = admin
     .from("companies")
     .select(
       `id, legal_name, tax_id, contact_email, lead_product_code, status,
@@ -45,7 +48,9 @@ export default async function LeadsPage() {
        applications(id, status)`
     )
     .not("lead_invited_at", "is", null)
-    .order("lead_invited_at", { ascending: false })
+  if (ctx?.isAgent) query = query.eq("assigned_agent_id", ctx.userId)
+
+  const { data: leads } = await query.order("lead_invited_at", { ascending: false })
 
   const { data: agents } = await admin
     .from("profiles")
@@ -69,7 +74,7 @@ export default async function LeadsPage() {
             empresas con invitación enviada
           </p>
         </div>
-        <NewLeadForm agents={agents ?? []} />
+        <NewLeadForm agents={ctx?.isAgent ? [] : (agents ?? [])} />
       </header>
 
       {/* ── Content ── */}

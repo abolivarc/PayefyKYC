@@ -2,6 +2,7 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
 import { LeadsTable, type LeadRow } from "@/components/proposals/leads-table"
+import { getStaffContext } from "@/lib/auth/staff"
 import { Plus } from "lucide-react"
 
 export const metadata = { title: "Propuestas | Payefy Admin" }
@@ -13,17 +14,22 @@ export default async function ProposalsPage() {
   } = await supabase.auth.getUser()
   if (!user) return notFound()
 
+  // El agente comercial solo ve las propuestas que él generó
+  const ctx = await getStaffContext()
+
+  let leadsQuery = supabase
+    .from("leads")
+    .select(
+      "id, created_at, business_name, contact_name, contact_email, contact_phone, sector_name, monthly_volume, product_type, proposal_type, proposal_data, status, company_id, companies(legal_name)"
+    )
+  if (ctx?.isAgent) leadsQuery = leadsQuery.eq("created_by", ctx.userId)
+
+  let companiesQuery = supabase.from("companies").select("id, legal_name")
+  if (ctx?.isAgent) companiesQuery = companiesQuery.eq("assigned_agent_id", ctx.userId)
+
   const [{ data: leads }, { data: companies }] = await Promise.all([
-    supabase
-      .from("leads")
-      .select(
-        "id, created_at, business_name, contact_name, contact_email, contact_phone, sector_name, monthly_volume, product_type, proposal_type, proposal_data, status, company_id, companies(legal_name)"
-      )
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("companies")
-      .select("id, legal_name")
-      .order("legal_name"),
+    leadsQuery.order("created_at", { ascending: false }),
+    companiesQuery.order("legal_name"),
   ])
 
   const active = (leads ?? []).filter((l) => !["ganado", "perdido"].includes(l.status))

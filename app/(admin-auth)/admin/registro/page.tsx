@@ -1,21 +1,29 @@
 import Link from "next/link"
-import { signInEmployee } from "@/app/(auth)/actions"
+import { signUpEmployee } from "@/app/(auth)/actions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
-export default async function AdminLoginPage({
+export const metadata = { title: "Crear cuenta de equipo" }
+
+const inputStyle = {
+  background: "rgba(255,255,255,0.08)",
+  borderColor: "rgba(255,255,255,0.15)",
+  color: "#fff",
+}
+
+export default async function AdminRegisterPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; success?: string }>
+  searchParams: Promise<{ error?: string }>
 }) {
-  const { error, success } = await searchParams
+  const { error } = await searchParams
 
   return (
     <div className="space-y-4">
       <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
-        Accede con tu cuenta institucional
+        Crea tu cuenta con tu correo <strong style={{ color: "#AEFF99" }}>@payefy.me</strong>
       </p>
 
       {error && (
@@ -24,13 +32,23 @@ export default async function AdminLoginPage({
         </Alert>
       )}
 
-      {success && (
-        <Alert style={{ background: "rgba(174,255,153,0.12)", border: "1px solid rgba(174,255,153,0.3)" }}>
-          <AlertDescription style={{ color: "#AEFF99" }}>{success}</AlertDescription>
-        </Alert>
-      )}
+      <form action={signUpEmployee} className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="fullName" className="text-white/80">
+            Nombre completo
+          </Label>
+          <Input
+            id="fullName"
+            name="fullName"
+            type="text"
+            placeholder="Nombre y apellidos"
+            autoComplete="name"
+            required
+            style={inputStyle}
+            className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
+          />
+        </div>
 
-      <form action={signInEmployee} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email" className="text-white/80">
             Correo electrónico
@@ -39,10 +57,10 @@ export default async function AdminLoginPage({
             id="email"
             name="email"
             type="email"
-            placeholder="nombre@payefy.com"
+            placeholder="nombre@payefy.me"
             autoComplete="email"
             required
-            style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
+            style={inputStyle}
             className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
         </div>
@@ -55,11 +73,11 @@ export default async function AdminLoginPage({
             id="password"
             name="password"
             type="password"
-            placeholder="••••••••"
-            autoComplete="current-password"
+            placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
             required
             minLength={8}
-            style={{ background: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.15)", color: "#fff" }}
+            style={inputStyle}
             className="placeholder:text-white/30 focus-visible:ring-[#AEFF99]"
           />
         </div>
@@ -69,20 +87,19 @@ export default async function AdminLoginPage({
           className="w-full font-semibold"
           style={{ background: "#AEFF99", color: "#004238" }}
         >
-          Acceder
+          Crear cuenta
         </Button>
       </form>
 
-      <p className="text-center text-sm" style={{ color: "rgba(255,255,255,0.4)" }}>
-        <Link href="/admin/forgot-password" className="hover:text-white/80 transition-colors">
-          ¿Olvidaste tu contraseña?
-        </Link>
+      <p className="text-xs text-center" style={{ color: "rgba(255,255,255,0.35)" }}>
+        Tu cuenta se crea como <strong>agente comercial</strong>: podrás generar
+        propuestas, dar de alta leads y dar seguimiento a tus propios clientes.
       </p>
 
       <p className="text-center text-sm pt-1" style={{ color: "rgba(255,255,255,0.4)" }}>
-        ¿Eres del equipo Payefy?{" "}
-        <Link href="/admin/registro" className="font-semibold hover:text-white/80 transition-colors" style={{ color: "#AEFF99" }}>
-          Crea tu cuenta
+        ¿Ya tienes cuenta?{" "}
+        <Link href="/admin/login" className="font-semibold hover:text-white/80 transition-colors" style={{ color: "#AEFF99" }}>
+          Inicia sesión
         </Link>
       </p>
     </div>

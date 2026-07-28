@@ -15,13 +15,17 @@ export default async function ClientsPage() {
         .single()
     : { data: null }
   const isSuperAdmin = profile?.role === "super_admin"
+  // El agente comercial solo ve los comercios que él dio de alta
+  const isAgent = profile?.role === "sales_agent"
 
-  const { data: companies } = await supabase
+  let query = supabase
     .from("companies")
     .select(
       `id, legal_name, tax_id, created_at, applications(id, status, products(name, code))`
     )
-    .order("created_at", { ascending: false })
+  if (isAgent && user) query = query.eq("assigned_agent_id", user.id)
+
+  const { data: companies } = await query.order("created_at", { ascending: false })
 
   const list = (companies ?? []).map((c) => ({
     ...c,

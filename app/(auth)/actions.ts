@@ -137,7 +137,7 @@ export async function signInEmployee(formData: FormData) {
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, is_active")
       .eq("id", user.id)
       .single()
 
@@ -150,10 +150,86 @@ export async function signInEmployee(formData: FormData) {
           )
       )
     }
+
+    // Cuenta desactivada por un administrador
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut({ scope: "local" })
+      redirect(
+        "/admin/login?error=" +
+          encodeURIComponent(
+            "Tu cuenta está desactivada. Contacta a un administrador."
+          )
+      )
+    }
+
+    revalidatePath("/", "layout")
+    redirect(profile?.role === "sales_agent" ? "/admin/proposals" : "/admin/dashboard")
   }
 
   revalidatePath("/", "layout")
   redirect("/admin/dashboard")
+}
+
+// Alta propia del equipo interno: solo correos @payefy.me.
+// Entra como agente comercial (solo ve su propio trabajo); un Super Admin
+// puede subirle el rol después desde /admin/usuarios.
+const STAFF_EMAIL_DOMAIN = "@payefy.me"
+
+export async function signUpEmployee(formData: FormData) {
+  const fullName = ((formData.get("fullName") as string) ?? "").trim()
+  const email = ((formData.get("email") as string) ?? "").trim().toLowerCase()
+  const password = (formData.get("password") as string) ?? ""
+
+  const fail = (msg: string) =>
+    redirect("/admin/registro?error=" + encodeURIComponent(msg))
+
+  if (!fullName || !email || !password) {
+    fail("Todos los campos son requeridos")
+  }
+  if (!email.endsWith(STAFF_EMAIL_DOMAIN)) {
+    fail(`Solo se pueden crear cuentas con un correo ${STAFF_EMAIL_DOMAIN}`)
+  }
+  if (password.length < 8) {
+    fail("La contraseña debe tener al menos 8 caracteres")
+  }
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: created, error: createErr } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+  })
+  if (createErr || !created?.user) {
+    fail(
+      /already|registered|exists|duplicate/i.test(createErr?.message ?? "")
+        ? "Ese correo ya tiene una cuenta. Inicia sesión."
+        : "No se pudo crear la cuenta. Intenta de nuevo."
+    )
+    return
+  }
+
+  const { error: profileErr } = await admin.from("profiles").upsert({
+    id: created.user.id,
+    email,
+    full_name: fullName,
+    role: "sales_agent",
+    is_active: true,
+    must_change_password: false,
+  })
+  if (profileErr) {
+    // Sin perfil la cuenta no sirve: se limpia para poder reintentar
+    await admin.auth.admin.deleteUser(created.user.id).catch(() => {})
+    fail("No se pudo crear la cuenta. Intenta de nuevo.")
+  }
+
+  redirect(
+    "/admin/login?success=" +
+      encodeURIComponent("Cuenta creada. Ya puedes iniciar sesión.")
+  )
 }
 
 export async function signUp(formData: FormData) {

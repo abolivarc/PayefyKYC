@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { agentCanAccess, AGENT_HOME } from "@/lib/auth/agent-paths"
 
 export async function updateSession(request: NextRequest) {
   // Inject pathname so server layouts can read it
@@ -50,6 +51,7 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage =
     pathname === "/login" ||
     pathname === "/admin/login" ||
+    pathname === "/admin/registro" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
     pathname.startsWith("/auth/")
@@ -62,7 +64,8 @@ export async function updateSession(request: NextRequest) {
       pathname.startsWith("/terminos") ||
       pathname.startsWith("/admin") ||
       pathname === "/reset-password") &&
-    pathname !== "/admin/login"
+    pathname !== "/admin/login" &&
+    pathname !== "/admin/registro"
 
   // Sin sesión + ruta protegida → /login
   if (!user && isProtected) {
@@ -80,7 +83,12 @@ export async function updateSession(request: NextRequest) {
       .single()
 
     const url = request.nextUrl.clone()
-    url.pathname = profile?.role === "client" ? "/dashboard" : "/admin/dashboard"
+    url.pathname =
+      profile?.role === "client"
+        ? "/dashboard"
+        : profile?.role === "sales_agent"
+          ? AGENT_HOME
+          : "/admin/dashboard"
 
     const redirectResponse = NextResponse.redirect(url)
     supabaseResponse.cookies.getAll().forEach((cookie) => {
@@ -109,6 +117,21 @@ export async function updateSession(request: NextRequest) {
       if (wrongPortal) {
         const url = request.nextUrl.clone()
         url.pathname = isClient ? "/dashboard" : "/admin/dashboard"
+        const redirectResponse = NextResponse.redirect(url)
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          redirectResponse.cookies.set(cookie.name, cookie.value)
+        })
+        return redirectResponse
+      }
+
+      // El agente comercial solo entra a sus propias secciones
+      if (
+        profile.role === "sales_agent" &&
+        pathname.startsWith("/admin") &&
+        !agentCanAccess(pathname)
+      ) {
+        const url = request.nextUrl.clone()
+        url.pathname = AGENT_HOME
         const redirectResponse = NextResponse.redirect(url)
         supabaseResponse.cookies.getAll().forEach((cookie) => {
           redirectResponse.cookies.set(cookie.name, cookie.value)

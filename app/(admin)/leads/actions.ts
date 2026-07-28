@@ -28,6 +28,15 @@ export async function createLead(formData: FormData) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const admin = createAdminClient(url, key)
 
+  // El agente comercial solo puede darse de alta leads a sí mismo
+  const { data: actorProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+  const finalAgentId =
+    actorProfile?.role === "sales_agent" ? user.id : (assignedAgentId ?? user.id)
+
   // 1. Crear la empresa en estado lead
   const { data: company, error: companyErr } = await admin
     .from("companies")
@@ -36,7 +45,7 @@ export async function createLead(formData: FormData) {
       tax_id: taxId,
       contact_email: contactEmail,
       lead_product_code: productCode,
-      assigned_agent_id: assignedAgentId ?? user.id,
+      assigned_agent_id: finalAgentId,
       created_by: user.id,
       status: "lead",
       lead_invited_at: new Date().toISOString(),

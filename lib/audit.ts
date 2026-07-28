@@ -10,7 +10,7 @@ export async function logAudit({
 }: {
   actorId: string
   action: string
-  entityType: "application" | "document" | "company"
+  entityType: "application" | "document" | "company" | "profile"
   entityId: string
   changes?: Record<string, unknown>
   metadata?: Record<string, unknown>
