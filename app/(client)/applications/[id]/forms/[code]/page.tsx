@@ -5,6 +5,7 @@ import { BeneficialOwnerForm } from "@/components/forms/beneficial-owner-form"
 import { TermsOpmForm } from "@/components/forms/terms-opm-form"
 import { TermsAndConditionsForm } from "@/components/forms/terms-and-conditions-form"
 import { OperationalInfoForm } from "@/components/forms/operational-info-form"
+import { AmexCoverForm } from "@/components/forms/amex-cover-form"
 
 const FORM_TITLES: Record<string, string> = {
   complementary_info: "Información complementaria",
@@ -13,6 +14,7 @@ const FORM_TITLES: Record<string, string> = {
   terms_and_conditions: "Términos y condiciones firmados",
   operational_info: "Datos operativos del comercio",
   pf_operational_info: "Datos operativos del comercio",
+  amex_cover: "Carátula de afiliación AMEX",
 }
 
 const VALID_CODES = new Set([
@@ -22,6 +24,7 @@ const VALID_CODES = new Set([
   "terms_and_conditions",
   "operational_info",
   "pf_operational_info",
+  "amex_cover",
 ])
 
 export default async function FormPage({
@@ -104,6 +107,7 @@ export default async function FormPage({
       {(code === "operational_info" || code === "pf_operational_info") && (
         <OperationalInfoFormLoader appId={appId} code={code} />
       )}
+      {code === "amex_cover" && <AmexCoverFormLoader appId={appId} />}
     </div>
   )
 }
@@ -157,5 +161,70 @@ async function OperationalInfoFormLoader({
 
   return (
     <OperationalInfoForm appId={appId} templateCode={code} initialData={initialData} />
+  )
+}
+
+// Prellenado de la carátula AMEX con lo que ya sabemos del expediente
+async function AmexCoverFormLoader({ appId }: { appId: string }) {
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: app } = await admin
+    .from("applications")
+    .select("product_id, companies(legal_name, tax_id, operator_email, phone)")
+    .eq("id", appId)
+    .single()
+  if (!app) return notFound()
+
+  const company = (app.companies as unknown) as {
+    legal_name: string | null
+    tax_id: string | null
+    operator_email: string | null
+    phone: string | null
+  } | null
+
+  const { data: tmpl } = await admin
+    .from("document_templates")
+    .select("id")
+    .eq("code", "amex_cover")
+    .eq("product_id", app.product_id)
+    .single()
+  if (!tmpl) return notFound()
+
+  const { data: doc } = await admin
+    .from("documents")
+    .select("id, file_name")
+    .eq("application_id", appId)
+    .eq("template_id", tmpl.id)
+    .single()
+  if (!doc) return notFound()
+
+  let initialData: Record<string, string> = {
+    razonSocial: company?.legal_name ?? "",
+    rfc: company?.tax_id ?? "",
+    estCorreo: company?.operator_email ?? "",
+    estTelefono: company?.phone ?? "",
+  }
+
+  // Si ya la contestó, se recuperan sus respuestas para corregir y regenerar
+  const { data: submission } = await admin
+    .from("form_submissions")
+    .select("form_data")
+    .eq("application_id", appId)
+    .eq("template_id", tmpl.id)
+    .maybeSingle()
+  if (submission?.form_data) {
+    initialData = { ...initialData, ...(submission.form_data as Record<string, string>) }
+  }
+
+  return (
+    <AmexCoverForm
+      appId={appId}
+      documentId={doc.id}
+      initialData={initialData}
+      initialFileName={doc.file_name}
+    />
   )
 }

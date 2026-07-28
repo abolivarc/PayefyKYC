@@ -27,6 +27,7 @@ export async function createApplications(formData: FormData) {
   const terminalType = (formData.get("terminal_type") as string) || null
   const operatorEmail = formData.get("operator_email") as string
   const personType = (formData.get("person_type") as string) || null
+  const wantsAmex = ((formData.get("wants_amex") as string) || "") === "si"
 
   if (!products.length || !legalName || !taxId || !operatorEmail) {
     redirect(
@@ -65,6 +66,7 @@ export async function createApplications(formData: FormData) {
       terminal_type: terminalType,
       operator_email: operatorEmail,
       person_type: personType,
+      wants_amex: wantsAmex,
     }).eq("id", companyId)
   } else {
     // Flujo estándar: crear empresa nueva
@@ -76,6 +78,7 @@ export async function createApplications(formData: FormData) {
         terminal_type: terminalType,
         operator_email: operatorEmail,
         person_type: personType,
+        wants_amex: wantsAmex,
         created_by: user.id,
       })
       .select("id")
@@ -137,7 +140,7 @@ export async function createApplications(formData: FormData) {
 
     let templates = allTemplates ?? []
     if (product.code === "terminals") {
-      templates = filterTerminalTemplates(templates, personType, terminalType)
+      templates = filterTerminalTemplates(templates, personType, terminalType, wantsAmex)
     }
 
     console.log("[CREATE DEBUG] templates found:", templates.length, "for product:", product.id, "personType:", personType, "error:", tmplErr?.message)
@@ -181,7 +184,8 @@ export async function createApplications(formData: FormData) {
 function filterTerminalTemplates<T extends { code: string }>(
   templates: T[],
   personType: string | null,
-  terminalType: string | null
+  terminalType: string | null,
+  wantsAmex?: boolean | null
 ): T[] {
   let result =
     personType === "persona_fisica"
@@ -196,6 +200,10 @@ function filterTerminalTemplates<T extends { code: string }>(
   } else if (terminalType === "ecommerce") {
     result = result.filter((t) => !PHOTO_CODES.includes(t.code))
   }
+
+  // La carátula AMEX solo aplica si el comercio va a aceptar American Express
+  if (!wantsAmex) result = result.filter((t) => t.code !== "amex_cover")
+
   return result
 }
 
@@ -243,13 +251,14 @@ export async function addProductToCompany(
   if (productCode === "terminals") {
     const { data: co } = await supabase
       .from("companies")
-      .select("person_type, terminal_type")
+      .select("person_type, terminal_type, wants_amex")
       .eq("id", companyId)
       .single()
     templates = filterTerminalTemplates(
       templates,
       co?.person_type ?? null,
-      co?.terminal_type ?? null
+      co?.terminal_type ?? null,
+      (co as unknown as { wants_amex?: boolean } | null)?.wants_amex ?? null
     )
   }
 

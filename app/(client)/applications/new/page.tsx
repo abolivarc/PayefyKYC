@@ -130,6 +130,7 @@ function WizardContent() {
   const [step, setStep] = useState(skipStep1 ? 2 : 1)
   const [selected, setSelected] = useState<ProductOption | null>(initialSelected)
   const [terminalType, setTerminalType] = useState("")
+  const [wantsAmex, setWantsAmex] = useState("")
   const [personType, setPersonType] = useState<PersonType | "">("")
 
   const hasTerminals = selected === "terminals" || selected === "both"
@@ -436,6 +437,9 @@ function WizardContent() {
               {terminalType && (
                 <input type="hidden" name="terminal_type" value={terminalType} />
               )}
+              {wantsAmex && (
+                <input type="hidden" name="wants_amex" value={wantsAmex} />
+              )}
               {personType && (
                 <input type="hidden" name="person_type" value={personType} />
               )}
@@ -547,6 +551,49 @@ function WizardContent() {
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 9l6 6 6-6" />
                         </svg>
+                      </div>
+                    </div>
+
+                    {/* American Express */}
+                    <div style={{ marginTop: 20 }}>
+                      <label style={labelStyle}>
+                        ¿Vas a aceptar American Express?{" "}
+                        <span style={{ color: T.req }}>*</span>
+                      </label>
+                      <p style={helpStyle}>
+                        Si aceptas AMEX, más adelante te pediremos la carátula de
+                        afiliación firmada. La generamos con tus datos, tú solo la
+                        firmas y la subes.
+                      </p>
+                      <div style={{ display: "flex", gap: 10 }}>
+                        {[
+                          { v: "si", label: "Sí, quiero AMEX" },
+                          { v: "no", label: "No, por ahora no" },
+                        ].map((opt) => {
+                          const active = wantsAmex === opt.v
+                          return (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              onClick={() => setWantsAmex(opt.v)}
+                              style={{
+                                flex: 1,
+                                padding: "12px 16px",
+                                fontSize: 14,
+                                fontWeight: active ? 700 : 500,
+                                fontFamily: "inherit",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                color: active ? T.brandStrong : T.text,
+                                background: active ? T.brandSoft : T.surface,
+                                border: `2px solid ${active ? T.brandStrong : T.border}`,
+                                borderRadius: 10,
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>

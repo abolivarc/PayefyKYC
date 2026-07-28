@@ -28,7 +28,7 @@ const MULTI_UPLOAD_CODES = new Set([
 const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   {
     title: "Formularios digitales",
-    codes: ["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions", "operational_info", "pf_operational_info"],
+    codes: ["complementary_info", "beneficial_owner", "terms_opm", "terms_and_conditions", "operational_info", "pf_operational_info", "amex_cover"],
   },
   {
     title: "Documentos de la empresa",
@@ -128,7 +128,7 @@ export default async function DocumentsPage({
   // 3. Obtener tipo de persona de la empresa (para filtrar PF/PM en terminales)
   const { data: company } = await admin
     .from("companies")
-    .select("person_type")
+    .select("person_type, terminal_type, wants_amex")
     .eq("id", app.company_id)
     .single()
 
@@ -149,6 +149,14 @@ export default async function DocumentsPage({
       productTemplates = productTemplates.filter((t) => t.code.startsWith("pf_"))
     } else {
       productTemplates = productTemplates.filter((t) => !t.code.startsWith("pf_"))
+    }
+  }
+
+  // La carátula AMEX solo se muestra si el comercio aceptará American Express
+  if (productCode === "terminals") {
+    const wantsAmex = (company as unknown as { wants_amex?: boolean } | null)?.wants_amex
+    if (!wantsAmex) {
+      productTemplates = productTemplates.filter((t) => t.code !== "amex_cover")
     }
   }
 
