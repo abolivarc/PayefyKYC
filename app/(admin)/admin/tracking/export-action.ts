@@ -32,7 +32,7 @@ export async function exportExpediente(
       .from("applications")
       .select(`
         id, status, submitted_at, approved_at, activated_at, rejection_reason,
-        companies(legal_name, tax_id, phone, operator_email, person_type, terminal_type),
+        companies(legal_name, tax_id, phone, operator_email, person_type, terminal_type, wants_amex),
         products(name, code)
       `)
       .eq("id", applicationId)
@@ -42,7 +42,7 @@ export async function exportExpediente(
 
     const company = (app.companies as unknown) as {
       legal_name: string; tax_id: string; phone: string | null;
-      operator_email: string | null; person_type: string | null; terminal_type: string | null
+      operator_email: string | null; person_type: string | null; terminal_type: string | null; wants_amex: boolean | null
     } | null
     const product = (app.products as unknown) as { name: string; code: string } | null
 
@@ -129,6 +129,7 @@ export async function exportExpediente(
         taxId: company?.tax_id ?? null,
         personType: company?.person_type ?? null,
         terminalType: company?.terminal_type ?? null,
+        wantsAmex: company?.wants_amex ?? null,
         productName: product?.name ?? null,
         applicationId,
         exportDate,

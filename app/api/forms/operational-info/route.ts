@@ -8,7 +8,8 @@ import {
 
 const FIELDS: (keyof OperationalInfoData)[] = [
   "averageTicket",
-  "avgTransactionsAmount",
+  "monthlyTransactions",
+  "maxTicket",
   "avgSalesAmount",
   "lastMonthSalesAmount",
   "lastMonthSalesOperations",
@@ -23,7 +24,8 @@ const FIELDS: (keyof OperationalInfoData)[] = [
 
 const REQUIRED: (keyof OperationalInfoData)[] = [
   "averageTicket",
-  "avgTransactionsAmount",
+  "monthlyTransactions",
+  "maxTicket",
   "avgSalesAmount",
   "lastMonthSalesAmount",
   "lastMonthSalesOperations",

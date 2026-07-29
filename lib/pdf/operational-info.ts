@@ -3,7 +3,8 @@ import { PDFDocument, StandardFonts, rgb } from "pdf-lib"
 
 export interface OperationalInfoData {
   averageTicket: string
-  avgTransactionsAmount: string
+  monthlyTransactions: string
+  maxTicket: string
   avgSalesAmount: string
   lastMonthSalesAmount: string
   lastMonthSalesOperations: string
@@ -59,11 +60,12 @@ export async function generateOperationalInfoPdf(
 
   const rows: [string, string][] = [
     ["Ticket promedio", money(data.averageTicket)],
-    ["Monto promedio de transacciones (mensual)", money(data.avgTransactionsAmount)],
-    ["Monto promedio de venta (mensual)", money(data.avgSalesAmount)],
-    ["Registro de ventas último mes — monto", money(data.lastMonthSalesAmount)],
-    ["Registro de ventas último mes — operaciones", data.lastMonthSalesOperations || "—"],
-    ["Monto de contracargos último mes", money(data.lastMonthChargebacks)],
+    ["Transacciones al mes", (data.monthlyTransactions || "—") + (data.monthlyTransactions ? " cobros" : "")],
+    ["Venta mensual estimada", money(data.avgSalesAmount)],
+    ["Ticket maximo a procesar", money(data.maxTicket)],
+    ["Ventas del mes pasado", money(data.lastMonthSalesAmount)],
+    ["Operaciones del mes pasado", (data.lastMonthSalesOperations || "—") + (data.lastMonthSalesOperations ? " cobros" : "")],
+    ["Contracargos del mes pasado", money(data.lastMonthChargebacks)],
     ["% Nacional", (data.pctNational || "—") + (data.pctNational ? "%" : "")],
     ["% Internacional", (data.pctInternational || "—") + (data.pctInternational ? "%" : "")],
     ["Operativa", OPERATIVA_LABELS[data.operativa] ?? data.operativa ?? "—"],

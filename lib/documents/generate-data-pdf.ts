@@ -11,7 +11,8 @@ export type DataPdfInput = {
   taxId: string | null
   personType: string | null
   productName: string | null
-  terminalType?: string | null // card_present | ecommerce | both
+  terminalType?: string | null // card_present | ecommerce | link_de_pago | both
+  wantsAmex?: boolean | null
   applicationId: string
   exportDate: string
   fields: DataField[]
@@ -95,6 +96,19 @@ export async function generateDataPdf(input: DataPdfInput): Promise<Uint8Array> 
     const label = TERMINAL_TYPE_LABELS[input.terminalType] ?? input.terminalType
     page.drawText(`Modalidad: ${clampToWinAnsi(label)}`, {
       x: marginX, y, size: 10, font: fontBold, color: GREEN_MID,
+    })
+    y -= 15
+  }
+
+  // American Express: se muestra siempre, y "sin respuesta" no se confunde
+  // con un "no" (el dato solo es confiable si el comercio lo contestó)
+  {
+    const v = input.wantsAmex
+    const label =
+      v === true ? "SI" : v === false ? "NO" : "SIN RESPUESTA - confirmar con el comercio"
+    page.drawText(`American Express: ${label}`, {
+      x: marginX, y, size: 10, font: fontBold,
+      color: v === true ? GREEN_MID : v === false ? GREY_TEXT : rgb(0.71, 0.27, 0.02),
     })
     y -= 15
   }

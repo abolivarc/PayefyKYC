@@ -27,7 +27,7 @@ export async function createApplications(formData: FormData) {
   const terminalType = (formData.get("terminal_type") as string) || null
   const operatorEmail = formData.get("operator_email") as string
   const personType = (formData.get("person_type") as string) || null
-  const wantsAmex = ((formData.get("wants_amex") as string) || "") === "si"
+  const wantsAmexRaw = (formData.get("wants_amex") as string) || ""
 
   if (!products.length || !legalName || !taxId || !operatorEmail) {
     redirect(
@@ -43,6 +43,17 @@ export async function createApplications(formData: FormData) {
         encodeURIComponent("Selecciona la modalidad de la terminal")
     )
   }
+
+  // AMEX debe contestarse explícitamente: si no, no se puede distinguir un
+  // "no" real de una pregunta que el comercio se saltó
+  if (products.includes("terminals") && !wantsAmexRaw) {
+    redirect(
+      "/applications/new?error=" +
+        encodeURIComponent("Indica si vas a aceptar American Express")
+    )
+  }
+
+  const wantsAmex = wantsAmexRaw === "si"
 
   // 1. Detectar si el cliente ya tiene empresa (flujo de invitación de lead)
   const { data: existingMembership } = await supabase
@@ -654,7 +665,7 @@ async function buildDatosSolicitadosPdf(
 
   const { data: company } = await adminClient
     .from("companies")
-    .select("legal_name, tax_id, person_type, terminal_type")
+    .select("legal_name, tax_id, person_type, terminal_type, wants_amex")
     .eq("id", companyId)
     .single()
 
@@ -684,6 +695,7 @@ async function buildDatosSolicitadosPdf(
     tax_id?: string | null
     person_type?: string | null
     terminal_type?: string | null
+    wants_amex?: boolean | null
   } | null
 
   // Sin datos capturados y sin modalidad no aporta nada
@@ -695,6 +707,7 @@ async function buildDatosSolicitadosPdf(
     personType: co?.person_type ?? null,
     productName,
     terminalType: co?.terminal_type ?? null,
+    wantsAmex: co?.wants_amex ?? null,
     applicationId,
     exportDate: new Date().toLocaleDateString("es-MX", {
       year: "numeric",

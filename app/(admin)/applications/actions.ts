@@ -530,3 +530,83 @@ export async function requestGeneralChanges(
   revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
+
+// ─────────────────────────────────────
+// Activar / quitar la carátula AMEX en un expediente ya creado
+// (cuando el comercio decide aceptar American Express después del alta)
+// ─────────────────────────────────────
+export async function setAmexRequirement(
+  applicationId: string,
+  wanted: boolean
+): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const admin = adminDb()
+
+  const { data: app } = await admin
+    .from("applications")
+    .select("company_id, product_id, products(code)")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+
+  const productCode = ((app.products as unknown) as { code: string } | null)?.code
+  if (productCode !== "terminals") {
+    return { error: "La carátula AMEX solo aplica a solicitudes de terminales" }
+  }
+
+  const { error: compErr } = await admin
+    .from("companies")
+    .update({ wants_amex: wanted })
+    .eq("id", app.company_id as string)
+  if (compErr) return { error: compErr.message }
+
+  const { data: tmpl } = await admin
+    .from("document_templates")
+    .select("id")
+    .eq("code", "amex_cover")
+    .eq("product_id", app.product_id)
+    .single()
+  if (!tmpl) return { error: "Falta la plantilla de la carátula AMEX" }
+
+  const { data: existing } = await admin
+    .from("documents")
+    .select("id, storage_path")
+    .eq("application_id", applicationId)
+    .eq("template_id", tmpl.id)
+    .maybeSingle()
+
+  if (wanted) {
+    if (!existing) {
+      const { error } = await admin.from("documents").insert({
+        application_id: applicationId,
+        template_id: tmpl.id,
+        status: "pending_upload",
+      })
+      if (error) return { error: error.message }
+    }
+  } else if (existing) {
+    // No se borra si el comercio ya subió algo: se conserva la evidencia
+    if (existing.storage_path) {
+      return {
+        error: "El comercio ya subió la carátula; no se puede quitar el requisito",
+      }
+    }
+    await admin.from("documents").delete().eq("id", existing.id)
+  }
+
+  await logAudit({
+    actorId: user.id,
+    action: wanted ? "amex_cover_requested" : "amex_cover_removed",
+    entityType: "application",
+    entityId: applicationId,
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
