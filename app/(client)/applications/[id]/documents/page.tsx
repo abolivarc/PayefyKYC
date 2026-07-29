@@ -58,6 +58,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
     title: "Documentos fiscales",
     codes: [
       "tax_situation_certificate",
+      "legal_rep_tax_situation",
       "tax_declaration",
       "sat_compliance",
       "pf_tax_situation",
@@ -149,6 +150,20 @@ export default async function DocumentsPage({
       productTemplates = productTemplates.filter((t) => t.code.startsWith("pf_"))
     } else {
       productTemplates = productTemplates.filter((t) => !t.code.startsWith("pf_"))
+    }
+  }
+
+  // Link de pago y e-commerce no requieren fotos del negocio
+  if (productCode === "terminals") {
+    const tt = (company as unknown as { terminal_type?: string | null } | null)?.terminal_type
+    if (tt === "ecommerce" || tt === "link_de_pago") {
+      productTemplates = productTemplates.filter(
+        (t) => !["business_photos", "pf_business_photos"].includes(t.code)
+      )
+    } else if (tt === "card_present") {
+      productTemplates = productTemplates.filter(
+        (t) => !["website_url", "pf_website_url"].includes(t.code)
+      )
     }
   }
 

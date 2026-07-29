@@ -61,7 +61,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
   { title: "Formularios digitales", codes: ["complementary_info", "beneficial_owner", "terms_opm", "operational_info", "pf_operational_info"] },
   { title: "Documentos de la empresa", codes: ["incorporation_act", "incorporation_act_update", "organigrama", "efirma", "cif", "company_address_proof", "inscription_rpc", "pf_address_proof"] },
   { title: "Identidades y poderes", codes: ["power_of_attorney", "legal_rep_id", "legal_rep_selfie", "shareholder_id", "administrator_id", "pf_official_id"] },
-  { title: "Documentos fiscales", codes: ["tax_situation_certificate", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
+  { title: "Documentos fiscales", codes: ["tax_situation_certificate", "legal_rep_tax_situation", "tax_declaration", "sat_compliance", "pf_tax_situation"] },
   { title: "Estado de cuenta", codes: ["bank_statement", "pf_bank_statement"] },
   { title: "Datos solicitados", codes: ["contact_email", "contact_phone", "pf_contact_email", "pf_contact_phone", "shareholders_curp", "shareholders_rfc", "legal_reps_curp", "legal_reps_rfc", "pf_curp", "pf_rfc"] },
   { title: "Adicionales", codes: ["business_photos", "website_url", "pf_business_photos", "pf_website_url"] },

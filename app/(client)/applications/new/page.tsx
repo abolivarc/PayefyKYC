@@ -543,6 +543,7 @@ function WizardContent() {
                           <option value="">Selecciona una modalidad</option>
                           <option value="card_present">Tarjeta Presente (punto de venta)</option>
                           <option value="ecommerce">E-commerce (tienda en línea)</option>
+                          <option value="link_de_pago">Link de pago</option>
                           <option value="both">Ambas modalidades</option>
                         </select>
                         <svg

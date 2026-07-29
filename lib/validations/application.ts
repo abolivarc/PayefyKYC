@@ -11,7 +11,7 @@ export const newApplicationSchema = z.object({
     .max(13),
   phone: z.string().min(10, "Teléfono debe tener 10 dígitos"),
   terminal_type: z
-    .enum(["card_present", "ecommerce", "both"])
+    .enum(["card_present", "ecommerce", "link_de_pago", "both"])
     .optional(),
 })
 

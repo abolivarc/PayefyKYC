@@ -203,7 +203,10 @@ function fillConditions(xml: string, c: AmexConditions): string {
   // las etiquetas se conservan tal cual.
   if (c.modalidad) {
     const presencial = c.modalidad === "card_present" || c.modalidad === "both"
-    const ecommerce = c.modalidad === "ecommerce" || c.modalidad === "both"
+    const ecommerce =
+      c.modalidad === "ecommerce" ||
+      c.modalidad === "link_de_pago" ||
+      c.modalidad === "both"
     const marks = [!presencial, presencial, !ecommerce]
     let m = 0
     out = out.replace(/\[_((?:<[^>]*>)*)\]/g, (orig, tags: string) => {

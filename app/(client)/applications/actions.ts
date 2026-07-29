@@ -197,7 +197,7 @@ function filterTerminalTemplates<T extends { code: string }>(
 
   if (terminalType === "card_present") {
     result = result.filter((t) => !URL_CODES.includes(t.code))
-  } else if (terminalType === "ecommerce") {
+  } else if (terminalType === "ecommerce" || terminalType === "link_de_pago") {
     result = result.filter((t) => !PHOTO_CODES.includes(t.code))
   }
 

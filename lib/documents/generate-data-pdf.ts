@@ -19,6 +19,7 @@ export type DataPdfInput = {
 
 export const TERMINAL_TYPE_LABELS: Record<string, string> = {
   card_present: "Tarjeta Presente (POS fisica)",
+  link_de_pago: "Link de pago",
   ecommerce: "E-commerce / Link de pago",
   both: "Tarjeta Presente + E-commerce",
 }
