@@ -555,16 +555,23 @@ function WizardContent() {
                       </div>
                     </div>
 
-                    {/* American Express */}
-                    <div style={{ marginTop: 20 }}>
+                  </div>
+                )}
+
+                {/* American Express — aplica a cualquier modalidad */}
+                {hasTerminals && (
+                  <div style={{ marginBottom: 28 }}>
+                    <div style={sectionHeadStyle}>American Express</div>
+                    <div>
                       <label style={labelStyle}>
                         ¿Vas a aceptar American Express?{" "}
                         <span style={{ color: T.req }}>*</span>
                       </label>
                       <p style={helpStyle}>
-                        Si aceptas AMEX, más adelante te pediremos la carátula de
-                        afiliación firmada. La generamos con tus datos, tú solo la
-                        firmas y la subes.
+                        Aplica igual si cobras en punto de venta, en línea o por
+                        link de pago. Si aceptas AMEX, más adelante te pediremos la
+                        carátula de afiliación firmada: la generamos con tus datos,
+                        tú solo la firmas y la subes.
                       </p>
                       <div style={{ display: "flex", gap: 10 }}>
                         {[
