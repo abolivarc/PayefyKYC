@@ -68,7 +68,7 @@ export async function exportExpediente(
     // 4. Load all documents (file uploads)
     const { data: docs } = await admin
       .from("documents")
-      .select("storage_path, file_name, uploaded_at, status, document_templates(name, code, is_form, field_type)")
+      .select("storage_path, file_name, uploaded_at, status, title, document_templates(name, code, is_form, field_type)")
       .eq("application_id", applicationId)
       .not("storage_path", "is", null)
 
@@ -94,8 +94,14 @@ export async function exportExpediente(
         if (error || !data) continue
 
         const ext = doc.file_name?.split(".").pop() ?? "pdf"
-        const safeName = (tmpl?.name ?? doc.file_name ?? `doc_${docCount}`)
-          .replace(/[^a-zA-Z0-9_\-. ]/g, "_").slice(0, 60)
+        // Documentos adicionales (sin plantilla): se usa el título que puso
+        // el cliente y se quita la extensión para no repetirla (.pdf.pdf)
+        const base =
+          tmpl?.name ??
+          ((doc as unknown as { title?: string | null }).title ||
+            doc.file_name?.replace(/\.[^.]+$/, "") ||
+            `documento_adicional_${docCount}`)
+        const safeName = base.replace(/[^a-zA-Z0-9_\-. ]/g, "_").slice(0, 60)
         docsFolder.file(`${docCount === 0 ? safeName : `${safeName}_${docCount}`}.${ext}`, await data.arrayBuffer())
         docCount++
         break
