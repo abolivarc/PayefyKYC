@@ -50,6 +50,15 @@ const PRODUCT_MAP: Record<string, { label: string; chip: string }> = {
   terminals: { label: "Terminal", chip: "bg-product-terminals-tint text-product-terminals border border-product-terminals/20" },
 }
 
+/* ── Product tabs ───────────────────────────────────────────────── */
+type ProductTab = "all" | "terminals" | "cards"
+
+const PRODUCT_TABS: { key: ProductTab; label: string; activeChip: string }[] = [
+  { key: "all",       label: "Todos",    activeChip: "bg-brand-tint border-transparent text-primary font-semibold" },
+  { key: "terminals", label: "Terminal", activeChip: "bg-product-terminals-tint border-product-terminals/30 text-product-terminals font-semibold" },
+  { key: "cards",     label: "Tarjetas", activeChip: "bg-product-cards-tint border-product-cards/30 text-product-cards font-semibold" },
+]
+
 /* ── Filter tabs ────────────────────────────────────────────────── */
 type FilterTab = "all" | "review" | "changes" | "approved"
 
@@ -182,7 +191,12 @@ function SkeletonCard() {
 export function ClientsGrid({ companies, isSuperAdmin }: Props) {
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState<FilterTab>("all")
+  const [product, setProduct] = useState<ProductTab>("all")
   const [view, setView] = useState<"grid" | "list">("grid")
+
+  // Un comercio puede tener los dos productos: aparece en ambos filtros
+  const hasProduct = (c: Company, code: ProductTab) =>
+    code === "all" || c.applications.some((a) => a.products?.code === code)
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -191,19 +205,32 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
         !q || c.legal_name.toLowerCase().includes(q) || (c.tax_id ?? "").toLowerCase().includes(q)
       const matchFilter =
         filter === "all" || c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
-      return matchSearch && matchFilter
+      return matchSearch && matchFilter && hasProduct(c, product)
     })
-  }, [companies, search, filter])
+  }, [companies, search, filter, product])
 
-  const counts = useMemo(
-    () => ({
-      all:      companies.length,
-      review:   companies.filter((c) => c.applications.some((a) => FILTER_STATUSES.review.includes(a.status))).length,
-      changes:  companies.filter((c) => c.applications.some((a) => FILTER_STATUSES.changes.includes(a.status))).length,
-      approved: companies.filter((c) => c.applications.some((a) => FILTER_STATUSES.approved.includes(a.status))).length,
-    }),
-    [companies]
-  )
+  // Los conteos de estado respetan el producto elegido, y viceversa
+  const counts = useMemo(() => {
+    const base = companies.filter((c) => hasProduct(c, product))
+    return {
+      all:      base.length,
+      review:   base.filter((c) => c.applications.some((a) => FILTER_STATUSES.review.includes(a.status))).length,
+      changes:  base.filter((c) => c.applications.some((a) => FILTER_STATUSES.changes.includes(a.status))).length,
+      approved: base.filter((c) => c.applications.some((a) => FILTER_STATUSES.approved.includes(a.status))).length,
+    }
+  }, [companies, product])
+
+  const productCounts = useMemo(() => {
+    const base =
+      filter === "all"
+        ? companies
+        : companies.filter((c) => c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status)))
+    return {
+      all:       base.length,
+      terminals: base.filter((c) => hasProduct(c, "terminals")).length,
+      cards:     base.filter((c) => hasProduct(c, "cards")).length,
+    }
+  }, [companies, filter])
 
   const tabs: { key: FilterTab; label: string }[] = [
     { key: "all",      label: "Todos"       },
@@ -253,6 +280,30 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
               <span className="font-mono opacity-60 text-[11px]">{counts[tab.key]}</span>
             </button>
           ))}
+        </div>
+
+        {/* Producto: se combina con el filtro de estado de arriba */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide pb-0.5">
+          <span className="text-[11px] text-tertiary shrink-0 pr-0.5">Producto</span>
+          {PRODUCT_TABS.map((tab) => {
+            const active = product === tab.key
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setProduct(tab.key)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full border whitespace-nowrap transition-colors ${
+                  active
+                    ? tab.activeChip
+                    : "bg-card border-border text-muted-foreground hover:bg-secondary"
+                }`}
+              >
+                {tab.label}
+                <span className="font-mono opacity-60 text-[11px]">{productCounts[tab.key]}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 

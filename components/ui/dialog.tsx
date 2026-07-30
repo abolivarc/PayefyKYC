@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "@/lib/utils"
 import { X } from "lucide-react"
 
@@ -12,6 +13,12 @@ interface DialogProps {
 }
 
 export function Dialog({ open, onClose, children, className }: DialogProps) {
+  // Se monta en el <body> con un portal: si el diálogo se renderiza dentro de
+  // una tarjeta (que usa `relative z-10`), queda atrapado en ese contexto de
+  // apilamiento y las tarjetas siguientes se pintan encima del modal.
+  const [mounted, setMounted] = React.useState(false)
+  React.useEffect(() => setMounted(true), [])
+
   React.useEffect(() => {
     if (open) {
       document.body.style.overflow = "hidden"
@@ -23,10 +30,21 @@ export function Dialog({ open, onClose, children, className }: DialogProps) {
     }
   }, [open])
 
-  if (!open) return null
+  React.useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [open, onClose])
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  if (!open || !mounted) return null
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+    >
       <div
         className="absolute inset-0 bg-black/50"
         onClick={onClose}
@@ -47,7 +65,8 @@ export function Dialog({ open, onClose, children, className }: DialogProps) {
         </button>
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
