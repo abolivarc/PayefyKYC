@@ -2,6 +2,27 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 import { agentCanAccess, AGENT_HOME } from "@/lib/auth/agent-paths"
 
+/**
+ * Redirige conservando las cookies de sesión COMPLETAS.
+ *
+ * `cookies.set(name, value)` pierde path, maxAge, sameSite, httpOnly y secure.
+ * Como getUser() rota el refresh token, perder esas opciones deja al navegador
+ * con cookies mutiladas: el token viejo ya se consumió, el nuevo no sirve, y
+ * Supabase responde `session_not_found`. El síntoma es cerrar sesión sola en
+ * cada clic — y le pega sobre todo al agente comercial, que pasa por un
+ * redirect en casi cada navegación.
+ */
+function redirectPreservingSession(
+  url: URL,
+  supabaseResponse: NextResponse
+): NextResponse {
+  const redirectResponse = NextResponse.redirect(url)
+  for (const cookie of supabaseResponse.cookies.getAll()) {
+    redirectResponse.cookies.set(cookie)
+  }
+  return redirectResponse
+}
+
 export async function updateSession(request: NextRequest) {
   // Inject pathname so server layouts can read it
   const requestHeaders = new Headers(request.headers)
@@ -71,7 +92,7 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = "/login"
-    return NextResponse.redirect(url)
+    return redirectPreservingSession(url, supabaseResponse)
   }
 
   // Con sesión + página de auth o root → dashboard correcto
@@ -90,11 +111,7 @@ export async function updateSession(request: NextRequest) {
           ? AGENT_HOME
           : "/admin/dashboard"
 
-    const redirectResponse = NextResponse.redirect(url)
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value)
-    })
-    return redirectResponse
+    return redirectPreservingSession(url, supabaseResponse)
   }
 
   // Con sesión + portal incorrecto para el rol
@@ -117,11 +134,7 @@ export async function updateSession(request: NextRequest) {
       if (wrongPortal) {
         const url = request.nextUrl.clone()
         url.pathname = isClient ? "/dashboard" : "/admin/dashboard"
-        const redirectResponse = NextResponse.redirect(url)
-        supabaseResponse.cookies.getAll().forEach((cookie) => {
-          redirectResponse.cookies.set(cookie.name, cookie.value)
-        })
-        return redirectResponse
+        return redirectPreservingSession(url, supabaseResponse)
       }
 
       // El agente comercial solo entra a sus propias secciones
@@ -132,11 +145,7 @@ export async function updateSession(request: NextRequest) {
       ) {
         const url = request.nextUrl.clone()
         url.pathname = AGENT_HOME
-        const redirectResponse = NextResponse.redirect(url)
-        supabaseResponse.cookies.getAll().forEach((cookie) => {
-          redirectResponse.cookies.set(cookie.name, cookie.value)
-        })
-        return redirectResponse
+        return redirectPreservingSession(url, supabaseResponse)
       }
     }
   }
