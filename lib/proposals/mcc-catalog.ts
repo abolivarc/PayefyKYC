@@ -10,8 +10,22 @@ export interface GiroMcc {
   pisoCredito: number // % sin IVA
 }
 
-export const AMEX_FLOOR_RATE = 2.8          // % piso fijo contractual
-export const INTERNATIONAL_FLOOR_RATE = 3.3 // % piso fijo contractual
+/** Margen base de Payefy, ya incluido en los pisos del Excel. */
+export const BASE_MARKUP = 0.3
+
+/** Lo que cuestan de contrato (costo, NO precio de venta). */
+export const AMEX_CONTRACT_COST = 2.8
+export const INTERNATIONAL_CONTRACT_COST = 3.3
+
+// Se les suma el mismo margen que ya traen los giros del Excel: si se
+// vendieran al costo, AMEX e Internacional saldrían sin margen mientras
+// todos los demás giros lo llevan.
+// Redondeo a 2 decimales: en coma flotante 2.8 + 0.3 = 3.0999999999999996,
+// que se colaría tal cual a la propuesta y a las comparaciones de piso.
+const conMargen = (costo: number) => Math.round((costo + BASE_MARKUP) * 100) / 100
+
+export const AMEX_FLOOR_RATE = conMargen(AMEX_CONTRACT_COST)                   // 3.1 %
+export const INTERNATIONAL_FLOOR_RATE = conMargen(INTERNATIONAL_CONTRACT_COST) // 3.6 %
 
 export const MCC_CATALOG: GiroMcc[] = [
   { mcc: "4722", familia: "Agencias de Viajes", descripcion: "AGENCIAS DE VIAJES, OPERADORAS DE VIAJES", pisoDebito: 1.7, pisoCredito: 2.18 },
