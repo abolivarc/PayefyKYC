@@ -8,6 +8,7 @@ import { Download, Save, ChevronLeft } from "lucide-react"
 import { ProposalData } from "@/lib/proposals/types"
 import { ProposalDocument } from "./pdf/proposal-document"
 import { saveLead } from "@/app/(admin)/admin/proposals/actions"
+import { firstRateError } from "@/lib/proposals/rate-floors"
 
 export function Step4Preview({
   data,
@@ -34,6 +35,13 @@ export function Step4Preview({
   }
 
   const handleGeneratePDF = async () => {
+    // Último candado del lado del cliente: aunque se haya llegado hasta aquí,
+    // el documento no se emite si alguna tasa quedó por debajo del piso.
+    const blocking = firstRateError(data)
+    if (blocking) {
+      setFeedback({ type: "err", msg: `${blocking}. Corrígela en el paso 3.` })
+      return
+    }
     setGeneratingPdf(true)
     setFeedback(null)
     try {

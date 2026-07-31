@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import type { ProposalData } from "@/lib/proposals/types"
+import { firstRateError } from "@/lib/proposals/rate-floors"
 
 function adminDb() {
   return createAdminClient(
@@ -29,6 +30,12 @@ export async function saveLead(
 ): Promise<{ error?: string; leadId?: string }> {
   const user = await requireStaff()
   if (!user) return { error: "No autenticado" }
+
+  // El piso se valida también aquí: la propuesta se arma en el navegador, así
+  // que este es el único punto que no se puede saltar retrocediendo un paso
+  // ni tocando el estado del wizard.
+  const rateError = firstRateError(data)
+  if (rateError) return { error: rateError }
 
   const admin = adminDb()
   const row = {

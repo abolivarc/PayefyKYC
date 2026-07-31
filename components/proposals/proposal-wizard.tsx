@@ -7,11 +7,8 @@ import { Step1BusinessInfo } from "./step1-business-info"
 import { Step2ProposalType } from "./step2-proposal-type"
 import { Step3RatesConfig } from "./step3-rates-config"
 import { Step4Preview } from "./step4-preview"
-import {
-  ProposalData,
-  AMEX_FLOOR_RATE,
-  INTERNATIONAL_FLOOR_RATE,
-} from "@/lib/proposals/types"
+import { ProposalData } from "@/lib/proposals/types"
+import { ratesAreValid } from "@/lib/proposals/rate-floors"
 
 const steps = [
   { number: 1, title: "Información del Negocio" },
@@ -36,13 +33,7 @@ export function ProposalWizard() {
   const handleNext = () => currentStep < steps.length && setCurrentStep(currentStep + 1)
   const handleBack = () => currentStep > 1 && setCurrentStep(currentStep - 1)
 
-  const ratesValid =
-    data.negotiatedDebitRate !== undefined &&
-    data.negotiatedCreditRate !== undefined &&
-    data.negotiatedDebitRate >= (data.sectorDebitFloor || 0) &&
-    data.negotiatedCreditRate >= (data.sectorCreditFloor || 0) &&
-    (data.negotiatedAmexRate ?? AMEX_FLOOR_RATE) >= AMEX_FLOOR_RATE &&
-    (data.negotiatedInternationalRate ?? INTERNATIONAL_FLOOR_RATE) >= INTERNATIONAL_FLOOR_RATE
+  const ratesValid = ratesAreValid(data)
 
   const canProceed = () => {
     switch (currentStep) {

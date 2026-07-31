@@ -23,6 +23,7 @@ import {
   EyeOff,
 } from "lucide-react"
 import { DispersionSection } from "./dispersion-section"
+import { validateRates, floorFor } from "@/lib/proposals/rate-floors"
 
 // Tiers de revenue share para la comisión del comercial (uso interno)
 function getRevenueShareTier(monthlyVolume: number) {
@@ -34,20 +35,12 @@ function getRevenueShareTier(monthlyVolume: number) {
 export function Step3RatesConfig({ data, updateData }: StepProps) {
   const isComparative = data.proposalType === "comparative"
 
-  const validateRate = (rate: number | undefined, floor: number, type: string) => {
-    if (rate === undefined) return null
-    if (rate < floor) return `La tasa de ${type} no puede ser menor al piso (${floor}%)`
-    return null
-  }
-
-  const debitError = validateRate(data.negotiatedDebitRate, data.sectorDebitFloor || 0, "débito")
-  const creditError = validateRate(data.negotiatedCreditRate, data.sectorCreditFloor || 0, "crédito")
-  const amexError = validateRate(data.negotiatedAmexRate, AMEX_FLOOR_RATE, "AMEX")
-  const internationalError = validateRate(
-    data.negotiatedInternationalRate,
-    INTERNATIONAL_FLOOR_RATE,
-    "internacional"
-  )
+  // Mismo validador que usan el wizard, el paso 4 y el servidor
+  const rateErrors = validateRates(data)
+  const debitError = rateErrors.negotiatedDebitRate ?? null
+  const creditError = rateErrors.negotiatedCreditRate ?? null
+  const amexError = rateErrors.negotiatedAmexRate ?? null
+  const internationalError = rateErrors.negotiatedInternationalRate ?? null
 
   const distTotal =
     (data.debitDistribution ?? 50) +
@@ -61,8 +54,8 @@ export function Step3RatesConfig({ data, updateData }: StepProps) {
     floor: number
     error: string | null
   }[] = [
-    { key: "negotiatedDebitRate", label: "Tasa Débito (%)", floor: data.sectorDebitFloor || 0, error: debitError },
-    { key: "negotiatedCreditRate", label: "Tasa Crédito (%)", floor: data.sectorCreditFloor || 0, error: creditError },
+    { key: "negotiatedDebitRate", label: "Tasa Débito (%)", floor: floorFor("negotiatedDebitRate", data) ?? 0, error: debitError },
+    { key: "negotiatedCreditRate", label: "Tasa Crédito (%)", floor: floorFor("negotiatedCreditRate", data) ?? 0, error: creditError },
     { key: "negotiatedAmexRate", label: "Tasa AMEX (%)", floor: AMEX_FLOOR_RATE, error: amexError },
     { key: "negotiatedInternationalRate", label: "Tasa Internacional (%)", floor: INTERNATIONAL_FLOOR_RATE, error: internationalError },
   ]
