@@ -35,6 +35,8 @@ interface Props {
   reviewerNotes?: string | null
   clientNotes?: string | null
   uploadedAt?: string | null
+  /** Producto de la otra solicitud, si el archivo se subió allá */
+  sharedFrom?: string | null
 }
 
 export function ReviewDocumentRow({
@@ -42,6 +44,7 @@ export function ReviewDocumentRow({
   applicationId,
   templateCode,
   templateName,
+  sharedFrom,
   isRequired,
   currentStatus,
   storageAvailable,
@@ -129,6 +132,13 @@ export function ReviewDocumentRow({
           <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0F2A22", lineHeight: 1.3 }}>
             {templateName}
           </p>
+          {sharedFrom && (
+            <p style={{ margin: "4px 0 0", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 5,
+                        background: "#F0FAF3", color: "#1f7a4d", border: "1px solid #CDE9D8",
+                        borderRadius: 999, padding: "2px 8px" }}>
+              Compartido desde {sharedFrom} — el comercio no vuelve a subirlo
+            </p>
+          )}
           {status === "changes_requested" && notes && (
             <p style={{ margin: "6px 0 0", fontSize: 12, background: "#fdf1e6", color: "#c9772f", borderRadius: 8, padding: "6px 10px" }}>
               Nota enviada: {notes}

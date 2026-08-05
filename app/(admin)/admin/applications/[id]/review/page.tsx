@@ -16,6 +16,7 @@ import { AdditionalUploadBox } from "@/components/documents/additional-upload-bo
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { InternalAliasField } from "@/components/admin/internal-alias-field"
+import { codeForProduct } from "@/lib/documents/equivalent-codes"
 
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
@@ -213,7 +214,9 @@ export default async function ReviewPage({
   type Doc = {
     id: string; status: string; storage_path: string | null; file_name: string | null;
     reviewer_notes: string | null; client_notes: string | null; template_id: string | null; uploaded_at: string | null;
-    is_checked: boolean; title: string | null; template: DocTemplate | null
+    is_checked: boolean; title: string | null; template: DocTemplate | null;
+    /** Nombre del producto de la otra solicitud, si el archivo viene de allá */
+    sharedFrom?: string | null
   }
 
   const rawDocs = (docsResult.data ?? []) as unknown as Array<Record<string, unknown>>
@@ -230,6 +233,72 @@ export default async function ReviewPage({
     title: (d.title as string | null) ?? null,
     template: (d.document_templates as DocTemplate | null) ?? null,
   }))
+
+  // ── Documentos compartidos con las otras solicitudes de la misma empresa ──
+  // Un comercio que ya hizo terminales y ahora pide tarjetas no vuelve a subir
+  // el acta o la CSF: el mismo archivo se muestra en los dos expedientes.
+  const codigosDeEsteProducto = new Set(
+    docs.map((d) => d.template?.code).filter((c): c is string => !!c)
+  )
+  const yaTieneArchivo = new Set(
+    docs
+      .filter((d) => d.storage_path || d.file_name)
+      .map((d) => d.template?.code)
+      .filter((c): c is string => !!c)
+  )
+
+  const { data: hermanasRows } = await admin
+    .from("applications")
+    .select("id, products(name)")
+    .eq("company_id", app.company_id)
+    .neq("id", appId)
+
+  const hermanas = (hermanasRows ?? []) as unknown as {
+    id: string
+    products: { name: string } | null
+  }[]
+
+  if (hermanas.length > 0) {
+    const { data: hermanosDocs } = await admin
+      .from("documents")
+      .select(`id, application_id, status, storage_path, file_name, reviewer_notes,
+               client_notes, template_id, uploaded_at, is_checked, title,
+               document_templates(id, code, name, is_form, is_required, sort_order, field_type)`)
+      .in("application_id", hermanas.map((h) => h.id))
+
+    const nombrePorApp = new Map(hermanas.map((h) => [h.id, h.products?.name ?? "otra solicitud"]))
+
+    for (const raw of (hermanosDocs ?? []) as unknown as Array<Record<string, unknown>>) {
+      const tmpl = (raw.document_templates as DocTemplate | null) ?? null
+      if (!tmpl) continue
+      const storagePath = (raw.storage_path as string | null) ?? null
+      const fileName = (raw.file_name as string | null) ?? null
+      if (!storagePath && !fileName) continue
+
+      // ¿Este producto pide ese mismo documento, aunque lo llame distinto?
+      const localCode = codeForProduct(tmpl.code, codigosDeEsteProducto)
+      if (!localCode) continue
+      // Si aquí ya lo subieron, gana el de esta solicitud
+      if (yaTieneArchivo.has(localCode)) continue
+
+      const localTmpl = docs.find((d) => d.template?.code === localCode)?.template ?? tmpl
+      docs.push({
+        id: raw.id as string,
+        status: raw.status as string,
+        storage_path: storagePath,
+        file_name: fileName,
+        reviewer_notes: (raw.reviewer_notes as string | null) ?? null,
+        client_notes: (raw.client_notes as string | null) ?? null,
+        template_id: (raw.template_id as string | null) ?? null,
+        uploaded_at: (raw.uploaded_at as string | null) ?? null,
+        is_checked: (raw.is_checked as boolean) ?? false,
+        title: (raw.title as string | null) ?? null,
+        template: localTmpl,
+        sharedFrom: nombrePorApp.get(raw.application_id as string) ?? "otra solicitud",
+      })
+      yaTieneArchivo.add(localCode)
+    }
+  }
 
   // ── Group docs by template code; extra docs (template_id IS NULL) go separately ──
   const docsByCode = new Map<string, Doc[]>()
@@ -684,6 +753,7 @@ export default async function ReviewPage({
                               reviewerNotes={doc.reviewer_notes}
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
+                              sharedFrom={doc.sharedFrom ?? null}
                             />
                           ))}
                         </div>
@@ -740,6 +810,7 @@ export default async function ReviewPage({
                               reviewerNotes={doc.reviewer_notes}
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
+                              sharedFrom={doc.sharedFrom ?? null}
                             />
                           ))}
                         </div>
@@ -795,6 +866,7 @@ export default async function ReviewPage({
                               reviewerNotes={doc.reviewer_notes}
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
+                              sharedFrom={doc.sharedFrom ?? null}
                             />
                           ))}
                         </div>

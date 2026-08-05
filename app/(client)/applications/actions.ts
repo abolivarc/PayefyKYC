@@ -10,6 +10,7 @@ import { emailExpedienteCompleto } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
+import { codeForProduct } from "@/lib/documents/equivalent-codes"
 
 // ─────────────────────────────────────
 // Crear empresa + applications + documents iniciales
@@ -637,12 +638,15 @@ async function collectExpedienteFiles(
       continue
     }
 
-    // Solo códigos que apliquen a este producto (propios o heredados)
-    const name = codeToName.get(tmpl.code)
-    if (!name) continue
+    // Solo códigos que apliquen a este producto (propios o heredados).
+    // Se acepta el equivalente de otro producto: la CSF es
+    // `tax_situation_certificate` en terminales y `cif` en tarjetas.
+    const localCode = codeForProduct(tmpl.code, new Set(codeToName.keys()))
+    if (!localCode) continue
+    const name = codeToName.get(localCode)!
 
     // Evitar duplicados: preferir el archivo de esta solicitud
-    const key = `${tmpl.code}::${d.storage_path}`
+    const key = `${localCode}::${d.storage_path}`
     if (seen.has(key)) continue
     seen.add(key)
 

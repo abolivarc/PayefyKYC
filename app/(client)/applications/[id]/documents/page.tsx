@@ -14,6 +14,7 @@ import { StageStepper } from "@/components/client/stage-stepper"
 import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { AdditionalDocRow } from "@/components/documents/additional-doc-row"
+import { codeForProduct } from "@/lib/documents/equivalent-codes"
 
 const MULTI_UPLOAD_CODES = new Set([
   "shareholder_id",
@@ -231,11 +232,15 @@ export default async function DocumentsPage({
       }
       continue
     }
-    // Solo incluir si el código pertenece al producto actual
-    if (!pCodeSet.has(tmpl.code)) continue
-    const existing = codeMap.get(tmpl.code) ?? []
+    // Solo incluir si el producto actual pide este documento. Se acepta el
+    // equivalente de otro producto: la Constancia de Situación Fiscal es
+    // `tax_situation_certificate` en terminales y `cif` en tarjetas, y es el
+    // mismo acuse del SAT — no tiene por qué subirlo dos veces.
+    const localCode = codeForProduct(tmpl.code, pCodeSet)
+    if (!localCode) continue
+    const existing = codeMap.get(localCode) ?? []
     existing.push(d)
-    codeMap.set(tmpl.code, existing)
+    codeMap.set(localCode, existing)
   }
 
   // 8. Construir groupMap usando metadata del producto actual (no la del doc compartido)
