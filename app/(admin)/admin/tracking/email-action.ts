@@ -50,7 +50,7 @@ export async function sendExpedienteEmail({
     .from("applications")
     .select(
       `id, transfer_status, company_id,
-       companies(name, company_users(profiles(full_name, email))),
+       companies(legal_name, company_users(profiles(full_name, email))),
        products(name)`
     )
     .eq("id", applicationId)
@@ -58,9 +58,9 @@ export async function sendExpedienteEmail({
 
   if (appErr || !app) return { error: appErr?.message ?? "Solicitud no encontrada" }
 
-  type CompanyRow = { name: string; company_users: { profiles: { full_name: string; email: string } }[] }
+  type CompanyRow = { legal_name: string; company_users: { profiles: { full_name: string; email: string } }[] }
   const companyRow = (app.companies as unknown as CompanyRow | null)
-  const companyName = companyRow?.name ?? ""
+  const companyName = companyRow?.legal_name ?? ""
   const productName = (app.products as unknown as { name: string } | null)?.name ?? ""
   const clientProfile = companyRow?.company_users?.[0]?.profiles
   const clientName = clientProfile?.full_name ?? ""
