@@ -258,6 +258,9 @@ export default async function ReviewPage({
     products: { name: string } | null
   }[]
 
+  // Códigos cuyo casillero vacío queda sustituido por el archivo compartido
+  const sustituidos = new Set<string>()
+
   if (hermanas.length > 0) {
     const { data: hermanosDocs } = await admin
       .from("documents")
@@ -297,6 +300,7 @@ export default async function ReviewPage({
         sharedFrom: nombrePorApp.get(raw.application_id as string) ?? "otra solicitud",
       })
       yaTieneArchivo.add(localCode)
+      sustituidos.add(localCode)
     }
   }
 
@@ -306,6 +310,16 @@ export default async function ReviewPage({
   for (const d of docs) {
     if (!d.template) {
       extraDocs.push(d)
+      continue
+    }
+    // El casillero vacío de esta solicitud no se muestra si el archivo ya
+    // llegó compartido: si no, saldría como "2 archivos", uno de ellos vacío.
+    if (
+      !d.sharedFrom &&
+      !d.storage_path &&
+      !d.file_name &&
+      sustituidos.has(d.template.code)
+    ) {
       continue
     }
     const arr = docsByCode.get(d.template.code) ?? []
