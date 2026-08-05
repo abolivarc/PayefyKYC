@@ -73,3 +73,64 @@ export async function deleteClient(companyId: string) {
   revalidatePath("/admin/clients")
   return { success: true, legalName: company.legal_name }
 }
+
+/**
+ * Alias interno del comercio: cómo se le conoce en el día a día.
+ *
+ * Las razones sociales no se parecen al nombre con el que el cliente se
+ * presenta, así que sin esto no hay forma de saber de quién habla cuando
+ * escribe. Lo pueden editar admin y compliance; el cliente nunca lo ve.
+ */
+export async function setInternalAlias(companyId: string, alias: string) {
+  const supabase = await createClient()
+
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .single()
+
+  // Todo el staff menos el agente comercial, que solo ve su propia cartera
+  const permitidos = ["super_admin", "admin", "compliance"]
+  if (!profile?.role || !permitidos.includes(profile.role)) {
+    return { error: "Sin permisos para editar el alias" }
+  }
+
+  const limpio = alias.trim().slice(0, 80)
+
+  const admin = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+
+  const { data: antes } = await admin
+    .from("companies")
+    .select("internal_alias")
+    .eq("id", companyId)
+    .single()
+
+  const { error } = await admin
+    .from("companies")
+    .update({ internal_alias: limpio || null })
+    .eq("id", companyId)
+  if (error) return { error: error.message }
+
+  await admin.from("audit_logs").insert({
+    actor_id: user.id,
+    action: "company_alias_updated",
+    entity_type: "company",
+    entity_id: companyId,
+    metadata: {
+      company_id: companyId,
+      antes: (antes as { internal_alias?: string } | null)?.internal_alias ?? null,
+      despues: limpio || null,
+    },
+  })
+
+  revalidatePath("/admin/clients")
+  revalidatePath(`/admin/applications/${companyId}/review`)
+  return { success: true, alias: limpio || null }
+}

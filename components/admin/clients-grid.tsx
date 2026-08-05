@@ -16,6 +16,7 @@ type App = {
 type Company = {
   id: string
   legal_name: string
+  internal_alias: string | null
   tax_id: string | null
   created_at: string
   applications: App[]
@@ -201,8 +202,12 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return companies.filter((c) => {
+      // El alias también busca: es lo que el equipo recuerda del cliente
       const matchSearch =
-        !q || c.legal_name.toLowerCase().includes(q) || (c.tax_id ?? "").toLowerCase().includes(q)
+        !q ||
+        c.legal_name.toLowerCase().includes(q) ||
+        (c.tax_id ?? "").toLowerCase().includes(q) ||
+        (c.internal_alias ?? "").toLowerCase().includes(q)
       const matchFilter =
         filter === "all" || c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
       return matchSearch && matchFilter && hasProduct(c, product)
@@ -250,7 +255,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por razón social o RFC…"
+              placeholder="Buscar por razón social, alias o RFC…"
               className="w-full pl-9 pr-3 h-10 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-tertiary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/30"
             />
           </div>
@@ -358,6 +363,17 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
 
                   {/* Name + RFC */}
                   <div className="relative z-10 pointer-events-none">
+                    {/* El alias va arriba: es el nombre con el que el equipo
+                        reconoce al cliente, la razón social casi nunca coincide */}
+                    {company.internal_alias && (
+                      <p
+                        className="text-xs font-semibold mb-0.5 truncate"
+                        style={{ color: "#1f7a4d" }}
+                        title={`Alias interno: ${company.internal_alias}`}
+                      >
+                        {company.internal_alias}
+                      </p>
+                    )}
                     <p
                       className="font-bold leading-snug line-clamp-2 mb-0.5"
                       style={{ fontSize: 15, color: "#0F2A22" }}
@@ -458,6 +474,11 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                 <div className="flex-1 min-w-0 relative z-10 pointer-events-none">
                   <p className="font-semibold text-sm truncate" style={{ color: "#0F2A22" }}>
                     {company.legal_name}
+                    {company.internal_alias && (
+                      <span className="ml-2 font-normal" style={{ color: "#1f7a4d" }}>
+                        · {company.internal_alias}
+                      </span>
+                    )}
                   </p>
                   {company.tax_id && (
                     <p className="font-mono text-xs" style={{ color: "#8A9E94" }}>{company.tax_id}</p>

@@ -15,6 +15,7 @@ import { AmexRequirementButton } from "@/components/admin/amex-requirement-butto
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
+import { InternalAliasField } from "@/components/admin/internal-alias-field"
 
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
@@ -160,7 +161,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, tax_id, contact_email, person_type, wants_amex), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -200,7 +201,7 @@ export default async function ReviewPage({
     .in("action", ["document_changes_requested", "document_rejected"])
     .filter("metadata->>application_id", "eq", appId)
   const changesCount = rawChangesCount ?? 0
-  const company = (app.companies as unknown) as { legal_name: string; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean } | null
+  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
   const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
@@ -353,6 +354,16 @@ export default async function ReviewPage({
               {personTypeLabel && <span> · {personTypeLabel}</span>}
               {product?.name && <span> · {product.name}</span>}
             </p>
+
+            {/* Alias interno: cómo identifica el equipo a este cliente.
+                La razón social casi nunca coincide con el nombre con el que
+                se presenta. No se muestra en el portal del cliente. */}
+            <div style={{ marginTop: 10 }}>
+              <InternalAliasField
+                companyId={app.company_id}
+                alias={company?.internal_alias ?? null}
+              />
+            </div>
 
             {/* Otras solicitudes de esta empresa */}
             {(siblingApps ?? []).length > 0 && (

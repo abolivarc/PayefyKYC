@@ -21,7 +21,7 @@ export default async function ClientsPage() {
   let query = supabase
     .from("companies")
     .select(
-      `id, legal_name, tax_id, created_at, applications(id, status, products(name, code))`
+      `id, legal_name, internal_alias, tax_id, created_at, applications(id, status, products(name, code))`
     )
   if (isAgent && user) query = query.eq("assigned_agent_id", user.id)
 
