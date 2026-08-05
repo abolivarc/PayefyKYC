@@ -7,8 +7,8 @@ import { sendExpedienteEmail, type EmailTemplateKey } from "@/app/(admin)/admin/
 const TEMPLATE_OPTIONS: { key: EmailTemplateKey; label: string; defaultSubject: string; recipientHint: string }[] = [
   {
     key: "expediente_to_transfer",
-    label: "Expediente → Transfer",
-    defaultSubject: "Expediente KYC adjunto",
+    label: "Apertura de centro de costos → Transfer",
+    defaultSubject: "Apertura de centro de costos",
     recipientHint: "Email del ejecutivo Transfer",
   },
   {
@@ -37,6 +37,7 @@ export function EmailComposer({ applicationId, clientEmail, onClose, initialTemp
   const [pending, startTransition] = useTransition()
   const [template, setTemplate] = useState<EmailTemplateKey>(initialTemplate ?? "expediente_to_transfer")
   const [toEmail, setToEmail] = useState("")
+  const [recipientName, setRecipientName] = useState("")
   const [customMessage, setCustomMessage] = useState("")
   const [attachExpediente, setAttachExpediente] = useState(true)
   const [contractName, setContractName] = useState("")
@@ -58,6 +59,7 @@ export function EmailComposer({ applicationId, clientEmail, onClose, initialTemp
         applicationId,
         templateKey: template,
         toEmail: resolvedTo,
+        recipientName: recipientName.trim() || undefined,
         customMessage: customMessage || undefined,
         attachExpediente: isTransfer ? attachExpediente : false,
         contractName: isContract ? contractName || undefined : undefined,
@@ -132,6 +134,24 @@ export function EmailComposer({ applicationId, clientEmail, onClose, initialTemp
                 style={inputStyle}
               />
             </div>
+
+            {/* Nombre de pila para el saludo. Si se deja vacío el correo abre
+                con "Buen día" en lugar de un "Estimado," sin nombre. */}
+            {!isClientTemplate && (
+              <div>
+                <label style={labelStyle}>
+                  Nombre del destinatario
+                  <span style={{ color: "#9ca3af", fontWeight: 400 }}> (opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={recipientName}
+                  onChange={(e) => setRecipientName(e.target.value)}
+                  placeholder="Ej: Mario"
+                  style={inputStyle}
+                />
+              </div>
+            )}
 
             {/* Contract name (contract template only) */}
             {isContract && (

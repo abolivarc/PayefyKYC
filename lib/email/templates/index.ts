@@ -247,17 +247,24 @@ export function emailExpedienteToTransfer({
   transferRecipientName?: string
   customMessage?: string
 }): string {
+  // Sin nombre del destinatario se abre con "Buen día" — antes salía
+  // "Estimado," con la coma colgando.
+  const saludo = transferRecipientName
+    ? `Estimado ${transferRecipientName},`
+    : "Buen día,"
+
   return wrap(`
-  ${header("Expediente KYC")}
+  ${header("Apertura de centro de costos")}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:${G};margin-top:0;">Expediente KYC adjunto</h2>
-    <p>Estimado${transferRecipientName ? ` ${transferRecipientName}` : ""},</p>
-    <p>Se adjunta el expediente KYC de <strong>${companyName}</strong> correspondiente al producto <strong>${productName}</strong>, listo para su revisión y alta en el sistema.</p>
+    <h2 style="color:${G};margin-top:0;">Apertura de centro de costos</h2>
+    <p>${saludo}</p>
+    <p>Solicito la apertura de un centro de costos para <strong>${companyName}</strong>, cliente de Payefy.</p>
+    <p>Adjunto la documentación de la empresa para el proceso de conocimiento del cliente.</p>
     ${customMessage ? `
     <div style="background:#f8faf9;border-left:4px solid ${G};padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
       <p style="margin:0;white-space:pre-wrap;font-size:13px;color:#374151;">${customMessage}</p>
     </div>` : ""}
-    <p style="color:#6b7280;font-size:13px;">El expediente se incluye como archivo ZIP adjunto a este correo.</p>
+    <p style="color:#6b7280;font-size:13px;">La documentación se incluye como archivo ZIP adjunto a este correo.</p>
     ${footer("Payefy · a.santibanez@payefy.me")}
   </div>`)
 }

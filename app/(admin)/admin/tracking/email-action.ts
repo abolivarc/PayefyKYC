@@ -21,6 +21,7 @@ export async function sendExpedienteEmail({
   applicationId,
   templateKey,
   toEmail,
+  recipientName,
   customMessage,
   attachExpediente,
   contractName,
@@ -29,6 +30,8 @@ export async function sendExpedienteEmail({
   applicationId: string
   templateKey: EmailTemplateKey
   toEmail: string
+  /** Nombre de pila del destinatario, para el saludo del correo */
+  recipientName?: string
   customMessage?: string
   attachExpediente?: boolean
   contractName?: string
@@ -71,8 +74,13 @@ export async function sendExpedienteEmail({
   let subject = ""
 
   if (templateKey === "expediente_to_transfer") {
-    subject = `Expediente KYC — ${companyName} (${productName})`
-    html = emailExpedienteToTransfer({ companyName, productName, customMessage })
+    subject = `Apertura de centro de costos — ${companyName}`
+    html = emailExpedienteToTransfer({
+      companyName,
+      productName,
+      transferRecipientName: recipientName,
+      customMessage,
+    })
   } else if (templateKey === "request_docs_to_client") {
     subject = `Acción requerida en tu expediente — ${companyName}`
     html = emailRequestDocsToClient({
