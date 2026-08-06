@@ -1,15 +1,8 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { isDocumentExpired, EXPIRY_CODES } from "@/lib/documents/expiry"
-import {
-  approveDocument,
-  requestDocumentChanges,
-} from "@/app/(admin)/applications/actions"
-import { ChangeImagesPicker } from "@/components/admin/change-images-picker"
-import type { ChangeImageInput } from "@/lib/documents/change-request-images"
+import { approveDocument, rejectDocument } from "@/app/(admin)/applications/actions"
 
 type DocStatus =
   | "pending_upload"
@@ -55,9 +48,6 @@ export function ReviewDocumentRow({
   uploadedAt,
 }: Props) {
   const [status, setStatus] = useState<DocStatus>(currentStatus)
-  const [dialogMode, setDialogMode] = useState<"changes" | null>(null)
-  const [notes, setNotes] = useState(reviewerNotes ?? "")
-  const [images, setImages] = useState<ChangeImageInput[]>([])
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -79,16 +69,14 @@ export function ReviewDocumentRow({
     })
   }
 
-  function handleSendChanges() {
-    if (!notes.trim()) return
+  // Rechazo directo: solo cambia el estado. El "por qué" va en el comentario
+  // general, que junta todo en un solo correo con capturas.
+  function handleReject() {
     setError(null)
     startTransition(async () => {
-      const result = await requestDocumentChanges(documentId, applicationId, notes.trim(), images)
+      const result = await rejectDocument(documentId, applicationId)
       if (result?.error) setError(result.error)
-      else {
-        setStatus("changes_requested")
-        setDialogMode(null)
-      }
+      else setStatus("changes_requested")
     })
   }
 
@@ -142,9 +130,9 @@ export function ReviewDocumentRow({
               Compartido desde {sharedFrom} — el comercio no vuelve a subirlo
             </p>
           )}
-          {status === "changes_requested" && notes && (
+          {status === "changes_requested" && reviewerNotes && (
             <p style={{ margin: "6px 0 0", fontSize: 12, background: "#fdf1e6", color: "#c9772f", borderRadius: 8, padding: "6px 10px" }}>
-              Nota enviada: {notes}
+              Nota enviada: {reviewerNotes}
             </p>
           )}
           {clientNotes && (
@@ -200,62 +188,26 @@ export function ReviewDocumentRow({
             </button>
           )}
 
-          {status !== "pending_upload" && (
+          {status !== "pending_upload" && status !== "changes_requested" && (
             <button
-              onClick={() => { setNotes(reviewerNotes ?? ""); setDialogMode("changes") }}
+              onClick={handleReject}
               disabled={isPending}
               style={{
                 fontSize: 12, fontWeight: 700, cursor: "pointer",
                 padding: "5px 12px", borderRadius: 7,
-                border: "1px solid #f5d9b5",
+                border: "1px solid #f5c2c2",
                 background: "#fff",
-                color: "#c9772f",
+                color: "#b91c1c",
                 opacity: isPending ? 0.6 : 1,
                 whiteSpace: "nowrap",
               }}
             >
-              Observaciones
+              {isPending ? "…" : "Rechazar"}
             </button>
           )}
         </div>
       </div>
 
-      {/* Inline changes form (shown when dialog mode = changes) */}
-      <Dialog open={dialogMode === "changes"} onClose={() => setDialogMode(null)}>
-        <DialogHeader>
-          <DialogTitle>Observaciones: {templateName}</DialogTitle>
-        </DialogHeader>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Describe qué debe corregir o complementar el cliente..."
-          rows={4}
-          className="mt-2"
-        />
-        {/* Capturas: van en el correo y en el portal del cliente */}
-        <div className="mt-3">
-          <ChangeImagesPicker images={images} onChange={setImages} disabled={isPending} />
-        </div>
-        <DialogFooter>
-          <button
-            onClick={() => setDialogMode(null)}
-            style={{ fontSize: 13, fontWeight: 600, padding: "8px 16px", borderRadius: 8, border: "1px solid #E4ECE7", background: "#fff", color: "#5B7168", cursor: "pointer" }}
-          >
-            Cancelar
-          </button>
-          <button
-            disabled={!notes.trim() || isPending}
-            onClick={handleSendChanges}
-            style={{
-              fontSize: 13, fontWeight: 700, padding: "8px 18px", borderRadius: 8,
-              border: "none", background: notes.trim() ? "#c9772f" : "#E4ECE7",
-              color: notes.trim() ? "#fff" : "#8A9E94", cursor: notes.trim() ? "pointer" : "not-allowed",
-            }}
-          >
-            {isPending ? "Enviando…" : "Enviar observaciones"}
-          </button>
-        </DialogFooter>
-      </Dialog>
     </div>
   )
 }

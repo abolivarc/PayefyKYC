@@ -155,6 +155,7 @@ export function emailChangesRequested({
   notes,
   applicationUrl,
   imagesHtml,
+  rejectedDocs,
 }: {
   companyName: string
   clientName: string
@@ -162,6 +163,8 @@ export function emailChangesRequested({
   applicationUrl: string
   /** Bloque <img> con las capturas adjuntas (imagesEmailBlock) */
   imagesHtml?: string
+  /** Nombres de los documentos rechazados en esta revisión */
+  rejectedDocs?: string[]
 }): string {
   return wrap(`
   ${header()}
@@ -172,6 +175,11 @@ export function emailChangesRequested({
     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
       <p style="margin:0;white-space:pre-wrap;">${notes}</p>
     </div>
+    ${rejectedDocs?.length ? `
+    <p style="margin:16px 0 6px;font-weight:bold;font-size:13px;">Documentos a corregir:</p>
+    <ul style="margin:0 0 8px;padding-left:20px;font-size:13px;color:#374151;">
+      ${rejectedDocs.map((n) => `<li style="margin-bottom:4px;">${n}</li>`).join("")}
+    </ul>` : ""}
     ${imagesHtml ?? ""}
     <div style="margin:24px 0;">${btn(applicationUrl, "Ver mi expediente")}</div>
     ${footer()}

@@ -70,8 +70,8 @@ export function RequestGeneralChangesButton({
           <p className="text-sm text-muted-foreground mb-4">
             Escribe un mensaje sobre el expediente completo de{" "}
             <strong>{companyName}</strong>. Le llegará por correo y lo verá en
-            su portal. Para observaciones de un documento puntual, usa el botón
-            de cada documento en la revisión.
+            su portal. Los documentos que hayas rechazado se listan
+            automáticamente en el mismo mensaje.
           </p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">

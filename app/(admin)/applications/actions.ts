@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
-import { emailChangesRequested, emailApproved, emailDocumentApproved } from "@/lib/email/templates"
+import { emailChangesRequested, emailApproved } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { uploadChangeImages, signChangeImages, imagesEmailBlock, type ChangeImageInput } from "@/lib/documents/change-request-images"
 
@@ -39,53 +39,45 @@ export async function approveDocument(
 
   if (error) return { error: error.message }
 
-  // Notify client via email
-  const { data: doc } = await supabase
-    .from("documents")
-    .select("document_templates(name)")
-    .eq("id", documentId)
-    .single()
-
-  const { data: app } = await supabase
-    .from("applications")
-    .select("company_id, companies(legal_name)")
-    .eq("id", applicationId)
-    .single()
-
-  const { data: member } = await supabase
-    .from("company_users")
-    .select("user_id, profiles(full_name, email)")
-    .eq("company_id", (app?.company_id as string) ?? "")
-    .limit(1)
-    .single()
-
-  const profile = (member?.profiles as unknown) as { full_name: string; email: string } | null
-  const company = (app?.companies as unknown) as { legal_name: string } | null
-  const templateName = ((doc?.document_templates as unknown) as { name: string } | null)?.name ?? "Documento"
-  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
-
-  if (member?.user_id && profile) {
-    await createNotification({
-      recipientId: member.user_id,
-      type: "document_approved",
-      title: `Documento aprobado: ${templateName}`,
-      message: `Tu documento "${templateName}" ha sido aprobado.`,
-      relatedApplicationId: applicationId,
-      relatedDocumentId: documentId,
-      emailTo: profile.email,
-      emailSubject: `[PayefyKYC] Documento aprobado: ${templateName}`,
-      emailHtml: emailDocumentApproved({
-        companyName: company?.legal_name ?? "",
-        clientName: profile.full_name,
-        documentName: templateName,
-        applicationUrl: appUrl,
-      }),
-    })
-  }
-
+  // Sin correo por documento: la comunicación con el cliente es el comentario
+  // general. Aprobar y rechazar solo cambian el estado, que él ve en su portal.
   await logAudit({
     actorId: user.id,
     action: "document_approved",
+    entityType: "document",
+    entityId: documentId,
+    metadata: { application_id: applicationId },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
+
+// ─────────────────────────────────────
+// Rechazar un documento (flujo nuevo)
+// ─────────────────────────────────────
+// Solo marca el documento: no envía correo ni notificación. El "por qué"
+// viaja en el comentario general, que lista los documentos rechazados —
+// un solo correo en lugar de uno por documento.
+export async function rejectDocument(
+  documentId: string,
+  applicationId: string
+) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const { error } = await supabase
+    .from("documents")
+    .update({ status: "changes_requested" })
+    .eq("id", documentId)
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: user.id,
+    action: "document_rejected",
     entityType: "document",
     entityId: documentId,
     metadata: { application_id: applicationId },
@@ -488,6 +480,19 @@ export async function requestGeneralChanges(
   const company = (app.companies as unknown) as { legal_name: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
 
+  // Documentos que el revisor rechazó: van listados en el mismo correo, como
+  // los puntos numerados de un correo de revisión.
+  const { data: rejectedRows } = await admin
+    .from("documents")
+    .select("document_templates(name)")
+    .eq("application_id", applicationId)
+    .in("status", ["changes_requested", "rejected"])
+  const rejectedDocs = ((rejectedRows ?? []) as unknown as {
+    document_templates: { name: string } | null
+  }[])
+    .map((r) => r.document_templates?.name)
+    .filter((n): n is string => !!n)
+
   // El expediente pasa a "cambios solicitados" salvo que ya esté cerrado
   if (!["activated", "rejected", "archived"].includes(app.status)) {
     await admin
@@ -510,12 +515,18 @@ export async function requestGeneralChanges(
 
   const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
 
+  // En la plataforma el cliente ve lo mismo que en el correo: el comentario
+  // completo y la lista de documentos a corregir.
+  const messageForApp = rejectedDocs.length
+    ? `${message}\n\nDocumentos a corregir:\n${rejectedDocs.map((n) => `• ${n}`).join("\n")}`
+    : message
+
   if (member?.user_id && profile) {
     await createNotification({
       recipientId: member.user_id,
       type: "changes_requested",
       title: "Tu expediente requiere cambios",
-      message,
+      message: messageForApp,
       relatedApplicationId: applicationId,
       emailTo: profile.email,
       emailSubject: "[PayefyKYC] Tu expediente requiere cambios",
@@ -525,6 +536,7 @@ export async function requestGeneralChanges(
         notes: message,
         applicationUrl: appUrl,
         imagesHtml: imagesEmailBlock(generalImageUrls),
+        rejectedDocs,
       }),
       imageUrls: generalImageUrls,
     })

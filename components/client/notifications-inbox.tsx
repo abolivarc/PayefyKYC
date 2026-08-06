@@ -139,7 +139,7 @@ export function NotificationsInbox({ initialItems }: { initialItems: Notificatio
                     )}
                   </div>
                   {n.message && (
-                    <p style={{ margin: "3px 0 0", fontSize: 12, color: "#5A6B7B", lineHeight: 1.5 }}>
+                    <p style={{ margin: "3px 0 0", fontSize: 12, color: "#5A6B7B", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
                       {n.message}
                     </p>
                   )}
