@@ -8,6 +8,8 @@ import {
   approveDocument,
   requestDocumentChanges,
 } from "@/app/(admin)/applications/actions"
+import { ChangeImagesPicker } from "@/components/admin/change-images-picker"
+import type { ChangeImageInput } from "@/lib/documents/change-request-images"
 
 type DocStatus =
   | "pending_upload"
@@ -55,6 +57,7 @@ export function ReviewDocumentRow({
   const [status, setStatus] = useState<DocStatus>(currentStatus)
   const [dialogMode, setDialogMode] = useState<"changes" | null>(null)
   const [notes, setNotes] = useState(reviewerNotes ?? "")
+  const [images, setImages] = useState<ChangeImageInput[]>([])
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -80,7 +83,7 @@ export function ReviewDocumentRow({
     if (!notes.trim()) return
     setError(null)
     startTransition(async () => {
-      const result = await requestDocumentChanges(documentId, applicationId, notes.trim())
+      const result = await requestDocumentChanges(documentId, applicationId, notes.trim(), images)
       if (result?.error) setError(result.error)
       else {
         setStatus("changes_requested")
@@ -229,6 +232,10 @@ export function ReviewDocumentRow({
           rows={4}
           className="mt-2"
         />
+        {/* Capturas: van en el correo y en el portal del cliente */}
+        <div className="mt-3">
+          <ChangeImagesPicker images={images} onChange={setImages} disabled={isPending} />
+        </div>
         <DialogFooter>
           <button
             onClick={() => setDialogMode(null)}

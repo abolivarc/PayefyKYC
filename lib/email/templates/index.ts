@@ -154,11 +154,14 @@ export function emailChangesRequested({
   clientName,
   notes,
   applicationUrl,
+  imagesHtml,
 }: {
   companyName: string
   clientName: string
   notes: string
   applicationUrl: string
+  /** Bloque <img> con las capturas adjuntas (imagesEmailBlock) */
+  imagesHtml?: string
 }): string {
   return wrap(`
   ${header()}
@@ -169,6 +172,7 @@ export function emailChangesRequested({
     <div style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px 16px;margin:16px 0;border-radius:0 6px 6px 0;">
       <p style="margin:0;white-space:pre-wrap;">${notes}</p>
     </div>
+    ${imagesHtml ?? ""}
     <div style="margin:24px 0;">${btn(applicationUrl, "Ver mi expediente")}</div>
     ${footer()}
   </div>`)

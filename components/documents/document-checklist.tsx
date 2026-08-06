@@ -16,6 +16,7 @@ export interface DocWithTemplate {
   is_checked: boolean
   uploaded_at: string | null
   reviewer_notes?: string | null
+  reviewer_note_image_urls?: string[]
   client_notes?: string | null
   template: {
     id: string
@@ -215,6 +216,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                     isShared={group.isShared}
                     isRequired={group.is_required}
                     reviewerNotes={doc.reviewer_notes}
+                    reviewerNoteImageUrls={doc.reviewer_note_image_urls}
                     clientNotes={doc.client_notes}
                   />
                 )

@@ -38,6 +38,7 @@ interface Props {
   isShared?: boolean
   isRequired?: boolean
   reviewerNotes?: string | null
+  reviewerNoteImageUrls?: string[]
   clientNotes?: string | null
 }
 
@@ -46,6 +47,7 @@ export function DocumentUploadRow({
   applicationId,
   templateCode,
   templateName,
+  templateInstructions,
   currentStatus,
   fileFormat,
   isForm,
@@ -55,6 +57,7 @@ export function DocumentUploadRow({
   isShared,
   isRequired = true,
   reviewerNotes,
+  reviewerNoteImageUrls,
   clientNotes: initialClientNotes,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
@@ -301,6 +304,20 @@ export function DocumentUploadRow({
         {templateName}
       </p>
 
+      {/* Instrucciones del template (p. ej. requisitos del sitio para e-commerce) */}
+      {templateInstructions && (
+        <p
+          style={{
+            margin: "3px 0 0",
+            fontSize: 10,
+            lineHeight: 1.35,
+            color: "#8A9E94",
+          }}
+        >
+          {templateInstructions}
+        </p>
+      )}
+
       {/* Observations panel (expandable) */}
       {showNotes && (
         <div
@@ -324,6 +341,21 @@ export function DocumentUploadRow({
               <p style={{ margin: 0, fontSize: 11, color: "#7f1d1d", lineHeight: 1.4 }}>
                 {reviewerNotes}
               </p>
+              {/* Capturas que adjuntó el revisor — clic para verlas completas */}
+              {!!reviewerNoteImageUrls?.length && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                  {reviewerNoteImageUrls.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={url}
+                        alt={`Captura ${i + 1} del revisor`}
+                        style={{ height: 56, width: 56, objectFit: "cover", borderRadius: 6, border: "1px solid #fecaca" }}
+                      />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 

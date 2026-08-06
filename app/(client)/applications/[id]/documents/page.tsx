@@ -15,6 +15,8 @@ import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { AdditionalDocRow } from "@/components/documents/additional-doc-row"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
+import { signChangeImages } from "@/lib/documents/change-request-images"
+import { createClient as createServiceClient } from "@supabase/supabase-js"
 
 const MULTI_UPLOAD_CODES = new Set([
   "shareholder_id",
@@ -193,7 +195,7 @@ export default async function DocumentsPage({
   const { data: allDocs } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes, client_notes,
+      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes, reviewer_note_images, client_notes,
        document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
@@ -208,6 +210,22 @@ export default async function DocumentsPage({
     storagePath: string | null
     title: string | null
     reviewerNotes: string | null
+  }
+
+  // 6b. Firmar las capturas de las solicitudes de cambios (si las hay) para
+  // mostrárselas al cliente junto a la nota del revisor.
+  const noteImageUrls = new Map<string, string[]>()
+  {
+    const service = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    for (const d of allDocs) {
+      const paths = (d as unknown as { reviewer_note_images?: string[] | null }).reviewer_note_images
+      if (paths?.length) {
+        noteImageUrls.set(d.id, await signChangeImages(service, paths))
+      }
+    }
   }
 
   // 7. Construir codeMap — SOLO códigos relevantes al producto actual
@@ -278,6 +296,7 @@ export default async function DocumentsPage({
       is_checked: (d as unknown as { is_checked: boolean }).is_checked ?? false,
       uploaded_at: (d as unknown as { uploaded_at?: string | null }).uploaded_at ?? null,
       reviewer_notes: (d as unknown as { reviewer_notes?: string | null }).reviewer_notes ?? null,
+      reviewer_note_image_urls: noteImageUrls.get(d.id) ?? [],
       client_notes: (d as unknown as { client_notes?: string | null }).client_notes ?? null,
       template: {
         id: tmpl.id,

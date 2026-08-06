@@ -7,6 +7,7 @@ import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
 import { emailChangesRequested, emailApproved, emailDocumentApproved } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
+import { uploadChangeImages, signChangeImages, imagesEmailBlock, type ChangeImageInput } from "@/lib/documents/change-request-images"
 
 // Copia interna cuando se piden cambios en cualquier expediente
 const CHANGES_CC = "a.santibanez@payefy.me"
@@ -100,7 +101,8 @@ export async function approveDocument(
 export async function requestDocumentChanges(
   documentId: string,
   applicationId: string,
-  notes: string
+  notes: string,
+  images: ChangeImageInput[] = []
 ) {
   const supabase = await createClient()
   const {
@@ -108,9 +110,25 @@ export async function requestDocumentChanges(
   } = await supabase.auth.getUser()
   if (!user) return { error: "No autenticado" }
 
+  // Capturas que acompañan la nota ("aquí está borroso, mira")
+  let imagePaths: string[] = []
+  let imageUrls: string[] = []
+  if (images.length > 0) {
+    try {
+      imagePaths = await uploadChangeImages(adminDb(), applicationId, images)
+      imageUrls = await signChangeImages(adminDb(), imagePaths)
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "No se pudieron subir las imágenes" }
+    }
+  }
+
   await supabase
     .from("documents")
-    .update({ status: "changes_requested", reviewer_notes: notes })
+    .update({
+      status: "changes_requested",
+      reviewer_notes: notes,
+      reviewer_note_images: imagePaths.length ? imagePaths : null,
+    })
     .eq("id", documentId)
 
   await supabase
@@ -154,7 +172,9 @@ export async function requestDocumentChanges(
         clientName: profile.full_name,
         notes,
         applicationUrl: appUrl,
+        imagesHtml: imagesEmailBlock(imageUrls),
       }),
+      imageUrls,
     })
   }
 
@@ -434,7 +454,8 @@ export async function toggleCompletionOverride(
 // ─────────────────────────────────────
 export async function requestGeneralChanges(
   applicationId: string,
-  notes: string
+  notes: string,
+  images: ChangeImageInput[] = []
 ): Promise<{ error?: string; success?: true }> {
   const supabase = await createClient()
   const {
@@ -446,6 +467,16 @@ export async function requestGeneralChanges(
   if (!message) return { error: "Escribe el mensaje para el cliente" }
 
   const admin = adminDb()
+
+  let generalImageUrls: string[] = []
+  if (images.length > 0) {
+    try {
+      const paths = await uploadChangeImages(admin, applicationId, images)
+      generalImageUrls = await signChangeImages(admin, paths)
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "No se pudieron subir las imágenes" }
+    }
+  }
 
   const { data: app } = await admin
     .from("applications")
@@ -493,7 +524,9 @@ export async function requestGeneralChanges(
         clientName: profile.full_name,
         notes: message,
         applicationUrl: appUrl,
+        imagesHtml: imagesEmailBlock(generalImageUrls),
       }),
+      imageUrls: generalImageUrls,
     })
   }
 

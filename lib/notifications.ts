@@ -11,6 +11,7 @@ export async function createNotification({
   emailTo,
   emailSubject,
   emailHtml,
+  imageUrls,
 }: {
   recipientId: string
   type: string
@@ -21,6 +22,8 @@ export async function createNotification({
   emailTo?: string
   emailSubject?: string
   emailHtml?: string
+  /** URLs firmadas de capturas adjuntas (solicitudes de cambios) */
+  imageUrls?: string[]
 }) {
   const supabase = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -50,6 +53,7 @@ export async function createNotification({
     message,
     related_application_id: relatedApplicationId ?? null,
     related_document_id: relatedDocumentId ?? null,
+    image_urls: imageUrls?.length ? imageUrls : null,
     email_sent: emailSent,
     email_sent_at: emailSent ? new Date().toISOString() : null,
   })

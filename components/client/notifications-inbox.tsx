@@ -11,6 +11,7 @@ type Notification = {
   type: string
   title: string
   message: string | null
+  image_urls: string[] | null
   is_read: boolean
   created_at: string
   related_application_id: string | null
@@ -141,6 +142,20 @@ export function NotificationsInbox({ initialItems }: { initialItems: Notificatio
                     <p style={{ margin: "3px 0 0", fontSize: 12, color: "#5A6B7B", lineHeight: 1.5 }}>
                       {n.message}
                     </p>
+                  )}
+                  {!!n.image_urls?.length && (
+                    <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}>
+                      {n.image_urls.map((url, i) => (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={url}
+                            alt={`Captura ${i + 1}`}
+                            style={{ height: 64, width: 64, objectFit: "cover", borderRadius: 6, border: "1px solid #E2E8F0" }}
+                          />
+                        </a>
+                      ))}
+                    </div>
                   )}
                   <p style={{ margin: "4px 0 0", fontSize: 11, color: "#8A99A8" }}>
                     {timeAgo}

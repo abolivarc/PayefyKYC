@@ -9,6 +9,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { MessageSquarePlus } from "lucide-react"
 import { requestGeneralChanges } from "@/app/(admin)/applications/actions"
+import { ChangeImagesPicker } from "@/components/admin/change-images-picker"
+import type { ChangeImageInput } from "@/lib/documents/change-request-images"
 
 export function RequestGeneralChangesButton({
   applicationId,
@@ -20,6 +22,7 @@ export function RequestGeneralChangesButton({
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState("")
+  const [images, setImages] = useState<ChangeImageInput[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -28,7 +31,7 @@ export function RequestGeneralChangesButton({
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const res = await requestGeneralChanges(applicationId, notes)
+      const res = await requestGeneralChanges(applicationId, notes, images)
       if (res.error) {
         setError(res.error)
       } else {
@@ -88,6 +91,8 @@ export function RequestGeneralChangesButton({
                 El expediente pasará a &ldquo;Cambios solicitados&rdquo;.
               </p>
             </div>
+            {/* Capturas: van en el correo y en el portal del cliente */}
+            <ChangeImagesPicker images={images} onChange={setImages} disabled={isPending} />
             {error && (
               <p className="text-sm text-destructive" role="alert">
                 {error}
