@@ -381,3 +381,77 @@ export function emailContractToClient({
     ${footer()}
   </div>`)
 }
+
+// ── Avisos internos a compliance ────────────────────────────────────────────
+
+/** Un comercio nuevo creó su solicitud: entra al pipeline del revisor. */
+export function emailNewApplicationInPipeline({
+  companyName,
+  productName,
+  personType,
+  reviewUrl,
+}: {
+  companyName: string
+  productName: string
+  personType?: string | null
+  reviewUrl: string
+}): string {
+  return wrap(`
+  ${header("Pipeline")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Nuevo comercio en el pipeline</h2>
+    <p><strong>${companyName}</strong> acaba de crear su solicitud de <strong>${productName}</strong>.</p>
+    <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:40%;">Empresa</td><td style="padding:8px;border:1px solid #e5e7eb;">${companyName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Producto</td><td style="padding:8px;border:1px solid #e5e7eb;">${productName}</td></tr>
+      ${personType ? `<tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Tipo de persona</td><td style="padding:8px;border:1px solid #e5e7eb;">${personType}</td></tr>` : ""}
+    </table>
+    <p style="color:#6b7280;font-size:13px;">Aún está cargando documentos; recibirás el expediente completo (con ZIP) cuando lo envíe.</p>
+    <div style="margin:24px 0;">${btn(reviewUrl, "Ver expediente")}</div>
+    ${footer()}
+  </div>`)
+}
+
+/** El comercio corrigió uno de los cambios solicitados (quedan pendientes). */
+export function emailChangeCorrected({
+  companyName,
+  documentName,
+  remaining,
+  reviewUrl,
+}: {
+  companyName: string
+  documentName: string
+  remaining: number
+  reviewUrl: string
+}): string {
+  return wrap(`
+  ${header("Cambios")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Cambio corregido</h2>
+    <p><strong>${companyName}</strong> volvió a subir <strong>${documentName}</strong> tras la solicitud de cambios.</p>
+    <p style="color:#b45309;font-size:13px;">Quedan <strong>${remaining}</strong> documento${remaining === 1 ? "" : "s"} pendiente${remaining === 1 ? "" : "s"} de corregir.</p>
+    <div style="margin:24px 0;">${btn(reviewUrl, "Revisar expediente")}</div>
+    ${footer()}
+  </div>`)
+}
+
+/** El comercio corrigió TODOS los cambios solicitados: listo para re-revisión. */
+export function emailAllChangesResolved({
+  companyName,
+  productName,
+  reviewUrl,
+}: {
+  companyName: string
+  productName: string
+  reviewUrl: string
+}): string {
+  return wrap(`
+  ${header("Cambios")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:#1f7a4d;margin-top:0;">Todos los cambios corregidos ✓</h2>
+    <p><strong>${companyName}</strong> (${productName}) ya respondió <strong>todos</strong> los cambios que se le solicitaron.</p>
+    <p>El expediente está listo para re-revisión.</p>
+    <div style="margin:24px 0;">${btn(reviewUrl, "Revisar expediente")}</div>
+    ${footer()}
+  </div>`)
+}

@@ -150,5 +150,45 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // ── Puerta de Términos y Condiciones ────────────────────────────────────
+  // Vive aquí y NO en el layout: un redirect() lanzado desde un layout durante
+  // una navegación suave deja la página en blanco hasta recargar (bug de Next).
+  // El middleware redirige antes de renderizar y el problema desaparece.
+  const CLIENT_TERMS_VERSION = "v1-2026"
+  const isClientArea =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/applications") ||
+    pathname.startsWith("/notifications") ||
+    pathname.startsWith("/profile")
+
+  if (user && isClientArea && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/company_users?user_id=eq.${user.id}&select=companies(terms_accepted_at,terms_version)&limit=1`,
+        {
+          headers: {
+            apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+            Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+        }
+      )
+      const rows = (await res.json()) as {
+        companies: { terms_accepted_at: string | null; terms_version: string | null } | null
+      }[]
+      const company = rows?.[0]?.companies
+      if (
+        company &&
+        (!company.terms_accepted_at || company.terms_version !== CLIENT_TERMS_VERSION)
+      ) {
+        const url = request.nextUrl.clone()
+        url.pathname = "/terminos"
+        return redirectPreservingSession(url, supabaseResponse)
+      }
+    } catch {
+      // Si la consulta falla no bloqueamos la navegación; el gate volverá a
+      // evaluarse en la siguiente petición.
+    }
+  }
+
   return supabaseResponse
 }

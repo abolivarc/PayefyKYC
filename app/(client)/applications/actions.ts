@@ -6,7 +6,7 @@ import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
-import { emailExpedienteCompleto } from "@/lib/email/templates"
+import { emailExpedienteCompleto, emailNewApplicationInPipeline } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
@@ -123,7 +123,7 @@ export async function createApplications(formData: FormData) {
   // 3. Obtener productos seleccionados
   const { data: productRows } = await supabase
     .from("products")
-    .select("id, code")
+    .select("id, code, name, internal_reviewer_email")
     .in("code", products)
 
   let firstAppId: string | null = null
@@ -143,6 +143,33 @@ export async function createApplications(formData: FormData) {
     if (appErr || !app) continue
 
     if (!firstAppId) firstAppId = app.id
+
+    // Aviso al revisor del producto: hay un comercio nuevo en su pipeline.
+    // Fire-and-forget — la creación de la solicitud no depende del correo.
+    {
+      const reviewerEmail = (product as unknown as { internal_reviewer_email?: string | null }).internal_reviewer_email
+      const prodName = (product as unknown as { name?: string }).name ?? product.code
+      if (reviewerEmail) {
+        const { data: companyRow } = await supabase
+          .from("companies")
+          .select("legal_name, person_type")
+          .eq("id", companyId)
+          .single()
+        const legalName = companyRow?.legal_name ?? "Nuevo comercio"
+        const pt = companyRow?.person_type === "persona_fisica" ? "Persona Física"
+          : companyRow?.person_type === "persona_moral" ? "Persona Moral" : null
+        sendEmail({
+          to: reviewerEmail,
+          subject: `[PayefyKYC] Nuevo comercio en el pipeline: ${legalName} (${prodName})`,
+          html: emailNewApplicationInPipeline({
+            companyName: legalName,
+            productName: prodName,
+            personType: pt,
+            reviewUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${app.id}/review`,
+          }),
+        }).catch((e) => console.error("[CREATE] aviso pipeline error:", e))
+      }
+    }
 
     // 5. Obtener templates del producto y filtrar por tipo de persona (solo terminals)
     const { data: allTemplates, error: tmplErr } = await supabase
