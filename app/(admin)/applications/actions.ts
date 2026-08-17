@@ -655,3 +655,176 @@ export async function setAmexRequirement(
   revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
+
+// ─────────────────────────────────────
+// Ronda del proveedor (Transfer)
+// ─────────────────────────────────────
+// Una ronda = una respuesta del proveedor: los comentarios pegados tal cual,
+// qué documentos existentes rechazó y qué documentos NUEVOS pide. Los nuevos
+// se crean como casilleros con nombre en la documentación adicional del
+// cliente (provider_requested: cuentan para su porcentaje de avance).
+// Al cliente le llega UN correo, sin mencionar al proveedor.
+export async function registerProviderRound(
+  applicationId: string,
+  comments: string,
+  rejectedDocIds: string[],
+  newDocTitles: string[],
+  images: ChangeImageInput[] = []
+): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const message = comments.trim()
+  if (!message) return { error: "Pega los comentarios del proveedor" }
+  const titles = newDocTitles.map((t) => t.trim()).filter(Boolean)
+  if (rejectedDocIds.length === 0 && titles.length === 0) {
+    return { error: "Marca al menos un documento rechazado o pide uno nuevo" }
+  }
+
+  const admin = adminDb()
+
+  const { data: app } = await admin
+    .from("applications")
+    .select("company_id, status, companies(legal_name), products(name, code)")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+  const company = (app.companies as unknown) as { legal_name: string } | null
+
+  let imagePaths: string[] = []
+  let imageUrls: string[] = []
+  if (images.length > 0) {
+    try {
+      imagePaths = await uploadChangeImages(admin, applicationId, images)
+      imageUrls = await signChangeImages(admin, imagePaths)
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : "No se pudieron subir las imágenes" }
+    }
+  }
+
+  // 1. Rechazar los documentos observados
+  const rejectedNames: string[] = []
+  if (rejectedDocIds.length > 0) {
+    const { data: rejDocs } = await admin
+      .from("documents")
+      .select("id, title, document_templates(name)")
+      .in("id", rejectedDocIds)
+      .eq("application_id", applicationId)
+    await admin
+      .from("documents")
+      .update({ status: "changes_requested" })
+      .in("id", rejectedDocIds)
+      .eq("application_id", applicationId)
+    for (const d of (rejDocs ?? []) as unknown as {
+      id: string; title: string | null; document_templates: { name: string } | null
+    }[]) {
+      rejectedNames.push(d.document_templates?.name ?? d.title ?? "Documento")
+    }
+  }
+
+  // 2. Crear los casilleros de documentos nuevos
+  const newDocIds: string[] = []
+  for (const title of titles) {
+    const { data: nuevo, error: insErr } = await admin
+      .from("documents")
+      .insert({
+        application_id: applicationId,
+        template_id: null,
+        title,
+        status: "pending_upload",
+        provider_requested: true,
+      })
+      .select("id")
+      .single()
+    if (insErr || !nuevo) return { error: `No se pudo crear "${title}": ${insErr?.message}` }
+    newDocIds.push((nuevo as { id: string }).id)
+  }
+
+  // 3. Registrar la ronda
+  const { count: rondasPrevias } = await admin
+    .from("provider_rounds")
+    .select("id", { count: "exact", head: true })
+    .eq("application_id", applicationId)
+  const { data: ronda, error: rondaErr } = await admin
+    .from("provider_rounds")
+    .insert({
+      application_id: applicationId,
+      round_no: (rondasPrevias ?? 0) + 1,
+      comments: message,
+      image_paths: imagePaths.length ? imagePaths : null,
+      created_by: user.id,
+    })
+    .select("id, round_no")
+    .single()
+  if (rondaErr || !ronda) return { error: rondaErr?.message ?? "No se pudo crear la ronda" }
+
+  const items = [
+    ...rejectedDocIds.map((id) => ({ round_id: (ronda as { id: string }).id, document_id: id, kind: "reject" })),
+    ...newDocIds.map((id) => ({ round_id: (ronda as { id: string }).id, document_id: id, kind: "new" })),
+  ]
+  if (items.length) await admin.from("provider_round_items").insert(items)
+
+  // 4. La solicitud pasa a "cambios del proveedor" (salvo cerradas)
+  if (!["activated", "rejected", "archived"].includes(app.status)) {
+    await admin
+      .from("applications")
+      .update({ status: "provider_changes_requested" })
+      .eq("id", applicationId)
+  }
+
+  // 5. Un solo correo al cliente — sin mencionar al proveedor
+  const { data: member } = await admin
+    .from("company_users")
+    .select("user_id, profiles(full_name, email)")
+    .eq("company_id", app.company_id as string)
+    .limit(1)
+    .single()
+  const profile = (member?.profiles as unknown) as { full_name: string; email: string } | null
+  const appUrl = `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}/documents`
+
+  const messageForApp = [
+    message,
+    rejectedNames.length ? `\nDocumentos a corregir:\n${rejectedNames.map((n) => `• ${n}`).join("\n")}` : "",
+    titles.length ? `\nDocumentos nuevos a subir (sección "Documentación adicional"):\n${titles.map((n) => `• ${n}`).join("\n")}` : "",
+  ].filter(Boolean).join("\n")
+
+  if (member?.user_id && profile) {
+    await createNotification({
+      recipientId: member.user_id,
+      type: "changes_requested",
+      title: "Tu expediente requiere cambios",
+      message: messageForApp,
+      relatedApplicationId: applicationId,
+      emailTo: profile.email,
+      emailSubject: "[PayefyKYC] Tu expediente requiere cambios",
+      emailHtml: emailChangesRequested({
+        companyName: company?.legal_name ?? "",
+        clientName: profile.full_name,
+        notes: message,
+        applicationUrl: appUrl,
+        imagesHtml: imagesEmailBlock(imageUrls),
+        rejectedDocs: [...rejectedNames, ...titles.map((t) => `${t} (documento nuevo — súbelo en "Documentación adicional")`)],
+      }),
+      imageUrls,
+    })
+  }
+
+  await logAudit({
+    actorId: user.id,
+    action: "provider_round_registered",
+    entityType: "application",
+    entityId: applicationId,
+    metadata: {
+      application_id: applicationId,
+      round_no: (ronda as { round_no: number }).round_no,
+      rechazados: rejectedNames,
+      nuevos: titles,
+    },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}

@@ -195,7 +195,7 @@ export default async function DocumentsPage({
   const { data: allDocs } = await admin
     .from("documents")
     .select(
-      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes, reviewer_note_images, client_notes,
+      `id, status, storage_path, file_name, application_id, template_id, is_checked, uploaded_at, title, reviewer_notes, reviewer_note_images, client_notes, provider_requested,
        document_templates(id, code, name, description, is_form, is_required, field_type, file_format, instructions, sort_order)`
     )
     .in("application_id", allAppIds)
@@ -210,6 +210,7 @@ export default async function DocumentsPage({
     storagePath: string | null
     title: string | null
     reviewerNotes: string | null
+    providerRequested: boolean
   }
 
   // 6b. Firmar las capturas de las solicitudes de cambios (si las hay) para
@@ -246,6 +247,7 @@ export default async function DocumentsPage({
           storagePath: d.storage_path,
           title: (raw.title as string | null) ?? null,
           reviewerNotes: (raw.reviewer_notes as string | null) ?? null,
+          providerRequested: (raw.provider_requested as boolean) ?? false,
         })
       }
       continue
@@ -339,7 +341,10 @@ export default async function DocumentsPage({
 
   // 10. Stats para progress bar
   const allGroupDocs = categories.flatMap((c) => c.groups).flatMap((g) => g.docs)
-  const total = allGroupDocs.length
+  // Los adicionales solicitados por revisión (provider_requested) también
+  // cuentan: sin esto el expediente marca 100% con pendientes sin subir.
+  const requiredExtras = extraDocs.filter((d) => d.providerRequested)
+  const total = allGroupDocs.length + requiredExtras.length
   const done = allGroupDocs.filter((d) => {
     if (d.template.field_type === "check_or_upload") return d.is_checked || !!d.storage_path
     // data_check: contar como completo en cuanto el cliente guardó un valor (pending_review o approved)
@@ -347,7 +352,8 @@ export default async function DocumentsPage({
     if (EXPIRY_CODES.has(d.template.code) && isDocumentExpired(d.uploaded_at)) return false
     return ["approved", "pending_review"].includes(d.status)
   }).length
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0
+  const doneExtras = requiredExtras.filter((d) => d.status !== "pending_upload").length
+  const pct = total > 0 ? Math.round(((done + doneExtras) / total) * 100) : 0
 
   // 11. ¿Todos los required listos para enviar?
   const requiredGroups = categories.flatMap((c) => c.groups).filter((g) => g.is_required)
@@ -503,6 +509,7 @@ export default async function DocumentsPage({
                     fileName={doc.fileName}
                     currentStatus={doc.status as "pending_upload" | "pending_review" | "approved" | "rejected" | "changes_requested"}
                     reviewerNotes={doc.reviewerNotes}
+                    providerRequested={doc.providerRequested}
                   />
                 ))
               )}

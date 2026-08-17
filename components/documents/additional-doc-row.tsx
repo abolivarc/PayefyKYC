@@ -22,6 +22,8 @@ interface Props {
   fileName: string | null
   currentStatus: DocStatus
   reviewerNotes: string | null
+  /** Lo pidió la revisión: es obligatorio y cuenta para el avance */
+  providerRequested?: boolean
 }
 
 export function AdditionalDocRow({
@@ -30,6 +32,7 @@ export function AdditionalDocRow({
   fileName,
   currentStatus,
   reviewerNotes,
+  providerRequested = false,
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [status, setStatus] = useState<DocStatus>(currentStatus)
@@ -71,6 +74,14 @@ export function AdditionalDocRow({
             <span className="w-1 h-1 rounded-full shrink-0" style={{ background: cfg.dot }} />
             {cfg.label}
           </span>
+          {providerRequested && (
+            <span
+              className="inline-flex items-center rounded-full text-[11px] font-semibold"
+              style={{ background: "#FDF1E6", color: "#C9772F", border: "1px solid #F5D9B5", padding: "2px 8px" }}
+            >
+              Requerido por revisión
+            </span>
+          )}
         </div>
         {uploadedName && status !== "pending_upload" && (
           <p className="text-xs truncate" style={{ color: "#5B7168" }}>📎 {uploadedName}</p>

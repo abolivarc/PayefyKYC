@@ -32,6 +32,10 @@ interface Props {
   uploadedAt?: string | null
   /** Producto de la otra solicitud, si el archivo se subió allá */
   sharedFrom?: string | null
+  /** Número de versión del archivo (1 = original) */
+  version?: number
+  /** Versiones anteriores con URL firmada */
+  previousVersions?: { version: number; label: string; url: string }[]
 }
 
 export function ReviewDocumentRow({
@@ -40,6 +44,8 @@ export function ReviewDocumentRow({
   templateCode,
   templateName,
   sharedFrom,
+  version = 1,
+  previousVersions = [],
   isRequired,
   currentStatus,
   storageAvailable,
@@ -120,9 +126,37 @@ export function ReviewDocumentRow({
               </span>
             )}
           </div>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0F2A22", lineHeight: 1.3 }}>
+          <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "#0F2A22", lineHeight: 1.3, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
             {templateName}
+            {/* v1 = el archivo original; v2+ = el cliente ya lo reemplazó.
+                Clave para saber si lo que ves es anterior o posterior a los
+                comentarios que enviaste. */}
+            {storageAvailable && (
+              <span style={{
+                fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "1px 8px",
+                background: version > 1 ? "#EFF4FF" : "#F3F7F4",
+                color: version > 1 ? "#1D4ED8" : "#8A9E94",
+                border: `1px solid ${version > 1 ? "#C7D9FF" : "#E4ECE7"}`,
+              }}>
+                {version > 1 ? `v${version} · actualizado` : "v1 · original"}
+              </span>
+            )}
           </p>
+          {previousVersions.length > 0 && (
+            <details style={{ marginTop: 4 }}>
+              <summary style={{ fontSize: 11, color: "#5B7168", cursor: "pointer" }}>
+                Ver {previousVersions.length} versión{previousVersions.length === 1 ? "" : "es"} anterior{previousVersions.length === 1 ? "" : "es"}
+              </summary>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, marginTop: 4 }}>
+                {previousVersions.map((pv) => (
+                  <a key={pv.version} href={pv.url} target="_blank" rel="noopener noreferrer"
+                     style={{ fontSize: 11, color: "#1f7a4d" }}>
+                    {pv.label}
+                  </a>
+                ))}
+              </div>
+            </details>
+          )}
           {sharedFrom && (
             <p style={{ margin: "4px 0 0", fontSize: 11, display: "inline-flex", alignItems: "center", gap: 5,
                         background: "#F0FAF3", color: "#1f7a4d", border: "1px solid #CDE9D8",

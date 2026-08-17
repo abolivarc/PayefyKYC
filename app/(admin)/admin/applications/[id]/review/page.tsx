@@ -17,6 +17,7 @@ import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { InternalAliasField } from "@/components/admin/internal-alias-field"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
+import { ProviderRoundButton } from "@/components/admin/provider-round-dialog"
 
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
@@ -167,7 +168,7 @@ export default async function ReviewPage({
       .single(),
     supabase
       .from("documents")
-      .select(`id, status, storage_path, file_name, reviewer_notes, client_notes, template_id, uploaded_at, is_checked, title,
+      .select(`id, status, storage_path, file_name, reviewer_notes, client_notes, template_id, uploaded_at, is_checked, title, version, provider_requested,
                document_templates(id, code, name, is_form, is_required, sort_order, field_type)`)
       .eq("application_id", appId),
     admin
@@ -215,6 +216,9 @@ export default async function ReviewPage({
     id: string; status: string; storage_path: string | null; file_name: string | null;
     reviewer_notes: string | null; client_notes: string | null; template_id: string | null; uploaded_at: string | null;
     is_checked: boolean; title: string | null; template: DocTemplate | null;
+    version?: number; provider_requested?: boolean;
+    /** Versiones anteriores, con URL firmada para abrirlas */
+    previousVersions?: { version: number; label: string; url: string }[];
     /** Nombre del producto de la otra solicitud, si el archivo viene de allá */
     sharedFrom?: string | null
   }
@@ -232,7 +236,39 @@ export default async function ReviewPage({
     is_checked: (d.is_checked as boolean) ?? false,
     title: (d.title as string | null) ?? null,
     template: (d.document_templates as DocTemplate | null) ?? null,
+    version: (d.version as number) ?? 1,
+    provider_requested: (d.provider_requested as boolean) ?? false,
   }))
+
+  // ── Historial de versiones: URLs firmadas para abrir los archivos viejos ──
+  {
+    const conHistorial = docs.filter((d) => (d.version ?? 1) > 1).map((d) => d.id)
+    if (conHistorial.length > 0) {
+      const { data: vers } = await admin
+        .from("document_versions")
+        .select("document_id, version, file_name, storage_path, uploaded_at")
+        .in("document_id", conHistorial)
+        .order("version", { ascending: false })
+      for (const v of (vers ?? []) as unknown as {
+        document_id: string; version: number; file_name: string | null
+        storage_path: string; uploaded_at: string | null
+      }[]) {
+        const doc = docs.find((d) => d.id === v.document_id)
+        if (!doc) continue
+        const { data: signed } = await admin.storage
+          .from("kyc-documents")
+          .createSignedUrl(v.storage_path, 60 * 60)
+        if (!signed?.signedUrl) continue
+        const fecha = v.uploaded_at
+          ? new Date(v.uploaded_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" })
+          : ""
+        doc.previousVersions = [
+          ...(doc.previousVersions ?? []),
+          { version: v.version, label: `v${v.version} · ${fecha}${v.file_name ? ` · ${v.file_name}` : ""}`, url: signed.signedUrl },
+        ]
+      }
+    }
+  }
 
   // ── Documentos compartidos con las otras solicitudes de la misma empresa ──
   // Un comercio que ya hizo terminales y ahora pide tarjetas no vuelve a subir
@@ -301,6 +337,50 @@ export default async function ReviewPage({
       })
       yaTieneArchivo.add(localCode)
       sustituidos.add(localCode)
+    }
+  }
+
+  // ── Última ronda del proveedor: semáforo por ítem ───────────────────────
+  type RoundItemView = { kind: string; name: string; done: boolean; detail: string }
+  let providerRound: { roundNo: number; createdAt: string; comments: string; items: RoundItemView[]; complete: boolean } | null = null
+  {
+    const { data: ronda } = await admin
+      .from("provider_rounds")
+      .select("id, round_no, comments, created_at")
+      .eq("application_id", appId)
+      .order("round_no", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (ronda) {
+      const { data: itemRows } = await admin
+        .from("provider_round_items")
+        .select("kind, documents(id, title, status, storage_path, uploaded_at, version, document_templates(name))")
+        .eq("round_id", (ronda as { id: string }).id)
+      const items: RoundItemView[] = []
+      for (const it of (itemRows ?? []) as unknown as {
+        kind: string
+        documents: { title: string | null; status: string; storage_path: string | null; uploaded_at: string | null; version: number; document_templates: { name: string } | null } | null
+      }[]) {
+        const d = it.documents
+        if (!d) continue
+        const name = d.document_templates?.name ?? d.title ?? "Documento"
+        const fecha = d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : ""
+        if (it.kind === "reject") {
+          // corregido = resubido DESPUÉS de registrar la ronda
+          const done = !!d.uploaded_at && d.uploaded_at > (ronda as { created_at: string }).created_at
+          items.push({ kind: "reject", name, done, detail: done ? `resubido v${d.version} · ${fecha}` : "esperando resubida" })
+        } else {
+          const done = !!d.storage_path
+          items.push({ kind: "new", name, done, detail: done ? `subido · ${fecha}` : "esperando archivo" })
+        }
+      }
+      providerRound = {
+        roundNo: (ronda as { round_no: number }).round_no,
+        createdAt: new Date((ronda as { created_at: string }).created_at).toLocaleDateString("es-MX", { day: "2-digit", month: "long" }),
+        comments: (ronda as { comments: string }).comments,
+        items,
+        complete: items.length > 0 && items.every((i) => i.done),
+      }
     }
   }
 
@@ -491,6 +571,18 @@ export default async function ReviewPage({
               />
             )}
             <SendToTransferButton applicationId={appId} transferStatus={transferStatus} />
+            <ProviderRoundButton
+              applicationId={appId}
+              companyName={company?.legal_name ?? ""}
+              docs={docs
+                .filter((d) => d.template || d.title)
+                .map((d) => ({
+                  id: d.id,
+                  name: d.template?.name ?? d.title ?? "Documento",
+                  version: d.version ?? 1,
+                  hasFile: !!d.storage_path,
+                }))}
+            />
             <ExportExpedienteButton applicationId={appId} />
             {/* Feature 4: completion override toggle */}
             <CompletionOverrideButton applicationId={appId} initialValue={completionOverride} />
@@ -529,6 +621,41 @@ export default async function ReviewPage({
 
       {/* ── Content ── */}
       <div style={{ padding: "20px 32px 40px", flex: 1 }}>
+
+        {/* ── Tablero de la ronda del proveedor ── */}
+        {providerRound && (
+          <div style={{
+            background: providerRound.complete ? "#F0FAF3" : "#FFFBEB",
+            border: `1px solid ${providerRound.complete ? "#B8E8CA" : "#FDE68A"}`,
+            borderRadius: 12, padding: "14px 18px", marginBottom: 16,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, fontWeight: 800, color: providerRound.complete ? "#1f7a4d" : "#92400E" }}>
+                {providerRound.complete
+                  ? `Ronda del proveedor #${providerRound.roundNo} — COMPLETA ✓ lista para reenviar`
+                  : `Ronda del proveedor #${providerRound.roundNo} — en curso (${providerRound.items.filter((i) => i.done).length}/${providerRound.items.length})`}
+              </span>
+              <span style={{ fontSize: 11, color: "#8A9E94" }}>registrada el {providerRound.createdAt}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 8 }}>
+              {providerRound.items.map((it, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                  <span style={{ width: 16, textAlign: "center" }}>{it.done ? "✅" : "⏳"}</span>
+                  <span style={{ color: "#0F2A22", fontWeight: 600 }}>{it.name}</span>
+                  {it.kind === "new" && (
+                    <span style={{ fontSize: 10, background: "#FDF1E6", color: "#C9772F", border: "1px solid #F5D9B5", borderRadius: 999, padding: "0 6px", fontWeight: 700 }}>nuevo</span>
+                  )}
+                  <span style={{ color: "#8A9E94" }}>· {it.detail}</span>
+                </div>
+              ))}
+            </div>
+            {providerRound.complete && (
+              <p style={{ margin: "8px 0 0", fontSize: 12, color: "#1f7a4d" }}>
+                Todo lo de esta ronda ya fue subido — usa &ldquo;Enviar a Transfer&rdquo; para reenviar el expediente actualizado.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── Action required banner ── */}
         {pendingReviewCount > 0 && (
@@ -768,6 +895,8 @@ export default async function ReviewPage({
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                               sharedFrom={doc.sharedFrom ?? null}
+                              version={doc.version ?? 1}
+                              previousVersions={doc.previousVersions ?? []}
                             />
                           ))}
                         </div>
@@ -825,6 +954,8 @@ export default async function ReviewPage({
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                               sharedFrom={doc.sharedFrom ?? null}
+                              version={doc.version ?? 1}
+                              previousVersions={doc.previousVersions ?? []}
                             />
                           ))}
                         </div>
@@ -881,6 +1012,8 @@ export default async function ReviewPage({
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}
                               sharedFrom={doc.sharedFrom ?? null}
+                              version={doc.version ?? 1}
+                              previousVersions={doc.previousVersions ?? []}
                             />
                           ))}
                         </div>
