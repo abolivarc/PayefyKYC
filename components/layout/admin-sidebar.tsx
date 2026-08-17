@@ -161,7 +161,7 @@ function SidebarContent({
               {email}
             </p>
           </div>
-          <NotificationBell variant="light" />
+          <NotificationBell variant="light" panelAlign="left" />
         </div>
       </div>
 

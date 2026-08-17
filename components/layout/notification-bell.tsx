@@ -18,9 +18,13 @@ type Notification = {
 
 interface Props {
   variant?: "light" | "dark"
+  /** Hacia dónde abre el panel. En el sidebar (pegado al borde izquierdo)
+      debe abrir a la derecha; con "right" un panel de 320px se sale de la
+      pantalla y se ve cortado. */
+  panelAlign?: "left" | "right"
 }
 
-export function NotificationBell({ variant = "dark" }: Props) {
+export function NotificationBell({ variant = "dark", panelAlign = "right" }: Props) {
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
@@ -95,7 +99,9 @@ export function NotificationBell({ variant = "dark" }: Props) {
 
       {/* Dropdown */}
       {open && (
-        <div style={{ position:"absolute", right:0, top:"calc(100% + 6px)", width:320,
+        <div style={{ position:"absolute",
+          ...(panelAlign === "right" ? { right: 0 } : { left: 0 }),
+          top:"calc(100% + 6px)", width:320,
           background:"#fff", border:"1px solid #d3dbd6", borderRadius:10,
           boxShadow:"0 8px 24px rgba(0,0,0,0.10)", zIndex:200, overflow:"hidden" }}>
           {/* Header */}
