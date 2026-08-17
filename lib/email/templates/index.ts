@@ -455,3 +455,40 @@ export function emailAllChangesResolved({
     ${footer()}
   </div>`)
 }
+
+/** Aviso interno: un cliente subió contenido nuevo a su expediente. */
+export function emailNewUploadAdmin({
+  companyName,
+  alias,
+  uploaderName,
+  documentName,
+  fileName,
+  productName,
+  burstNote,
+  reviewUrl,
+}: {
+  companyName: string
+  alias?: string | null
+  uploaderName: string
+  documentName: string
+  fileName: string
+  productName: string
+  burstNote?: boolean
+  reviewUrl: string
+}): string {
+  return wrap(`
+  ${header("Actividad")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Contenido nuevo en un expediente</h2>
+    <p><strong>${companyName}</strong>${alias ? ` <span style="color:#1f7a4d;">(${alias})</span>` : ""} acaba de subir un archivo.</p>
+    <table style="border-collapse:collapse;width:100%;margin:16px 0;">
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;width:34%;">Subió</td><td style="padding:8px;border:1px solid #e5e7eb;">${uploaderName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Documento</td><td style="padding:8px;border:1px solid #e5e7eb;">${documentName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Archivo</td><td style="padding:8px;border:1px solid #e5e7eb;">${fileName}</td></tr>
+      <tr><td style="padding:8px;border:1px solid #e5e7eb;font-weight:bold;background:#f9fafb;">Producto</td><td style="padding:8px;border:1px solid #e5e7eb;">${productName}</td></tr>
+    </table>
+    ${burstNote ? `<p style="color:#6b7280;font-size:13px;">Si sube más archivos en los próximos 15 minutos ya no te enviaré un correo por cada uno — los verás todos en la plataforma.</p>` : ""}
+    <div style="margin:24px 0;">${btn(reviewUrl, "Ver expediente")}</div>
+    ${footer()}
+  </div>`)
+}

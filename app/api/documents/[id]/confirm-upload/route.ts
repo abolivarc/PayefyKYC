@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/send"
-import { emailChangeCorrected, emailAllChangesResolved } from "@/lib/email/templates"
+import { emailChangeCorrected, emailAllChangesResolved, emailNewUploadAdmin } from "@/lib/email/templates"
 
 export async function POST(
   req: Request,
@@ -34,7 +34,7 @@ export async function POST(
   // es una corrección y hay que avisarle al revisor.
   const { data: prevDoc } = await serviceClient
     .from("documents")
-    .select("status, application_id, document_templates(name)")
+    .select("status, application_id, title, document_templates(name)")
     .eq("id", documentId)
     .single()
 
@@ -110,6 +110,60 @@ export async function POST(
       }
     })()
   }
+
+  // ── Aviso a Alejandro: contenido nuevo en un expediente ─────────────────
+  // Un correo por ráfaga, no por archivo: si el comercio ya subió algo en los
+  // últimos 15 minutos, este archivo viaja en la misma ráfaga y no se repite
+  // el correo (el primero de la ráfaga lo advierte).
+  ;(async () => {
+    try {
+      const ADMIN_EMAIL = "a.santibanez@payefy.me"
+      const { data: uploader } = await serviceClient
+        .from("profiles")
+        .select("full_name, email")
+        .eq("id", user.id)
+        .single()
+      // Sus propias subidas no se auto-notifican
+      if (uploader?.email?.toLowerCase() === ADMIN_EMAIL) return
+      if (!prevDoc?.application_id) return
+
+      const hace15min = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+      const { count: recientes } = await serviceClient
+        .from("documents")
+        .select("id", { count: "exact", head: true })
+        .eq("application_id", prevDoc.application_id)
+        .neq("id", documentId)
+        .gte("uploaded_at", hace15min)
+      if ((recientes ?? 0) > 0) return // ya salió el correo de esta ráfaga
+
+      const { data: appRow } = await serviceClient
+        .from("applications")
+        .select("id, companies(legal_name, internal_alias), products(name)")
+        .eq("id", prevDoc.application_id)
+        .single()
+      const companyRow = (appRow?.companies as unknown) as { legal_name: string; internal_alias: string | null } | null
+      const documentName =
+        ((prevDoc.document_templates as unknown) as { name: string } | null)?.name ??
+        ((prevDoc as unknown as { title?: string | null }).title ?? "Documento adicional")
+
+      await sendEmail({
+        to: ADMIN_EMAIL,
+        subject: `[PayefyKYC] ${companyRow?.legal_name?.trim() ?? "Un comercio"} subió: ${documentName}`,
+        html: emailNewUploadAdmin({
+          companyName: companyRow?.legal_name ?? "",
+          alias: companyRow?.internal_alias,
+          uploaderName: uploader?.full_name || uploader?.email || "Cliente",
+          documentName,
+          fileName,
+          productName: ((appRow?.products as unknown) as { name: string } | null)?.name ?? "",
+          burstNote: true,
+          reviewUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${prevDoc.application_id}/review`,
+        }),
+      })
+    } catch (e) {
+      console.error("[CONFIRM-UPLOAD] aviso admin error:", e)
+    }
+  })()
 
   return NextResponse.json({ success: true })
 }
