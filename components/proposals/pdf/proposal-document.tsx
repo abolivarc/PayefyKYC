@@ -694,7 +694,7 @@ function DocsPage({
                 <p style={{ margin: "4px 0 0", fontSize: 10.8, color: "#3E5049", lineHeight: 1.4 }}>
                   {isCardPresent
                     ? "2 fotos del interior y 2 del exterior de tu negocio"
-                    : "URL de tu sitio web o link de pago"}
+                    : "URL de tu sitio web o link de pago. El sitio debe contar con Términos y Condiciones y Aviso de Privacidad publicados."}
                 </p>
               </div>
             </div>
