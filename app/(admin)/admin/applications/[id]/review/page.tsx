@@ -469,6 +469,23 @@ export default async function ReviewPage({
     })
     .sort((a, b) => a.sortOrder - b.sortOrder)
 
+  // Formularios del cliente (datos operativos, beneficiario controlador…):
+  // generan un PDF que viaja en el ZIP pero no aparecía en el resumen.
+  const overviewForms = Array.from(docsByCode.entries())
+    .filter(([, ds]) => ds[0]?.template?.is_form)
+    .map(([code, ds]) => {
+      const conArchivo = ds.find((d) => d.storage_path)
+      return {
+        code,
+        name: ds[0].template!.name,
+        sortOrder: ds[0].template!.sort_order,
+        displayStatus: conArchivo ? worstStatus(ds.map((d) => d.status)) : "pending_upload",
+        primaryDocId: conArchivo?.id ?? ds[0].id,
+        storagePath: conArchivo?.storage_path ?? null,
+      }
+    })
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+
   const overviewUpload = overviewGroups.filter(
     (g) => !g.isCheckType && !ANNEX_SECTION_CODES.has(g.code) && g.fieldType !== "data_check"
   )
@@ -721,6 +738,31 @@ export default async function ReviewPage({
                     )}
                   </div>
                 ))}
+
+                {overviewForms.length > 0 && (
+                  <>
+                    <p style={{ margin: "12px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                      Formularios del cliente
+                    </p>
+                    {overviewForms.map((g) => (
+                      <div key={g.code} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
+                        <DocIcon status={g.displayStatus} />
+                        <span style={{ fontSize: 13, color: g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #8A99A8)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
+                          {g.name}
+                        </span>
+                        {g.displayStatus === "pending_upload" && (
+                          <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>sin contestar</span>
+                        )}
+                        {g.storagePath ? (
+                          <a href={`/api/documents/${g.primaryDocId}/view`} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 11, fontWeight: 700, color: "var(--admin-brand-strong, #0B7A44)", textDecoration: "none", whiteSpace: "nowrap" }}>
+                            ver respuestas
+                          </a>
+                        ) : null}
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
 
