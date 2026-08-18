@@ -78,14 +78,23 @@ export default async function AdminDashboardPage() {
     .from("applications")
     .select("id, status, created_at, updated_at, products(code)")
 
-  const { data: pendingDocs } = await supabase
+  // "Por revisar" = solo lo revisable: con archivo o con dato capturado.
+  // Los campos de datos nacen en pending_review VACÍOS al crear la solicitud
+  // — contarlos infla el número y confunde ("4 esperando decisión" sin nada
+  // que ver). Y los borradores no se revisan: aún no los envía el cliente.
+  const { data: pendingDocsRaw } = await supabase
     .from("documents")
     .select(
-      "id, application_id, document_templates(name), applications(id, companies(legal_name), products(code))"
+      "id, application_id, storage_path, file_name, document_templates(name, field_type), applications(id, status, companies(legal_name), products(code))"
     )
     .eq("status", "pending_review")
     .order("uploaded_at", { ascending: true })
-    .limit(50)
+    .limit(120)
+  const pendingDocs = (pendingDocsRaw ?? []).filter((d) => {
+    const app = (d.applications as unknown) as { status?: string } | null
+    if (app?.status === "draft") return false
+    return !!d.storage_path || !!d.file_name
+  }).slice(0, 50)
 
   // Solo solicitudes con algo pendiente: los comercios ya activados,
   // rechazados o archivados no aportan nada aquí (viven en Clientes/Seguimiento)

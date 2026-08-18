@@ -530,7 +530,9 @@ function WizardContent() {
                       </label>
                       <p style={{ fontSize: 12, color: T.textMuted, margin: "0 0 6px" }}>
                         Con tarjeta presente pediremos fotos del negocio; con
-                        e-commerce o link de pago, la URL de tu sitio.
+                        e-commerce o link de pago, la URL de tu sitio. En ese
+                        caso el sitio debe contar con Términos y Condiciones y
+                        Aviso de Privacidad publicados.
                       </p>
                       <div style={{ position: "relative" }}>
                         <select
@@ -658,6 +660,70 @@ function WizardContent() {
                       placeholder="operaciones@miempresa.com"
                       required
                       style={inputStyle}
+                    />
+                  </div>
+
+                  <div style={{ marginTop: 16 }}>
+                    <label htmlFor="business_activity" style={labelStyle}>
+                      ¿Cuál es la actividad o giro de tu empresa? <span style={{ color: T.req }}>*</span>
+                    </label>
+                    <p style={helpStyle}>
+                      Descríbelo con tus palabras: a qué se dedica realmente tu negocio
+                      (ej. &ldquo;venta de materiales de construcción&rdquo;, &ldquo;despacho contable&rdquo;).
+                    </p>
+                    <input
+                      id="business_activity"
+                      name="business_activity"
+                      placeholder="Ej: restaurante de comida mexicana"
+                      required
+                      minLength={4}
+                      style={inputStyle}
+                    />
+                  </div>
+
+                  {hasTerminals && (
+                    <div style={{ marginTop: 16 }}>
+                      <label htmlFor="descriptor" style={labelStyle}>
+                        ¿Qué nombre quieres que aparezca en el ticket? <span style={{ color: T.req }}>*</span>
+                      </label>
+                      <p style={helpStyle}>
+                        Es el &ldquo;descriptor&rdquo;: el nombre comercial que verán tus clientes
+                        en el ticket de compra y en la notificación de su celular o estado de
+                        cuenta. Puede ser distinto a tu razón social (ej. razón social
+                        &ldquo;Grupo Meridian&rdquo;, descriptor &ldquo;Más Boletos&rdquo;).
+                      </p>
+                      <input
+                        id="descriptor"
+                        name="descriptor"
+                        placeholder="Ej: MAS BOLETOS"
+                        required
+                        minLength={2}
+                        maxLength={25}
+                        style={{ ...inputStyle, textTransform: "uppercase" }}
+                      />
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: 16 }}>
+                    <label htmlFor="acquisition_channel" style={labelStyle}>
+                      ¿Cómo llegaste a Payefy?
+                    </label>
+                    <select
+                      id="acquisition_channel"
+                      name="acquisition_channel"
+                      defaultValue=""
+                      style={{ ...inputStyle, appearance: "auto" }}
+                    >
+                      <option value="">Selecciona una opción</option>
+                      <option value="campaña digital">Campaña digital / redes sociales</option>
+                      <option value="vendedor Payefy">Un vendedor de Payefy</option>
+                      <option value="recomendación">Me lo recomendaron</option>
+                      <option value="otro">Otro</option>
+                    </select>
+                    <input
+                      name="acquisition_channel_detail"
+                      placeholder="¿Quién te atendió o te recomendó? (opcional)"
+                      style={{ ...inputStyle, marginTop: 8 }}
                     />
                   </div>
                 </div>

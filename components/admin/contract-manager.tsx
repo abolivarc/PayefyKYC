@@ -258,9 +258,11 @@ function TransferCheckRow({
 interface Props {
   applicationId: string
   contracts: ContractState
+  /** Los checks de Transfer solo aplican a tarjetas; terminales va con Broxel */
+  productCode?: string | null
 }
 
-export function ContractManager({ applicationId, contracts }: Props) {
+export function ContractManager({ applicationId, contracts, productCode }: Props) {
   return (
     <div>
       <p style={{
@@ -276,6 +278,7 @@ export function ContractManager({ applicationId, contracts }: Props) {
         signedDocPath={contracts.payefy_doc_path}
       />
 
+      {productCode === "cards" && (
       <div style={{ borderTop: "1px solid var(--admin-border, #E7ECF1)", paddingTop: 12, marginTop: 4, display: "flex", flexDirection: "column", gap: 2 }}>
         <TransferCheckRow
           applicationId={applicationId}
@@ -290,6 +293,7 @@ export function ContractManager({ applicationId, contracts }: Props) {
           currentStatus={contracts.transfer_increase}
         />
       </div>
+      )}
     </div>
   )
 }

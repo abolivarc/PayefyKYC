@@ -22,7 +22,7 @@ const KANBAN_COLUMNS = [
   { id: "documents_pending",          label: "Docs enviados",          status: "documents_pending" },
   { id: "in_compliance_review",       label: "En revisión",            status: "in_compliance_review" },
   { id: "changes_requested",          label: "Cambios solicitados",    status: "changes_requested" },
-  { id: "approved_compliance",        label: "Aprobado compliance",    status: "approved_compliance" },
+  { id: "approved_compliance",        label: "Aprobado interno",    status: "approved_compliance" },
   { id: "in_provider_review",         label: "En Transfer",            status: "in_provider_review" },
   { id: "provider_changes_requested", label: "Cambios Transfer",       status: "provider_changes_requested" },
   { id: "approved_provider",          label: "Aprobado Transfer",      status: "approved_provider" },

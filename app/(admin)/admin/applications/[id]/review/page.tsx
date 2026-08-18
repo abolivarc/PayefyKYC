@@ -44,15 +44,24 @@ const STATUS_COLORS: Record<string, { bg: string; color: string; border: string 
   archived:                  { bg: "#F1F5F9", color: "#334155", border: "#E2E8F0" },
 }
 
-const STATUS_LABELS: Record<string, string> = {
-  draft: "Borrador",
-  documents_pending: "Documentos pendientes",
-  in_compliance_review: "En revisión de compliance",
-  changes_requested: "Cambios solicitados",
-  approved_compliance: "Aprobado por compliance",
-  in_provider_review: "En revisión del proveedor",
-  provider_changes_requested: "Cambios solicitados (proveedor)",
-  approved_provider: "Aprobado por proveedor",
+// "Compliance" solo aplica a tarjetas (Francisco); en terminales revisa
+// operaciones (Elizabeth) y el adquirente es Broxel — no Transfer.
+function statusLabels(productCode?: string | null): Record<string, string> {
+  const esTerminales = productCode === "terminals"
+  const revisor = esTerminales ? "operaciones" : "compliance"
+  const proveedor = esTerminales ? "Broxel" : "Transfer"
+  return {
+    draft: "Borrador",
+    documents_pending: "Documentos pendientes",
+    in_compliance_review: `En revisión de ${revisor}`,
+    changes_requested: "Cambios solicitados",
+    approved_compliance: `Aprobado por ${revisor}`,
+    in_provider_review: `En revisión de ${proveedor}`,
+    provider_changes_requested: `Cambios solicitados (${proveedor})`,
+    approved_provider: `Aprobado por ${proveedor}`,
+  }
+}
+const STATUS_LABELS_LEGACY: Record<string, string> = {
   contracts_pending: "Contratos por firmar",
   contracts_signed: "Contratos firmados",
   activation_pending: "Por activar",
@@ -163,7 +172,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, business_activity, descriptor, acquisition_channel), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -203,7 +212,7 @@ export default async function ReviewPage({
     .in("action", ["document_changes_requested", "document_rejected"])
     .filter("metadata->>application_id", "eq", appId)
   const changesCount = rawChangesCount ?? 0
-  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean } | null
+  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
   const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
@@ -417,13 +426,35 @@ export default async function ReviewPage({
     const satisfied = codeDocs.some((d) => d.status === "approved" || d.is_checked)
     if (satisfied) satisfiedTemplateCodes.add(code)
   }
+  // Requeridos sin subir en una solicitud YA enviada: pasa cuando se agrega
+  // un documento después del envío (ej. carátula AMEX activada tarde) o en
+  // altas manuales. Eli no debe gastar una revisión en un expediente así.
+  const ENVIADAS = new Set([
+    "documents_pending", "in_compliance_review", "approved_compliance",
+    "in_provider_review", "provider_changes_requested", "changes_requested",
+  ])
+  const faltantesPostEnvio = ENVIADAS.has(app.status)
+    ? docs.filter((d) => {
+        if (!d.template?.is_required) return false
+        if (d.template.field_type === "data_check") return d.status === "pending_review" && !d.file_name
+        if (d.template.field_type === "check_or_upload") return !d.is_checked && !d.storage_path
+        return d.status === "pending_upload" && !d.storage_path
+      }).map((d) => d.template!.name)
+    : []
+
   const rawPct = requiredTemplateCodes.size > 0
     ? Math.round((satisfiedTemplateCodes.size / requiredTemplateCodes.size) * 100)
     : 0
   const pct = completionOverride ? 100 : rawPct
 
   // Count docs that need reviewer action (pending_review = uploaded but not yet decided)
-  const pendingReviewCount = docs.filter((d) => d.status === "pending_review" && d.template).length
+  // Un dato vacío (data_check recién creado) no es revisable: no cuenta
+  const pendingReviewCount = docs.filter(
+    (d) =>
+      d.status === "pending_review" &&
+      d.template &&
+      (!!d.storage_path || !!d.file_name)
+  ).length
 
   const contractMap = new Map<string, { status: string; signed_doc_path: string | null }>()
   for (const c of contractsResult.data ?? []) contractMap.set(c.kind, { status: c.status, signed_doc_path: (c as unknown as { signed_doc_path: string | null }).signed_doc_path ?? null })
@@ -435,10 +466,52 @@ export default async function ReviewPage({
     payefy_doc_path: contractMap.get("payefy_service")?.signed_doc_path ?? null,
   }
 
-  const logs = (logsResult.data ?? []).map((l) => ({
-    ...l,
-    actor: (l.profiles as unknown) as { full_name: string } | null,
+  // Bitácora narrativa: además de las acciones del staff (audit_logs), se
+  // integran las subidas del cliente (con su versión) y los correos que se
+  // le enviaron, con confirmación de entrega — para que operaciones sepa
+  // qué se pidió, qué corrigió el cliente y si el aviso realmente salió.
+  type Entrada = { id: string; created_at: string; texto: string; quien?: string | null; tipo: "staff" | "cliente" | "correo" }
+  const entradas: Entrada[] = (logsResult.data ?? []).map((l) => ({
+    id: l.id as string,
+    created_at: l.created_at as string,
+    texto: BITACORA_LABELS[l.action as string] ?? (l.action as string).replace(/_/g, " "),
+    quien: ((l.profiles as unknown) as { full_name: string } | null)?.full_name ?? null,
+    tipo: "staff",
   }))
+  for (const d of docs) {
+    if (!d.uploaded_at || (!d.storage_path && !d.file_name)) continue
+    if (d.template?.field_type === "data_check") continue
+    const nombre = d.template?.name ?? d.title ?? "Documento"
+    const v = d.version ?? 1
+    entradas.push({
+      id: `up-${d.id}`,
+      created_at: d.uploaded_at,
+      texto: v > 1 ? `El cliente resubió ${nombre} (v${v})` : `El cliente subió ${nombre}`,
+      tipo: "cliente",
+    })
+    for (const pv of d.previousVersions ?? []) {
+      // las versiones anteriores ya quedan implícitas en el vN; no se duplican
+      void pv
+    }
+  }
+  {
+    const { data: notis } = await admin
+      .from("notifications")
+      .select("id, title, created_at, email_sent")
+      .eq("related_application_id", appId)
+      .order("created_at", { ascending: false })
+      .limit(15)
+    for (const n of (notis ?? []) as unknown as { id: string; title: string; created_at: string; email_sent: boolean }[]) {
+      entradas.push({
+        id: `mail-${n.id}`,
+        created_at: n.created_at,
+        texto: `Aviso al cliente: “${n.title}” — ${n.email_sent ? "correo entregado" : "solo en plataforma"}`,
+        tipo: "correo",
+      })
+    }
+  }
+  entradas.sort((x, y) => (x.created_at < y.created_at ? 1 : -1))
+  const logs = entradas.slice(0, 25)
 
   const personTypeLabel = company?.person_type === "persona_fisica" ? "Persona Física"
     : company?.person_type === "persona_moral" ? "Persona Moral" : null
@@ -526,7 +599,7 @@ export default async function ReviewPage({
                 background: statusStyle.bg, color: statusStyle.color, border: `1px solid ${statusStyle.border}`,
               }}>
                 <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusStyle.color, flexShrink: 0 }} />
-                {STATUS_LABELS[app.status] ?? app.status}
+                {({ ...STATUS_LABELS_LEGACY, ...statusLabels(product?.code) } as Record<string,string>)[app.status] ?? app.status}
               </span>
             </div>
             <p style={{ margin: 0, fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
@@ -534,6 +607,21 @@ export default async function ReviewPage({
               {personTypeLabel && <span> · {personTypeLabel}</span>}
               {product?.name && <span> · {product.name}</span>}
             </p>
+
+            {/* Giro declarado, descriptor y canal — reunión e.lopez 18-ago */}
+            {(company?.business_activity || company?.descriptor || company?.acquisition_channel) && (
+              <p style={{ margin: "6px 0 0", fontSize: 12.5, color: "var(--admin-text-muted, #5A6B7B)", display: "flex", gap: 14, flexWrap: "wrap" }}>
+                {company?.business_activity && (
+                  <span><strong style={{ color: "var(--admin-text, #0F2A22)" }}>Giro:</strong> {company.business_activity}</span>
+                )}
+                {company?.descriptor && (
+                  <span><strong style={{ color: "var(--admin-text, #0F2A22)" }}>Descriptor:</strong> <span style={{ fontFamily: "var(--font-mono)", background: "#F0FAF3", border: "1px solid #CDE9D8", borderRadius: 5, padding: "0 6px" }}>{company.descriptor}</span></span>
+                )}
+                {company?.acquisition_channel && (
+                  <span><strong style={{ color: "var(--admin-text, #0F2A22)" }}>Canal:</strong> {company.acquisition_channel}</span>
+                )}
+              </p>
+            )}
 
             {/* Alias interno: cómo identifica el equipo a este cliente.
                 La razón social casi nunca coincide con el nombre con el que
@@ -568,7 +656,7 @@ export default async function ReviewPage({
                     >
                       {sibProduct?.name ?? "Otro producto"}
                       <span style={{ opacity: 0.75, fontWeight: 500 }}>
-                        · {STATUS_LABELS[sib.status] ?? sib.status}
+                        · {({ ...STATUS_LABELS_LEGACY, ...statusLabels(product?.code) } as Record<string,string>)[sib.status] ?? sib.status}
                       </span>
                       <span aria-hidden>→</span>
                     </Link>
@@ -587,7 +675,9 @@ export default async function ReviewPage({
                 }
               />
             )}
-            <SendToTransferButton applicationId={appId} transferStatus={transferStatus} />
+            {product?.code === "cards" && (
+              <SendToTransferButton applicationId={appId} transferStatus={transferStatus} />
+            )}
             <ProviderRoundButton
               applicationId={appId}
               companyName={company?.legal_name ?? ""}
@@ -638,6 +728,24 @@ export default async function ReviewPage({
 
       {/* ── Content ── */}
       <div style={{ padding: "20px 32px 40px", flex: 1 }}>
+
+        {/* ── Expediente enviado pero incompleto ── */}
+        {faltantesPostEnvio.length > 0 && (
+          <div style={{
+            background: "#FEF2F2", border: "1px solid #FECACA", borderRadius: 12,
+            padding: "12px 18px", marginBottom: 16,
+          }}>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: "#B91C1C" }}>
+              Expediente incompleto — {faltantesPostEnvio.length} requerido{faltantesPostEnvio.length === 1 ? "" : "s"} sin entregar
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "#7F1D1D" }}>
+              {faltantesPostEnvio.join(" · ")}
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#8A9E94" }}>
+              No conviene revisarlo ni reenviarlo al adquirente hasta que esté completo.
+            </p>
+          </div>
+        )}
 
         {/* ── Tablero de la ronda del proveedor ── */}
         {providerRound && (
@@ -819,7 +927,7 @@ export default async function ReviewPage({
               )}
 
               {/* Contracts */}
-              <ContractManager applicationId={appId} contracts={contractState} />
+              <ContractManager applicationId={appId} contracts={contractState} productCode={product?.code} />
 
               {/* Bitácora */}
               {logs.length > 0 && (
@@ -829,13 +937,13 @@ export default async function ReviewPage({
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                     {logs.map((log) => {
-                      const dateStr = format(new Date(log.created_at), "d MMM", { locale: es })
-                      const label = BITACORA_LABELS[log.action] ?? log.action.replace(/_/g, " ")
+                      const dateStr = format(new Date(log.created_at), "d MMM HH:mm", { locale: es })
+                      const color = log.tipo === "cliente" ? "#1f7a4d" : log.tipo === "correo" ? "#1D4ED8" : "var(--admin-text-muted, #5A6B7B)"
                       return (
-                        <p key={log.id} style={{ margin: 0, fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)", lineHeight: 1.5 }}>
+                        <p key={log.id} style={{ margin: 0, fontSize: 13, color, lineHeight: 1.5 }}>
                           <span style={{ fontWeight: 600, color: "var(--admin-text, #0F1B2A)", marginRight: 4 }}>{dateStr}</span>
-                          — {label}
-                          {log.actor?.full_name && <span style={{ color: "var(--admin-text-subtle, #8A99A8)" }}> ({log.actor.full_name})</span>}
+                          — {log.texto}
+                          {log.quien && <span style={{ color: "var(--admin-text-subtle, #8A99A8)" }}> ({log.quien})</span>}
                         </p>
                       )
                     })}

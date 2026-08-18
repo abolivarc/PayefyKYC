@@ -6,9 +6,9 @@ import { updateApplicationStatus } from "@/app/(admin)/applications/actions"
 const ALL_STATUSES = [
   { value: "draft",                       label: "Borrador" },
   { value: "documents_pending",           label: "Documentos pendientes" },
-  { value: "in_compliance_review",        label: "En revisión de compliance" },
+  { value: "in_compliance_review",        label: "En revisión interna (operaciones / compliance)" },
   { value: "changes_requested",           label: "Cambios solicitados (compliance)" },
-  { value: "approved_compliance",         label: "Aprobado por compliance" },
+  { value: "approved_compliance",         label: "Aprobado internamente (operaciones / compliance)" },
   { value: "in_provider_review",          label: "En revisión del proveedor" },
   { value: "provider_changes_requested",  label: "Cambios solicitados (proveedor)" },
   { value: "approved_provider",           label: "Aprobado por proveedor" },

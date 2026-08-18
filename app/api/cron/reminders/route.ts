@@ -172,7 +172,12 @@ export async function GET(request: Request) {
         results.archived++
       } else if (ageDays >= 14 && !processed.has("cron_alert_14d")) {
         // ── ALERTA INTERNA (14 días) ────────────────────────────────
-        const reviewerEmail = product?.internal_reviewer_email
+        // Un borrador estancado es asunto del embudo (Alejandro), no del
+        // revisor: e.lopez solo recibe expedientes ya enviados.
+        const reviewerEmail =
+          app.status === "draft"
+            ? "a.santibanez@payefy.me"
+            : product?.internal_reviewer_email
         if (reviewerEmail && resend) {
           await resend.emails
             .send({

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { updateApplicationStatus } from "@/app/(admin)/applications/actions"
 
 const STATUS_LABELS: Record<string, string> = {
-  in_compliance_review: "En revisión de compliance",
+  in_compliance_review: "En revisión interna",
   changes_requested: "Solicitar cambios (compliance)",
   approved_compliance: "Aprobar (compliance)",
   in_provider_review: "Enviar a revisión del proveedor",

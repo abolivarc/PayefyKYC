@@ -29,6 +29,14 @@ export async function createApplications(formData: FormData) {
   const operatorEmail = formData.get("operator_email") as string
   const personType = (formData.get("person_type") as string) || null
   const wantsAmexRaw = (formData.get("wants_amex") as string) || ""
+  // Reunión 18-ago-2026: giro declarado, descriptor (nombre del ticket) y canal
+  const businessActivity = ((formData.get("business_activity") as string) || "").trim().slice(0, 200)
+  const descriptor = ((formData.get("descriptor") as string) || "").trim().slice(0, 60)
+  const channelRaw = ((formData.get("acquisition_channel") as string) || "").trim().slice(0, 80)
+  const channelDetail = ((formData.get("acquisition_channel_detail") as string) || "").trim().slice(0, 80)
+  const acquisitionChannel = channelRaw
+    ? channelDetail ? `${channelRaw}: ${channelDetail}` : channelRaw
+    : null
 
   if (!products.length || !legalName || !taxId || !operatorEmail) {
     redirect(
@@ -79,6 +87,9 @@ export async function createApplications(formData: FormData) {
       operator_email: operatorEmail,
       person_type: personType,
       wants_amex: wantsAmex,
+      business_activity: businessActivity || null,
+      descriptor: descriptor || null,
+      acquisition_channel: acquisitionChannel,
     }).eq("id", companyId)
   } else {
     // Flujo estándar: crear empresa nueva
@@ -91,6 +102,9 @@ export async function createApplications(formData: FormData) {
         operator_email: operatorEmail,
         person_type: personType,
         wants_amex: wantsAmex,
+        business_activity: businessActivity || null,
+        descriptor: descriptor || null,
+        acquisition_channel: acquisitionChannel,
         created_by: user.id,
       })
       .select("id")
@@ -144,10 +158,11 @@ export async function createApplications(formData: FormData) {
 
     if (!firstAppId) firstAppId = app.id
 
-    // Aviso al revisor del producto: hay un comercio nuevo en su pipeline.
-    // Fire-and-forget — la creación de la solicitud no depende del correo.
+    // Aviso de comercio nuevo: SOLO a Alejandro. El revisor del producto no
+    // puede hacer nada con un borrador — le llega hasta que el expediente se
+    // envía completo (acordado con e.lopez, reunión 18-ago-2026).
     {
-      const reviewerEmail = (product as unknown as { internal_reviewer_email?: string | null }).internal_reviewer_email
+      const reviewerEmail = "a.santibanez@payefy.me"
       const prodName = (product as unknown as { name?: string }).name ?? product.code
       if (reviewerEmail) {
         const { data: companyRow } = await supabase
@@ -696,7 +711,7 @@ async function buildDatosSolicitadosPdf(
 
   const { data: company } = await adminClient
     .from("companies")
-    .select("legal_name, tax_id, person_type, terminal_type, wants_amex")
+    .select("legal_name, tax_id, person_type, terminal_type, wants_amex, business_activity, descriptor")
     .eq("id", companyId)
     .single()
 
@@ -727,6 +742,8 @@ async function buildDatosSolicitadosPdf(
     person_type?: string | null
     terminal_type?: string | null
     wants_amex?: boolean | null
+    business_activity?: string | null
+    descriptor?: string | null
   } | null
 
   // Sin datos capturados y sin modalidad no aporta nada
@@ -739,6 +756,8 @@ async function buildDatosSolicitadosPdf(
     productName,
     terminalType: co?.terminal_type ?? null,
     wantsAmex: co?.wants_amex ?? null,
+    businessActivity: co?.business_activity ?? null,
+    descriptor: co?.descriptor ?? null,
     applicationId,
     exportDate: new Date().toLocaleDateString("es-MX", {
       year: "numeric",
