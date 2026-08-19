@@ -18,6 +18,7 @@ import {
   LogOut,
   Menu,
   X,
+  MailCheck,
 } from "lucide-react"
 import { signOut } from "@/app/(auth)/actions"
 import { cn } from "@/lib/utils"
@@ -53,6 +54,7 @@ const NAV = [
   { href: "/admin/tracking/orders", label: "Pedidos", icon: ShoppingBag },
   { href: "/admin/reportes", label: "Reportes", icon: PieChart },
   { href: "/admin/usuarios", label: "Usuarios", icon: UserCog },
+  { href: "/admin/correos", label: "Correos", icon: MailCheck },
   { href: "/admin/perfil", label: "Mi cuenta", icon: UserRound },
 ]
 
@@ -66,7 +68,9 @@ const AGENT_NAV_HREFS = new Set([
 
 function navForRole(role: string | null | undefined) {
   if (role === "sales_agent") return NAV.filter((n) => AGENT_NAV_HREFS.has(n.href))
-  if (role !== "super_admin") return NAV.filter((n) => n.href !== "/admin/usuarios")
+  // Usuarios y la bandeja de Correos son exclusivos del super admin
+  if (role !== "super_admin")
+    return NAV.filter((n) => n.href !== "/admin/usuarios" && n.href !== "/admin/correos")
   return NAV
 }
 

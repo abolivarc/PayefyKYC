@@ -1,5 +1,6 @@
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
+import { logEmail } from "@/lib/email/send"
 
 export async function createNotification({
   recipientId,
@@ -34,15 +35,23 @@ export async function createNotification({
   if (emailTo && emailSubject && emailHtml && process.env.RESEND_API_KEY) {
     try {
       const resend = new Resend(process.env.RESEND_API_KEY)
-      await resend.emails.send({
+      const { data } = await resend.emails.send({
         from: process.env.RESEND_FROM_EMAIL ?? "onboarding@payefy.com.mx",
         to: emailTo,
         subject: emailSubject,
         html: emailHtml,
       })
       emailSent = true
+      await logEmail({
+        to: emailTo, subject: emailSubject, html: emailHtml,
+        applicationId: relatedApplicationId ?? null, resendId: data?.id ?? null,
+      })
     } catch {
       // No bloquear el flujo si el correo falla
+      await logEmail({
+        to: emailTo, subject: emailSubject, html: emailHtml,
+        applicationId: relatedApplicationId ?? null, status: "error", error: "excepción al enviar",
+      })
     }
   }
 
