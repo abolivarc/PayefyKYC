@@ -12,16 +12,27 @@ import { requestGeneralChanges } from "@/app/(admin)/applications/actions"
 import { ChangeImagesPicker } from "@/components/admin/change-images-picker"
 import type { ChangeImageInput } from "@/lib/documents/change-request-images"
 
+export interface ChangeDocOption {
+  id: string
+  name: string
+  version: number
+  hasFile: boolean
+}
+
 export function RequestGeneralChangesButton({
   applicationId,
   companyName,
+  docs = [],
 }: {
   applicationId: string
   companyName: string
+  /** Documentos del expediente, para marcar cuáles requieren corrección */
+  docs?: ChangeDocOption[]
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notes, setNotes] = useState("")
+  const [rejected, setRejected] = useState<Set<string>>(new Set())
   const [images, setImages] = useState<ChangeImageInput[]>([])
   const [error, setError] = useState<string | null>(null)
   const [sent, setSent] = useState(false)
@@ -31,12 +42,13 @@ export function RequestGeneralChangesButton({
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const res = await requestGeneralChanges(applicationId, notes, images)
+      const res = await requestGeneralChanges(applicationId, notes, images, [...rejected])
       if (res.error) {
         setError(res.error)
       } else {
         setSent(true)
         setNotes("")
+        setRejected(new Set())
         setOpen(false)
         router.refresh()
         setTimeout(() => setSent(false), 6000)
@@ -91,6 +103,44 @@ export function RequestGeneralChangesButton({
                 El expediente pasará a &ldquo;Cambios solicitados&rdquo;.
               </p>
             </div>
+            {/* Marcar aquí los archivos que requieren corrección: quedan en
+                ROJO para el cliente, bajan su % y se listan solos en el correo */}
+            {docs.filter((doc) => doc.hasFile).length > 0 && (
+              <div className="space-y-1.5">
+                <Label>Archivos que requieren corrección</Label>
+                <div className="max-h-44 space-y-0.5 overflow-y-auto rounded-lg border border-border p-2">
+                  {docs.filter((doc) => doc.hasFile).map((doc) => (
+                    <label
+                      key={doc.id}
+                      className="flex cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-secondary"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={rejected.has(doc.id)}
+                        onChange={() =>
+                          setRejected((prev) => {
+                            const next = new Set(prev)
+                            if (next.has(doc.id)) next.delete(doc.id)
+                            else next.add(doc.id)
+                            return next
+                          })
+                        }
+                        disabled={isPending}
+                      />
+                      <span className="flex-1">{doc.name}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">
+                        v{doc.version}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Los marcados pasan a &ldquo;con observaciones&rdquo; (rojo), bajan el
+                  porcentaje del cliente y se listan automáticamente en el correo.
+                </p>
+              </div>
+            )}
+
             {/* Capturas: van en el correo y en el portal del cliente */}
             <ChangeImagesPicker images={images} onChange={setImages} disabled={isPending} />
             {error && (

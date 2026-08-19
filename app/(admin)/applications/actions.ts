@@ -447,7 +447,8 @@ export async function toggleCompletionOverride(
 export async function requestGeneralChanges(
   applicationId: string,
   notes: string,
-  images: ChangeImageInput[] = []
+  images: ChangeImageInput[] = [],
+  rejectedDocIds: string[] = []
 ): Promise<{ error?: string; success?: true }> {
   const supabase = await createClient()
   const {
@@ -479,6 +480,16 @@ export async function requestGeneralChanges(
 
   const company = (app.companies as unknown) as { legal_name: string } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
+
+  // Los archivos marcados en el diálogo se rechazan aquí mismo: un solo
+  // correo Y los documentos quedan en rojo para el cliente (baja su %).
+  if (rejectedDocIds.length > 0) {
+    await admin
+      .from("documents")
+      .update({ status: "changes_requested" })
+      .in("id", rejectedDocIds)
+      .eq("application_id", applicationId)
+  }
 
   // Documentos que el revisor rechazó: van listados en el mismo correo, como
   // los puntos numerados de un correo de revisión.

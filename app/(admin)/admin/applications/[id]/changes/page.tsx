@@ -86,6 +86,24 @@ export default async function ChangesPage({
     })
   }
 
+  // Todos los documentos del expediente, para las casillas del diálogo
+  const { data: allDocs } = await admin
+    .from("documents")
+    .select("id, status, storage_path, file_name, title, version, document_templates(name, field_type)")
+    .eq("application_id", appId)
+  const docOptions = ((allDocs ?? []) as unknown as {
+    id: string; storage_path: string | null; file_name: string | null
+    title: string | null; version: number | null
+    document_templates: { name: string; field_type?: string } | null
+  }[])
+    .filter((d) => d.document_templates?.field_type !== "data_check")
+    .map((d) => ({
+      id: d.id,
+      name: d.document_templates?.name ?? d.title ?? "Documento",
+      version: d.version ?? 1,
+      hasFile: !!d.storage_path,
+    }))
+
   const company = (app.companies as unknown) as { legal_name: string } | null
   const product = (app.products as unknown) as { name: string } | null
 
@@ -131,6 +149,7 @@ export default async function ChangesPage({
           <RequestGeneralChangesButton
             applicationId={appId}
             companyName={company?.legal_name ?? "este cliente"}
+            docs={docOptions}
           />
         </div>
       </header>

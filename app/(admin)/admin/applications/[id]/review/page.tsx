@@ -18,6 +18,7 @@ import { es } from "date-fns/locale"
 import { InternalAliasField } from "@/components/admin/internal-alias-field"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
 import { ProviderRoundButton } from "@/components/admin/provider-round-dialog"
+import { RequestGeneralChangesButton } from "@/components/admin/request-general-changes-button"
 
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
@@ -678,6 +679,18 @@ export default async function ReviewPage({
             {product?.code === "cards" && (
               <SendToTransferButton applicationId={appId} transferStatus={transferStatus} />
             )}
+            <RequestGeneralChangesButton
+              applicationId={appId}
+              companyName={company?.legal_name ?? ""}
+              docs={docs
+                .filter((d) => (d.template && d.template.field_type !== "data_check") || d.title)
+                .map((d) => ({
+                  id: d.id,
+                  name: d.template?.name ?? d.title ?? "Documento",
+                  version: d.version ?? 1,
+                  hasFile: !!d.storage_path,
+                }))}
+            />
             <ProviderRoundButton
               applicationId={appId}
               companyName={company?.legal_name ?? ""}
