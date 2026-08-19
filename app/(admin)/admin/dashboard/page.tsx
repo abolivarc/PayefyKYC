@@ -100,7 +100,7 @@ export default async function AdminDashboardPage() {
   // rechazados o archivados no aportan nada aquí (viven en Clientes/Seguimiento)
   const { data: recentApps } = await supabase
     .from("applications")
-    .select("id, status, updated_at, companies(legal_name), products(name, code)")
+    .select("id, status, updated_at, companies(legal_name), products(name, code), documents(id, status)")
     .not("status", "in", "(activated,rejected,archived)")
     .order("updated_at", { ascending: false })
     .limit(8)
@@ -215,7 +215,7 @@ export default async function AdminDashboardPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
-                        {[["Empresa", "20px"], ["Producto", "12px"], ["Estado", "12px"], ["Actualizado", "12px"]].map(([h, pl]) => (
+                        {[["Empresa", "20px"], ["Producto", "12px"], ["Estado", "12px"], ["Avance", "12px"], ["Actualizado", "12px"]].map(([h, pl]) => (
                           <th key={h} style={{ textAlign: "left", padding: `12px ${pl}`, fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}>
                             {h}
                           </th>
@@ -227,6 +227,10 @@ export default async function AdminDashboardPage() {
                         const company = (app.companies as unknown) as { legal_name: string } | null
                         const product = (app.products as unknown) as { name: string; code: string } | null
                         const timeAgo = formatDistanceToNow(new Date(app.updated_at), { addSuffix: true, locale: es })
+                        const appDocs = ((app.documents as unknown) as { status: string }[] | null) ?? []
+                        const pct = appDocs.length
+                          ? Math.round((appDocs.filter((d) => ["approved", "pending_review"].includes(d.status)).length / appDocs.length) * 100)
+                          : null
                         return (
                           <tr key={app.id} className="table-row-hover" style={{ borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                             <td style={{ padding: "14px 20px", verticalAlign: "middle" }}>
@@ -246,6 +250,18 @@ export default async function AdminDashboardPage() {
                               <Badge variant={STATUS_VARIANT[app.status] ?? "pending"} className="text-xs">
                                 {STATUS_LABELS[app.status] ?? app.status}
                               </Badge>
+                            </td>
+                            <td style={{ padding: "14px 12px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
+                              {pct === null ? (
+                                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>—</span>
+                              ) : (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                                  <span style={{ display: "inline-block", width: 44, height: 5, borderRadius: 99, background: "var(--admin-border, #E7ECF1)", overflow: "hidden" }}>
+                                    <span style={{ display: "block", height: "100%", width: `${Math.min(pct, 100)}%`, borderRadius: 99, background: pct >= 100 ? "#1f7a4d" : pct >= 60 ? "#C9772F" : "#9FB4A9" }} />
+                                  </span>
+                                  <span style={{ fontSize: 12, fontWeight: 700, fontFamily: "var(--font-mono)", color: pct >= 100 ? "#1f7a4d" : "var(--admin-text-muted, #5A6B7B)" }}>{pct}%</span>
+                                </span>
+                              )}
                             </td>
                             <td style={{ padding: "14px 12px", verticalAlign: "middle", fontSize: 13, color: "var(--admin-text-muted, #5A6B7B)" }}>
                               {timeAgo}

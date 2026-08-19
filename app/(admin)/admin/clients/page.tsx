@@ -21,21 +21,34 @@ export default async function ClientsPage() {
   let query = supabase
     .from("companies")
     .select(
-      `id, legal_name, internal_alias, tax_id, created_at, applications(id, status, products(name, code))`
+      `id, legal_name, internal_alias, tax_id, created_at, applications(id, status, products(name, code), documents(id, status))`
     )
   if (isAgent && user) query = query.eq("assigned_agent_id", user.id)
 
   const { data: companies } = await query.order("created_at", { ascending: false })
 
+  // % de avance por solicitud (mismo criterio que el Kanban)
+  const pctDe = (docs: { status: string }[] | null | undefined) => {
+    const arr = docs ?? []
+    if (arr.length === 0) return null
+    const done = arr.filter((d) => ["approved", "pending_review"].includes(d.status)).length
+    return Math.round((done / arr.length) * 100)
+  }
   const list = (companies ?? []).map((c) => ({
     ...c,
-    applications: (
+    applications: ((
       c.applications as unknown as {
         id: string
         status: string
         products: { name: string; code: string } | null
+        documents?: { id: string; status: string }[] | null
       }[]
-    ) ?? [],
+    ) ?? []).map((a) => ({
+      id: a.id,
+      status: a.status,
+      products: a.products,
+      pct: pctDe(a.documents),
+    })),
   }))
 
   const reviewCount = list.filter((c) =>

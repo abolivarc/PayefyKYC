@@ -11,6 +11,8 @@ type App = {
   id: string
   status: string
   products: { name: string; code: string } | null
+  /** % de avance del expediente (null si aún no tiene documentos) */
+  pct?: number | null
 }
 
 type Company = {
@@ -199,18 +201,28 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
   const hasProduct = (c: Company, code: ProductTab) =>
     code === "all" || c.applications.some((a) => a.products?.code === code)
 
-  const filtered = useMemo(() => {
+  // Una TARJETA POR SOLICITUD: la empresa con dos productos aparece dos
+  // veces, porque cada trámite avanza por su propio pipeline (puedes tener
+  // tarjetas aprobado y terminales en cambios). Empresas sin solicitud
+  // conservan su tarjeta única.
+  type Entry = { company: Company; app: App | null }
+  const filtered = useMemo<Entry[]>(() => {
     const q = search.trim().toLowerCase()
-    return companies.filter((c) => {
-      // El alias también busca: es lo que el equipo recuerda del cliente
+    const entries: Entry[] = companies.flatMap((c): Entry[] =>
+      c.applications.length > 0
+        ? c.applications.map((a) => ({ company: c, app: a }))
+        : [{ company: c, app: null }]
+    )
+    return entries.filter(({ company: c, app }) => {
       const matchSearch =
         !q ||
         c.legal_name.toLowerCase().includes(q) ||
         (c.tax_id ?? "").toLowerCase().includes(q) ||
         (c.internal_alias ?? "").toLowerCase().includes(q)
       const matchFilter =
-        filter === "all" || c.applications.some((a) => FILTER_STATUSES[filter].includes(a.status))
-      return matchSearch && matchFilter && hasProduct(c, product)
+        filter === "all" || (!!app && FILTER_STATUSES[filter].includes(app.status))
+      const matchProduct = product === "all" || app?.products?.code === product
+      return matchSearch && matchFilter && matchProduct
     })
   }, [companies, search, filter, product])
 
@@ -325,15 +337,15 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
       {/* ── Grid view ──────────────────────────────────────────── */}
       {filtered.length > 0 && view === "grid" && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((company) => {
-            const apps = company.applications ?? []
+          {filtered.map(({ company, app: entryApp }) => {
+            const apps = entryApp ? [entryApp] : []
             const reviewHref = apps[0] ? `/admin/applications/${apps[0].id}/review` : "#"
             const { stripe, avatarBg, avatarColor } = cardAccent(apps)
             const timeAgo = formatDistanceToNow(new Date(company.created_at), { addSuffix: true, locale: es })
 
             return (
               <div
-                key={company.id}
+                key={`${company.id}-${entryApp?.id ?? "none"}`}
                 className="group relative flex flex-col hover:shadow-[0_6px_24px_rgba(15,42,34,.12)] transition-shadow duration-200"
                 style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22 }}
               >
@@ -412,6 +424,25 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.pip}`} />
                               {st.label}
                             </span>
+                            {typeof app.pct === "number" && (
+                              <span
+                                className="inline-flex items-center gap-1 text-[11px] font-bold font-mono"
+                                style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#8A9E94" }}
+                                title="Avance del expediente"
+                              >
+                                <span
+                                  aria-hidden
+                                  className="inline-block h-1.5 w-8 overflow-hidden rounded-full"
+                                  style={{ background: "#E4ECE7" }}
+                                >
+                                  <span
+                                    className="block h-full rounded-full"
+                                    style={{ width: `${Math.min(app.pct, 100)}%`, background: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#9FB4A9" }}
+                                  />
+                                </span>
+                                {app.pct}%
+                              </span>
+                            )}
                           </Link>
                         )
                       })
@@ -440,15 +471,15 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
       {/* ── List view ──────────────────────────────────────────── */}
       {filtered.length > 0 && view === "list" && (
         <div style={{ background: "#fff", border: "1px solid #E4ECE7", borderRadius: 22, overflow: "hidden" }}>
-          {filtered.map((company, i) => {
-            const apps = company.applications ?? []
+          {filtered.map(({ company, app: entryApp }, i) => {
+            const apps = entryApp ? [entryApp] : []
             const reviewHref = apps[0] ? `/admin/applications/${apps[0].id}/review` : "#"
             const { stripe, avatarBg, avatarColor } = cardAccent(apps)
             const timeAgo = formatDistanceToNow(new Date(company.created_at), { addSuffix: true, locale: es })
 
             return (
               <div
-                key={company.id}
+                key={`${company.id}-${entryApp?.id ?? "none"}`}
                 className={`group relative flex items-center gap-4 px-5 py-3.5 hover:bg-[#F8FAF9] transition-colors ${
                   i < filtered.length - 1 ? "border-b border-[#F0F4F1]" : ""
                 }`}
@@ -501,6 +532,14 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.pip}`} />
                           {st.label}
                         </span>
+                        {typeof app.pct === "number" && (
+                          <span
+                            className="text-[11px] font-bold font-mono"
+                            style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#8A9E94" }}
+                          >
+                            {app.pct}%
+                          </span>
+                        )}
                       </div>
                     )
                   })}
