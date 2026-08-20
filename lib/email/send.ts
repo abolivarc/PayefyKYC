@@ -63,7 +63,14 @@ export async function sendEmail({
     to,
     subject,
     html,
-    replyTo: replyTo ?? "a.santibanez@payefy.me",
+    // Con INBOUND_CAPTURE_EMAIL configurado, las respuestas también caen en
+    // la bandeja de /admin/correos (Alejandro primero: su Gmail siempre recibe;
+    // clientes de correo viejos pueden ignorar la segunda dirección).
+    replyTo:
+      replyTo ??
+      (process.env.INBOUND_CAPTURE_EMAIL
+        ? ["a.santibanez@payefy.me", process.env.INBOUND_CAPTURE_EMAIL]
+        : "a.santibanez@payefy.me"),
     ...(attachments?.length
       ? {
           attachments: attachments.map((a) => ({

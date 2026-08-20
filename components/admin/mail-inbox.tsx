@@ -9,6 +9,8 @@ export interface MailRow {
   id: string
   sentAt: string
   to: string
+  from?: string | null
+  direction?: string
   subject: string
   status: string
   error: string | null
@@ -18,6 +20,7 @@ export interface MailRow {
 
 const TABS = [
   { key: "todos", label: "Todos" },
+  { key: "recibidos", label: "Recibidos" },
   { key: "clientes", label: "Clientes" },
   { key: "eli", label: "Elizabeth" },
   { key: "fran", label: "Francisco" },
@@ -41,19 +44,26 @@ export function MailInbox({ mails }: { mails: MailRow[] }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return mails.filter((m) => {
-      const matchTab = tab === "todos" || categoria(m.to) === tab
+      const esInbound = m.direction === "inbound"
+      const matchTab =
+        tab === "todos" ||
+        (tab === "recibidos" ? esInbound : !esInbound && categoria(m.to) === tab)
       const matchQ =
         !q ||
         m.subject.toLowerCase().includes(q) ||
         m.to.toLowerCase().includes(q) ||
+        (m.from ?? "").toLowerCase().includes(q) ||
         (m.company ?? "").toLowerCase().includes(q)
       return matchTab && matchQ
     })
   }, [mails, tab, search])
 
   const counts = useMemo(() => {
-    const c: Record<TabKey, number> = { todos: mails.length, clientes: 0, eli: 0, fran: 0, yo: 0 }
-    for (const m of mails) c[categoria(m.to)]++
+    const c: Record<TabKey, number> = { todos: mails.length, recibidos: 0, clientes: 0, eli: 0, fran: 0, yo: 0 }
+    for (const m of mails) {
+      if (m.direction === "inbound") c.recibidos++
+      else c[categoria(m.to)]++
+    }
     return c
   }, [mails])
 
@@ -109,16 +119,23 @@ export function MailInbox({ mails }: { mails: MailRow[] }) {
                 className="w-36 shrink-0 truncate text-xs font-semibold"
                 style={{
                   color:
-                    categoria(m.to) === "clientes"
-                      ? "#1f7a4d"
-                      : categoria(m.to) === "yo"
-                        ? "#8A9E94"
-                        : "#1D4ED8",
+                    m.direction === "inbound"
+                      ? "#B45309"
+                      : categoria(m.to) === "clientes"
+                        ? "#1f7a4d"
+                        : categoria(m.to) === "yo"
+                          ? "#8A9E94"
+                          : "#1D4ED8",
                 }}
-                title={m.to}
+                title={m.direction === "inbound" ? `De: ${m.from ?? "?"}` : m.to}
               >
-                {m.to.split("@")[0]}
+                {m.direction === "inbound" ? (m.from ?? "?").split("@")[0] : m.to.split("@")[0]}
               </span>
+              {m.direction === "inbound" && (
+                <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                  recibido
+                </span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium text-foreground">
                   {m.subject}
@@ -155,7 +172,7 @@ function MailViewer({ id, onClose, mails }: { id: string; onClose: () => void; m
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-foreground">{meta?.subject}</p>
             <p className="truncate text-xs text-muted-foreground">
-              Para: {meta?.to}
+              {meta?.direction === "inbound" ? `De: ${meta?.from ?? "?"}` : `Para: ${meta?.to}`}
               {meta?.sentAt && ` · ${format(new Date(meta.sentAt), "d MMM yyyy HH:mm", { locale: es })}`}
             </p>
           </div>

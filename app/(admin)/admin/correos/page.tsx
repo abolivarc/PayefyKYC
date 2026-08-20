@@ -31,7 +31,7 @@ export default async function CorreosPage() {
 
   const { data: rows } = await admin
     .from("email_log")
-    .select("id, sent_at, to_email, subject, status, error, application_id, applications(companies(legal_name, internal_alias))")
+    .select("id, sent_at, to_email, from_email, direction, subject, status, error, application_id, applications(companies(legal_name, internal_alias))")
     .order("sent_at", { ascending: false })
     .limit(400)
 
@@ -39,6 +39,8 @@ export default async function CorreosPage() {
     id: string
     sent_at: string
     to_email: string
+    from_email: string | null
+    direction: string
     subject: string
     status: string
     error: string | null
@@ -48,6 +50,8 @@ export default async function CorreosPage() {
     id: r.id,
     sentAt: r.sent_at,
     to: r.to_email,
+    from: r.from_email,
+    direction: r.direction,
     subject: r.subject,
     status: r.status,
     error: r.error,
@@ -64,7 +68,7 @@ export default async function CorreosPage() {
         <p style={{ margin: "4px 0 0", fontSize: 13, color: "var(--admin-text-muted, #5B7168)" }}>
           Todo lo que la plataforma envía — a clientes y al equipo — aunque no vengas
           en copia. Solo tú ves esta bandeja. Se registra desde el 19&nbsp;ago&nbsp;2026;
-          las respuestas que la gente escribe desde su propio correo no pasan por aquí.
+          los entrantes llegan a la pestaña Recibidos vía contacto@payefy.me (respuestas al sistema o correos con esa dirección en copia).
         </p>
       </header>
       <MailInbox mails={mails} />
