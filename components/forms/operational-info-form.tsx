@@ -62,8 +62,6 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
     lastMonthSalesAmount: "",
     lastMonthSalesOperations: "",
     lastMonthChargebacks: "",
-    pctNational: "",
-    pctInternational: "",
     operativa: "",
     terminalsRequired: "",
     contactEmail: "",
@@ -91,10 +89,6 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
   const ventaMensual = form.avgSalesAmount !== "" ? form.avgSalesAmount : (calculado || "")
   const money = (n: number) =>
     new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 }).format(n)
-  const pctSum =
-    (parseFloat(form.pctNational) || 0) + (parseFloat(form.pctInternational) || 0)
-  const pctInvalid =
-    form.pctNational !== "" && form.pctInternational !== "" && Math.round(pctSum) !== 100
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -252,49 +246,6 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
         </div>
       </div>
 
-      {/* Distribución nacional / internacional */}
-      <div className="border rounded-lg p-4">
-        <p className="text-sm font-medium mb-3">
-          Distribución de tus ventas (deben sumar 100%)
-        </p>
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="pctNational">% Nacional</Label>
-            <Input
-              id="pctNational"
-              type="number"
-              min={0}
-              max={100}
-              step="any"
-              value={form.pctNational}
-              onChange={(e) => set("pctNational", e.target.value)}
-              required
-              disabled={saving}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="pctInternational">% Internacional</Label>
-            <Input
-              id="pctInternational"
-              type="number"
-              min={0}
-              max={100}
-              step="any"
-              value={form.pctInternational}
-              onChange={(e) => set("pctInternational", e.target.value)}
-              required
-              disabled={saving}
-            />
-          </div>
-        </div>
-        {pctInvalid && (
-          <p className="text-xs text-destructive flex items-center gap-1 mt-2">
-            <AlertTriangle className="h-3 w-3" />
-            Suman {pctSum}% — deben sumar 100%
-          </p>
-        )}
-      </div>
-
       {/* Operativa */}
       <div className="space-y-1.5">
         <Label>Operativa</Label>
@@ -369,7 +320,7 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
 
       <Button
         type="submit"
-        disabled={saving || pctInvalid}
+        disabled={saving}
         className="flex items-center gap-1.5"
         style={{ background: "#004238", color: "#AEFF99" }}
       >

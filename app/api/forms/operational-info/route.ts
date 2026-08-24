@@ -14,8 +14,6 @@ const FIELDS: (keyof OperationalInfoData)[] = [
   "lastMonthSalesAmount",
   "lastMonthSalesOperations",
   "lastMonthChargebacks",
-  "pctNational",
-  "pctInternational",
   "operativa",
   "terminalsRequired",
   "contactEmail",
@@ -30,8 +28,6 @@ const REQUIRED: (keyof OperationalInfoData)[] = [
   "lastMonthSalesAmount",
   "lastMonthSalesOperations",
   "lastMonthChargebacks",
-  "pctNational",
-  "pctInternational",
   "operativa",
   "contactEmail",
   "contactPhone",
@@ -89,13 +85,6 @@ export async function POST(request: Request) {
     if (!data[f]) {
       return NextResponse.json({ error: `Falta el campo: ${f}` }, { status: 422 })
     }
-  }
-  const pctSum = parseFloat(data.pctNational) + parseFloat(data.pctInternational)
-  if (isNaN(pctSum) || Math.round(pctSum) !== 100) {
-    return NextResponse.json(
-      { error: "% Nacional y % Internacional deben sumar 100" },
-      { status: 422 }
-    )
   }
   if (data.operativa !== "ecommerce" && !data.terminalsRequired) {
     return NextResponse.json(

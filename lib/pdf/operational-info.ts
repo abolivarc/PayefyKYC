@@ -9,8 +9,9 @@ export interface OperationalInfoData {
   lastMonthSalesAmount: string
   lastMonthSalesOperations: string
   lastMonthChargebacks: string
-  pctNational: string
-  pctInternational: string
+  /** Eliminados del cuestionario (20-ago-2026); opcionales por datos viejos */
+  pctNational?: string
+  pctInternational?: string
   operativa: string // "ecommerce" | "card_present" | "both"
   terminalsRequired: string
   contactEmail: string
@@ -66,8 +67,6 @@ export async function generateOperationalInfoPdf(
     ["Ventas del mes pasado", money(data.lastMonthSalesAmount)],
     ["Operaciones del mes pasado", (data.lastMonthSalesOperations || "—") + (data.lastMonthSalesOperations ? " cobros" : "")],
     ["Contracargos del mes pasado", money(data.lastMonthChargebacks)],
-    ["% Nacional", (data.pctNational || "—") + (data.pctNational ? "%" : "")],
-    ["% Internacional", (data.pctInternational || "—") + (data.pctInternational ? "%" : "")],
     ["Operativa", OPERATIVA_LABELS[data.operativa] ?? data.operativa ?? "—"],
     ...(data.operativa !== "ecommerce"
       ? ([["Terminales requeridas", data.terminalsRequired || "—"]] as [string, string][])
