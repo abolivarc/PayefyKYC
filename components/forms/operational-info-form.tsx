@@ -8,6 +8,7 @@ import { Select } from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { AlertTriangle } from "lucide-react"
+import { useDraftAutosave, draftLabel } from "@/lib/forms/use-draft-autosave"
 
 interface Props {
   appId: string
@@ -81,6 +82,9 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
 
   const needsTerminals = form.operativa === "card_present" || form.operativa === "both"
 
+  // Memoria: borrador autoguardado mientras escribe
+  const draftState = useDraftAutosave(appId, templateCode, form)
+
   // La venta mensual sale de ticket promedio x transacciones; el cliente
   // puede sobrescribirla si su realidad no es exactamente esa multiplicación.
   const ticket = parseFloat(form.averageTicket) || 0
@@ -131,6 +135,11 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {draftLabel(draftState) && (
+        <p className="text-xs" style={{ color: draftState === "error" ? "#B91C1C" : "#1f7a4d" }}>
+          {draftLabel(draftState)}
+        </p>
+      )}
       {yaContestado ? (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
           <p className="text-sm text-blue-900 font-medium">

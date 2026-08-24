@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { uploadDocumentFile } from "@/lib/documents/upload"
+import { useDraftAutosave, draftLabel } from "@/lib/forms/use-draft-autosave"
 import { AlertTriangle, Download, Upload, CheckCircle2 } from "lucide-react"
 
 interface Field {
@@ -152,6 +153,10 @@ export function AmexCoverForm({ appId, documentId, initialData, initialFileName 
 
   const set = (k: string, v: string) => setForm((p) => ({ ...p, [k]: v }))
 
+  // Memoria: el borrador se guarda solo mientras escribe (caso Carmen 24-ago:
+  // llenó el 90 %, se fue a una junta en incógnito y perdió todo)
+  const draftState = useDraftAutosave(appId, "amex_cover", form)
+
   function copyFiscalAddress() {
     setForm((p) => ({
       ...p,
@@ -224,6 +229,11 @@ export function AmexCoverForm({ appId, documentId, initialData, initialFileName 
     <div className="space-y-6">
       {/* Paso 1 */}
       <form onSubmit={handleGenerate} className="space-y-6">
+      {draftLabel(draftState) && (
+        <p style={{ margin: "0 0 10px", fontSize: 12, color: draftState === "error" ? "#B91C1C" : "#1f7a4d" }}>
+          {draftLabel(draftState)}
+        </p>
+      )}
         <div className="rounded-lg border bg-card p-4">
           <p className="text-sm font-semibold text-foreground">
             1. Contesta tus datos y descarga la carátula
