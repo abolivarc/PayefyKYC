@@ -98,7 +98,14 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
       const res = await fetch("/api/forms/operational-info", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ applicationId: appId, templateCode, data: form }),
+        // La venta mensual mostrada puede venir del cálculo (ticket × cobros)
+        // sin que el cliente la teclee: hay que materializarla en el envío o
+        // el servidor la rechaza como faltante aunque se vea en pantalla.
+        body: JSON.stringify({
+          applicationId: appId,
+          templateCode,
+          data: { ...form, avgSalesAmount: String(ventaMensual || "") },
+        }),
       })
       const json = await res.json()
       if (!res.ok) {
