@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation"
+import Link from "next/link"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ComplementaryInfoForm } from "@/components/forms/complementary-info-form"
 import { BeneficialOwnerForm } from "@/components/forms/beneficial-owner-form"
@@ -80,6 +81,15 @@ export default async function FormPage({
   return (
     <div className="p-6 sm:p-8 max-w-3xl mx-auto">
       <div className="mb-6">
+        {/* Regreso al expediente: sin esto el cliente queda "atrapado" en el
+            formulario y solo puede salir con el botón atrás del navegador */}
+        <Link
+          href={`/applications/${appId}/documents`}
+          className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
+          style={{ color: "#1f7a4d" }}
+        >
+          ← Volver a mi expediente
+        </Link>
         <h1 className="text-xl font-bold">{title}</h1>
       </div>
       {code === "complementary_info" && (
