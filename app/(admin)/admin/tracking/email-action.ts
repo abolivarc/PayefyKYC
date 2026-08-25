@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/send"
-import { bundleExpediente } from "@/lib/email/bundle-expediente"
+import { bundleExpediente, zipDeliverable } from "@/lib/email/bundle-expediente"
 import {
   emailExpedienteToTransfer,
   emailRequestDocsToClient,
@@ -104,12 +104,18 @@ export async function sendExpedienteEmail({
   const finalTo = toEmail || clientEmail
   if (!finalTo) return { error: "No se encontró destinatario" }
 
-  // Bundle expediente if requested
+  // Bundle expediente if requested. Resend rechaza correos >40 MB: si el
+  // ZIP es pesado se sube a storage y el correo lleva botón de descarga.
   let attachments: { filename: string; content: string }[] | undefined
   if (attachExpediente) {
     try {
       const bundle = await bundleExpediente(applicationId)
-      attachments = [{ filename: bundle.filename, content: bundle.base64 }]
+      const entrega = await zipDeliverable(applicationId, bundle.filename, bundle.base64)
+      if (entrega.modo === "adjunto") {
+        attachments = entrega.attachments
+      } else {
+        html = html.replace("</body>", `${entrega.linkHtml}</body>`)
+      }
     } catch (e) {
       Sentry.captureException(e, { extra: { applicationId, templateKey } })
       return { error: `Error al generar ZIP: ${(e as Error).message}` }

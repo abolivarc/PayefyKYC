@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
+import { zipDeliverable } from "@/lib/email/bundle-expediente"
 
 // ─────────────────────────────────────
 // Crear empresa + applications + documents iniciales
@@ -812,6 +813,7 @@ async function dispatchExpedienteEmails(
     const to = product.internal_reviewer_email ?? "francisco.sosa@payefy.me"
     let attachments: { filename: string; content: string }[] | undefined
     let zipAttached = false
+    let zipLinkHtml: string | null = null
 
     try {
       const docRows = await collectExpedienteFiles(adminClient, applicationId, app.company_id)
@@ -860,10 +862,19 @@ async function dispatchExpedienteEmails(
         const safeProduct = (product?.name ?? "expediente")
           .replace(/[/\\:*?"<>|]/g, "_")
           .trim()
-        attachments = [
-          { filename: `expediente_${safeCompany}_${safeProduct}.zip`, content: zipBase64 },
-        ]
-        zipAttached = true
+        const entrega = await zipDeliverable(
+          applicationId,
+          `expediente_${safeCompany}_${safeProduct}.zip`,
+          zipBase64
+        )
+        if (entrega.modo === "adjunto") {
+          attachments = entrega.attachments
+          zipAttached = true
+        } else {
+          // Pesa demasiado para adjuntarse: va como botón de descarga
+          zipLinkHtml = entrega.linkHtml
+          zipAttached = true
+        }
       }
     } catch (e) {
       // Sin ZIP no bloqueamos el aviso: el correo sale igual con el botón
@@ -873,13 +884,16 @@ async function dispatchExpedienteEmails(
     const { error: sendErr } = await sendEmail({
       to,
       subject: `[PayefyKYC] Expediente completo: ${company?.legal_name ?? ""}`,
-      html: emailExpedienteCompleto({
-        companyName: company?.legal_name ?? "",
-        productName: product?.name ?? "",
-        reviewerName: product?.code === "cards" ? "Francisco" : "Equipo Payefy",
-        applicationUrl: appUrl,
-        zipAttached,
-      }),
+      html: (() => {
+        const base = emailExpedienteCompleto({
+          companyName: company?.legal_name ?? "",
+          productName: product?.name ?? "",
+          reviewerName: product?.code === "cards" ? "Francisco" : "Equipo Payefy",
+          applicationUrl: appUrl,
+          zipAttached,
+        })
+        return zipLinkHtml ? base.replace("</body>", `${zipLinkHtml}</body>`) : base
+      })(),
       attachments,
     })
     if (sendErr) errors.push(`Correo a ${to}: ${sendErr}`)
