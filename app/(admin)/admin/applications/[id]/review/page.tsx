@@ -19,6 +19,7 @@ import { InternalAliasField } from "@/components/admin/internal-alias-field"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
 import { ProviderRoundButton } from "@/components/admin/provider-round-dialog"
 import { RequestGeneralChangesButton } from "@/components/admin/request-general-changes-button"
+import { ModalitySelector } from "@/components/admin/modality-selector"
 
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
@@ -173,7 +174,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, business_activity, descriptor, acquisition_channel), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -213,7 +214,7 @@ export default async function ReviewPage({
     .in("action", ["document_changes_requested", "document_rejected"])
     .filter("metadata->>application_id", "eq", appId)
   const changesCount = rawChangesCount ?? 0
-  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null } | null
+  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null; terminal_type?: string | null } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
   const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
@@ -622,6 +623,15 @@ export default async function ReviewPage({
                   <span><strong style={{ color: "var(--admin-text, #0F2A22)" }}>Canal:</strong> {company.acquisition_channel}</span>
                 )}
               </p>
+            )}
+
+            {product?.code === "terminals" && (
+              <div style={{ marginTop: 8 }}>
+                <ModalitySelector
+                  applicationId={appId}
+                  current={company?.terminal_type ?? null}
+                />
+              </div>
             )}
 
             {/* Alias interno: cómo identifica el equipo a este cliente.

@@ -839,3 +839,100 @@ export async function registerProviderRound(
   revalidatePath(`/admin/applications/${applicationId}/review`)
   return { success: true }
 }
+
+// ─────────────────────────────────────
+// Cambiar la modalidad de una solicitud de terminales
+// ─────────────────────────────────────
+// Caso recurrente (ALTIX, ARANDAS): el cliente elige "ambas" por error y el
+// expediente exige una URL que no aplica. Esto ajusta la modalidad y
+// reconcilia los casilleros: borra los que ya no aplican SOLO si están
+// vacíos (nunca se pierde un archivo subido) y crea los que falten.
+export async function changeTerminalModality(
+  applicationId: string,
+  newType: "card_present" | "ecommerce" | "link_de_pago" | "both"
+): Promise<{ error?: string; success?: true }> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return { error: "No autenticado" }
+
+  const admin = adminDb()
+  const { data: app } = await admin
+    .from("applications")
+    .select("company_id, product_id, companies(terminal_type, person_type), products(code)")
+    .eq("id", applicationId)
+    .single()
+  if (!app) return { error: "Solicitud no encontrada" }
+  if (((app.products as unknown) as { code: string } | null)?.code !== "terminals") {
+    return { error: "La modalidad solo aplica a terminales" }
+  }
+  const companyInfo = (app.companies as unknown) as {
+    terminal_type: string | null
+    person_type: string | null
+  } | null
+  const anterior = companyInfo?.terminal_type ?? null
+  if (anterior === newType) return { success: true }
+
+  const esFisica = companyInfo?.person_type === "persona_fisica"
+  const urlCode = esFisica ? "pf_website_url" : "website_url"
+  const fotosCode = esFisica ? "pf_business_photos" : "business_photos"
+  const pideUrl = newType !== "card_present"
+  const pideFotos = newType === "card_present" || newType === "both"
+
+  await admin.from("companies").update({ terminal_type: newType }).eq("id", app.company_id)
+
+  const { data: tmpls } = await admin
+    .from("document_templates")
+    .select("id, code")
+    .eq("product_id", app.product_id)
+    .in("code", [urlCode, fotosCode])
+  const tmplPorCodigo = new Map(
+    ((tmpls ?? []) as unknown as { id: string; code: string }[]).map((t) => [t.code, t.id])
+  )
+
+  const { data: docs } = await admin
+    .from("documents")
+    .select("id, template_id, storage_path")
+    .eq("application_id", applicationId)
+    .in("template_id", [...tmplPorCodigo.values()])
+  const docsPorTmpl = new Map<string, { id: string; storage_path: string | null }[]>()
+  for (const d of (docs ?? []) as unknown as { id: string; template_id: string; storage_path: string | null }[]) {
+    const arr = docsPorTmpl.get(d.template_id) ?? []
+    arr.push(d)
+    docsPorTmpl.set(d.template_id, arr)
+  }
+
+  async function reconciliar(code: string, requerido: boolean, filasNuevas: number) {
+    const tmplId = tmplPorCodigo.get(code)
+    if (!tmplId) return
+    const existentes = docsPorTmpl.get(tmplId) ?? []
+    if (!requerido) {
+      // solo se eliminan casilleros VACÍOS; un archivo subido nunca se borra
+      const vacios = existentes.filter((d) => !d.storage_path).map((d) => d.id)
+      if (vacios.length) await admin.from("documents").delete().in("id", vacios)
+    } else if (existentes.length === 0) {
+      await admin.from("documents").insert(
+        Array.from({ length: filasNuevas }, () => ({
+          application_id: applicationId,
+          template_id: tmplId,
+          status: "pending_upload",
+        }))
+      )
+    }
+  }
+
+  await reconciliar(urlCode, pideUrl, 1)
+  await reconciliar(fotosCode, pideFotos, 4)
+
+  await logAudit({
+    actorId: user.id,
+    action: "terminal_modality_changed",
+    entityType: "application",
+    entityId: applicationId,
+    metadata: { application_id: applicationId, de: anterior, a: newType },
+  })
+
+  revalidatePath(`/admin/applications/${applicationId}/review`)
+  return { success: true }
+}
