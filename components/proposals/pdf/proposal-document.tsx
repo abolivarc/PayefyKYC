@@ -113,6 +113,11 @@ function CoverPage({
 }) {
   const isComparative = data.proposalType === "comparative"
   const showSavings = isComparative && calc.annualSavings > 0
+  // Enfoque comercial: el primer golpe es lo que el cliente RECIBE, nunca
+  // lo que Payefy le cuesta. El costo se detalla en la página de tasas.
+  const volume = data.monthlyVolume || 0
+  const netoMensual = volume - calc.payefyMonthlyCost
+  const effectiveRate = volume > 0 ? (calc.payefyMonthlyCost / volume) * 100 : 0
 
   return (
     <>
@@ -138,11 +143,10 @@ function CoverPage({
       </div>
 
       <div className="flex-1 flex flex-col px-[14mm] pt-[10mm]">
-        {/* Cifra protagonista */}
+        {/* Cifra protagonista — siempre en positivo y en el verde menta del logo */}
         <div
           style={{
-            background: showSavings ? "#F0FAF3" : CANVAS,
-            border: `1px solid ${showSavings ? "#CBEFDB" : LINE}`,
+            background: MINT,
             borderRadius: 20,
             padding: "20px 24px",
             display: "flex",
@@ -152,16 +156,16 @@ function CoverPage({
           }}
         >
           <div>
-            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: showSavings ? GREEN : GRAY }}>
-              {showSavings ? `Ahorro anual estimado vs ${data.competitorName}` : "Costo mensual estimado"}
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: DEEP }}>
+              {showSavings ? `Ahorro anual estimado vs ${data.competitorName}` : "Recibes neto en tu cuenta"}
             </p>
-            <p style={{ margin: "6px 0 0", fontFamily: "var(--font-display)", fontSize: 46, fontWeight: 800, lineHeight: 1, letterSpacing: "-.035em", color: showSavings ? GREEN : INK }}>
-              {formatCurrency(showSavings ? calc.annualSavings : calc.payefyMonthlyCost)}
+            <p style={{ margin: "6px 0 0", fontFamily: "var(--font-display)", fontSize: 46, fontWeight: 800, lineHeight: 1, letterSpacing: "-.035em", color: DEEP }}>
+              {formatCurrency(showSavings ? calc.annualSavings : netoMensual)}
             </p>
-            <p style={{ margin: "8px 0 0", fontSize: 12, color: GRAY }}>
+            <p style={{ margin: "8px 0 0", fontSize: 12, color: "#2E5548" }}>
               {showSavings
                 ? `${calc.savingsPercentage.toFixed(1)}% menos de lo que pagas hoy · ${formatCurrency(calc.monthlySavings)} cada mes`
-                : `Sobre un volumen de ${formatCurrency(data.monthlyVolume || 0)} al mes (IVA incluido)`}
+                : `Cada mes, de tus ${formatCurrency(volume)} en ventas · comisión efectiva de ${effectiveRate.toFixed(2)}% ya con IVA, sin renta ni cargos ocultos`}
             </p>
           </div>
         </div>
@@ -384,8 +388,8 @@ function RatesPage({
 
             <div className="grid grid-cols-3 gap-3" style={{ marginTop: "9mm" }}>
               {[
-                { k: "Comisión mensual", v: formatCurrency(calc.payefyMonthlyCost), s: "IVA incluido" },
                 { k: "Te queda neto", v: formatCurrency((data.monthlyVolume || 0) - calc.payefyMonthlyCost), s: "cada mes" },
+                { k: "Comisión mensual", v: formatCurrency(calc.payefyMonthlyCost), s: "IVA incluido" },
                 { k: "Comisión anual", v: formatCurrency(calc.payefyAnnualCost), s: "proyectada" },
               ].map((it) => (
                 <div key={it.k} style={{ background: CANVAS, borderRadius: 14, padding: "14px 16px" }}>
