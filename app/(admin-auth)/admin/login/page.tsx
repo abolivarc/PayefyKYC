@@ -14,6 +14,7 @@ export default async function AdminLoginPage({
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Acceso administrativo — Payefy</h1>
       <p className="text-sm text-center mb-6" style={{ color: "rgba(255,255,255,0.5)" }}>
         Accede con tu cuenta institucional
       </p>

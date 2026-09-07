@@ -167,11 +167,11 @@ export default async function SeguimientoPage({
                         <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
                           {d.document_templates?.name ?? "Documento"}
                           {!d.document_templates?.is_required && (
-                            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--admin-text-subtle, #8A99A8)" }}> · opcional</span>
+                            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--admin-text-subtle, #64748B)" }}> · opcional</span>
                           )}
                         </p>
                         {d.file_name && (
-                          <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                          <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>
                             {d.file_name}
                             {d.uploaded_at && (
                               <> · {format(new Date(d.uploaded_at), "d MMM yyyy", { locale: es })}</>

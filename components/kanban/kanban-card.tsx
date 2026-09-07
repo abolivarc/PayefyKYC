@@ -44,7 +44,7 @@ export function KanbanCard({ app, isOverlay }: Props) {
     pct === 100 ? "#1f7a4d" : pct >= 60 ? "#c9772f" : "#D1D5DB"
 
   const pctColor =
-    pct === 100 ? "#1f7a4d" : pct >= 60 ? "#c9772f" : "#8A9E94"
+    pct === 100 ? "#1f7a4d" : pct >= 60 ? "#c9772f" : "#5B7168"
 
   const timeAgo = formatDistanceToNow(new Date(app.updated_at), {
     addSuffix: true,
@@ -106,7 +106,7 @@ export function KanbanCard({ app, isOverlay }: Props) {
         {/* Progress bar */}
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[11px]" style={{ color: "#8A9E94" }}>
+            <span className="text-[11px]" style={{ color: "#5B7168" }}>
               {app.docStats.done} de {app.docStats.total} docs
             </span>
             <span className="text-[11px] font-bold" style={{ color: pctColor }}>
@@ -129,7 +129,7 @@ export function KanbanCard({ app, isOverlay }: Props) {
         </div>
 
         {/* Timestamp */}
-        <p className="text-[11px] mt-3" style={{ color: "#8A9E94" }}>
+        <p className="text-[11px] mt-3" style={{ color: "#5B7168" }}>
           {timeAgo}
         </p>
       </Link>

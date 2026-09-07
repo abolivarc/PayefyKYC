@@ -85,7 +85,7 @@ export function NotificationsInbox({ initialItems }: { initialItems: Notificatio
       <div style={{ background: "#fff", border: "1px solid #E7ECF1", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.05)" }}>
         {visible.length === 0 ? (
           <div style={{ padding: "48px 24px", textAlign: "center" }}>
-            <p style={{ fontSize: 14, color: "#8A99A8", margin: 0 }}>
+            <p style={{ fontSize: 14, color: "#64748B", margin: 0 }}>
               {filter === "unread" ? "No tienes notificaciones sin leer." : "No tienes notificaciones aún."}
             </p>
           </div>
@@ -98,6 +98,20 @@ export function NotificationsInbox({ initialItems }: { initialItems: Notificatio
             const inner = (
               <div
                 onClick={() => !n.is_read && handleMarkOne(n.id)}
+                {...(!n.is_read && !n.related_application_id && {
+                  // Solo cuando el renglón NO va envuelto en un <Link>: un rol
+                  // interactivo anidado dentro de un enlace confunde al teclado.
+                  role: "button",
+                  tabIndex: 0,
+                  "aria-label": `Marcar como leída: ${n.title}`,
+                  onKeyDown: (e: React.KeyboardEvent) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      handleMarkOne(n.id)
+                    }
+                  },
+                })}
+                className={n.is_read || n.related_application_id ? undefined : "data-input-focus"}
                 style={{
                   display: "flex",
                   alignItems: "flex-start",
@@ -157,7 +171,7 @@ export function NotificationsInbox({ initialItems }: { initialItems: Notificatio
                       ))}
                     </div>
                   )}
-                  <p style={{ margin: "4px 0 0", fontSize: 11, color: "#8A99A8" }}>
+                  <p style={{ margin: "4px 0 0", fontSize: 11, color: "#64748B" }}>
                     {timeAgo}
                   </p>
                 </div>

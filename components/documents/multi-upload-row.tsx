@@ -164,7 +164,7 @@ export function MultiUploadRow({
             {templateName}
           </p>
           {templateInstructions && (
-            <p className="text-xs leading-relaxed" style={{ color: "#8A9E94" }}>
+            <p className="text-xs leading-relaxed" style={{ color: "#5B7168" }}>
               {templateInstructions}
             </p>
           )}
@@ -255,7 +255,7 @@ function SlotRow({
     <div className="flex items-center gap-2">
       <span
         className="text-[10px] font-semibold shrink-0"
-        style={{ color: "#8A9E94", minWidth: 72 }}
+        style={{ color: "#5B7168", minWidth: 72 }}
       >
         {label}
       </span>

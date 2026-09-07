@@ -116,9 +116,10 @@ function SidebarContent({
         {onClose && (
           <button
             onClick={onClose}
+            aria-label="Cerrar menú"
             className="text-white/50 hover:text-white transition-colors p-1"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
       </div>

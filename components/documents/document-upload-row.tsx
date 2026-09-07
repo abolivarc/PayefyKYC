@@ -15,7 +15,7 @@ type DocStatus =
   | "changes_requested"
 
 const STATUS: Record<string, { label: string; color: string; bg: string; stripe: string }> = {
-  pending_upload:    { label: "Pendiente",     color: "#8A9E94", bg: "#F3F7F4", stripe: "#D1D5DB" },
+  pending_upload:    { label: "Pendiente",     color: "#5B7168", bg: "#F3F7F4", stripe: "#D1D5DB" },
   pending_review:    { label: "En revisión",   color: "#1D4ED8", bg: "#EFF4FF", stripe: "#1D4ED8" },
   approved:          { label: "Aprobado",      color: "#1f7a4d", bg: "#e7f6ec", stripe: "#1f7a4d" },
   rejected:          { label: "Rechazado",     color: "#d1622f", bg: "#fef2f2", stripe: "#d1622f" },
@@ -188,6 +188,7 @@ export function DocumentUploadRow({
               href={`/api/documents/${documentId}/view`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`Ver ${templateName}`}
               style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -207,6 +208,7 @@ export function DocumentUploadRow({
             <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
               <Link
                 href={`/applications/${applicationId}/forms/${templateCode}`}
+                aria-label={`${needsAction ? "Generar" : "Editar"} ${templateName}`}
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
@@ -232,6 +234,7 @@ export function DocumentUploadRow({
                   <button
                     onClick={() => inputRef.current?.click()}
                     disabled={isPending}
+                    aria-label={`${needsAction ? "Subir" : "Cambiar"} ${templateName}`}
                     style={{
                       fontSize: 10,
                       fontWeight: 700,
@@ -266,6 +269,7 @@ export function DocumentUploadRow({
               <button
                 onClick={() => inputRef.current?.click()}
                 disabled={isPending}
+                aria-label={`${needsAction ? "Subir" : status === "changes_requested" ? "Re-subir" : "Cambiar"} ${templateName}`}
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
@@ -311,7 +315,7 @@ export function DocumentUploadRow({
             margin: "3px 0 0",
             fontSize: 10,
             lineHeight: 1.35,
-            color: "#8A9E94",
+            color: "#5B7168",
           }}
         >
           {templateInstructions}
@@ -361,14 +365,19 @@ export function DocumentUploadRow({
 
           {/* Client reply */}
           <div>
-            <p style={{ margin: "0 0 4px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "#5B7168" }}>
+            <label
+              htmlFor={`client-note-${documentId}`}
+              style={{ display: "block", margin: "0 0 4px", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: ".06em", color: "#5B7168" }}
+            >
               Tu respuesta (opcional)
-            </p>
+            </label>
             <textarea
+              id={`client-note-${documentId}`}
               value={clientNote}
               onChange={(e) => { setClientNote(e.target.value); setNoteSaved(false) }}
               placeholder="Escribe una observación o pregunta al revisor…"
               rows={2}
+              className="data-input-focus"
               style={{
                 width: "100%",
                 fontSize: 11,
@@ -378,13 +387,12 @@ export function DocumentUploadRow({
                 resize: "vertical",
                 fontFamily: "inherit",
                 color: "#0F2A22",
-                outline: "none",
                 boxSizing: "border-box",
               }}
             />
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
               {noteSaved && (
-                <span style={{ fontSize: 10, color: "#1f7a4d", fontWeight: 600 }}>Respuesta guardada</span>
+                <span role="status" style={{ fontSize: 10, color: "#1f7a4d", fontWeight: 600 }}>Respuesta guardada</span>
               )}
               {!noteSaved && <span />}
               <button
@@ -410,7 +418,7 @@ export function DocumentUploadRow({
       )}
 
       {error && (
-        <p style={{ margin: 0, fontSize: 10, color: "#d1622f" }}>{error}</p>
+        <p role="alert" style={{ margin: 0, fontSize: 12, color: "#b23b10" }}>{error}</p>
       )}
     </div>
   )

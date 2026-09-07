@@ -204,7 +204,7 @@ export default async function StatusPage({
         return (
           <div style={{ marginTop: 32, background: "#fff", border: "1px solid #E7ECF1", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.05)" }}>
             <div style={{ padding: "14px 20px", borderBottom: "1px solid #E7ECF1", background: "#FBFCFD" }}>
-              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#8A99A8" }}>
+              <p style={{ margin: 0, fontSize: 12, fontWeight: 700, letterSpacing: ".07em", textTransform: "uppercase", color: "#64748B" }}>
                 Contratos y firmas
               </p>
             </div>
@@ -236,9 +236,9 @@ export default async function StatusPage({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ margin: 0, fontSize: 13, fontWeight: 500, color: "#0F1B2A" }}>
                         {def.label}
-                        {def.method && <span style={{ fontSize: 11, color: "#8A99A8", marginLeft: 5 }}>({def.method})</span>}
+                        {def.method && <span style={{ fontSize: 11, color: "#64748B", marginLeft: 5 }}>({def.method})</span>}
                       </p>
-                      <p style={{ margin: "2px 0 0", fontSize: 12, color: isSigned ? "#047857" : isSent ? "#92400E" : "#8A99A8" }}>
+                      <p style={{ margin: "2px 0 0", fontSize: 12, color: isSigned ? "#047857" : isSent ? "#92400E" : "#64748B" }}>
                         {isSigned ? "Firmado" : isSent ? "Pendiente de tu firma" : "Pendiente"}
                       </p>
                     </div>

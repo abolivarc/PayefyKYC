@@ -318,7 +318,7 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
         )}
       </div>
 
-      <p style={{ fontSize:11, color:"#8a948e", margin:"8px 0 18px",
+      <p style={{ fontSize:11, color:"#5B7168", margin:"8px 0 18px",
         display:"flex", alignItems:"center", gap:6 }}>
         <svg viewBox="0 0 24 24" width={13} height={13} fill="none" stroke="currentColor" strokeWidth={2}>
           <rect x={2} y={5} width={20} height={14} rx={2} /><path d="m22 7-10 5L2 7" />
@@ -336,16 +336,16 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
             Documentos · {app.docs.total}
           </p>
           {app.documentList.length === 0 ? (
-            <p style={{ fontSize:13, color:"#8a948e" }}>Sin documentos registrados</p>
+            <p style={{ fontSize:13, color:"#5B7168" }}>Sin documentos registrados</p>
           ) : (
             app.documentList.map((doc, i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:9,
                 padding:"5px 0", fontSize:13,
-                color: doc.status === "pending_upload" && !doc.isChecked ? "#8a948e" : "#16201b" }}>
+                color: doc.status === "pending_upload" && !doc.isChecked ? "#5B7168" : "#16201b" }}>
                 <DocStatusIcon doc={doc} />
                 {doc.name}
                 {doc.fieldType === "check_or_upload" && (
-                  <span style={{ fontSize:10, color:"#8a948e" }}>(casilla o doc)</span>
+                  <span style={{ fontSize:10, color:"#5B7168" }}>(casilla o doc)</span>
                 )}
                 {!doc.isRequired && (
                   <span style={{ fontSize:10, color:"#b4bcb7" }}>(opc.)</span>
@@ -369,7 +369,7 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
             Bitácora
           </p>
           {app.bitacora.length === 0 ? (
-            <p style={{ fontSize:12, color:"#8a948e" }}>Sin actividad registrada</p>
+            <p style={{ fontSize:12, color:"#5B7168" }}>Sin actividad registrada</p>
           ) : (
             <div style={{ fontSize:12, color:"#5f6b64", lineHeight:1.7 }}>
               {app.bitacora.map((entry, i) => (
@@ -380,7 +380,7 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
                   {" — "}
                   {auditEntryLabel(entry)}
                   {entry.actorName !== "Sistema" && (
-                    <span style={{ color:"#8a948e" }}> ({entry.actorName})</span>
+                    <span style={{ color:"#5B7168" }}> ({entry.actorName})</span>
                   )}
                 </div>
               ))}
@@ -499,7 +499,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
           <div key={k.label} style={{ background:"#fff", border:"1px solid #e3e8e5", borderRadius:10, padding:"14px 16px" }}>
             <p style={{ fontSize:12, color:"#5f6b64", margin:0 }}>{k.label}</p>
             <p style={{ fontSize:26, fontWeight:600, margin:"4px 0 0", letterSpacing:"-.4px" }}>{k.value}</p>
-            <p style={{ fontSize:11, color:"#8a948e", marginTop:2 }}>{k.sub}</p>
+            <p style={{ fontSize:11, color:"#5B7168", marginTop:2 }}>{k.sub}</p>
           </div>
         ))}
       </section>
@@ -508,7 +508,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:14, flexWrap:"wrap" }}>
         <div style={{ flex:1, minWidth:200, display:"flex", alignItems:"center", gap:8,
           background:"#fff", border:"1px solid #e3e8e5", borderRadius:7,
-          padding:"8px 12px", color:"#8a948e", fontSize:13 }}>
+          padding:"8px 12px", color:"#5B7168", fontSize:13 }}>
           <svg viewBox="0 0 24 24" width={15} height={15} fill="none" stroke="currentColor" strokeWidth={2}>
             <circle cx={11} cy={11} r={7}/><path d="m21 21-4.3-4.3"/>
           </svg>
@@ -546,7 +546,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
       {/* Table */}
       <div style={{ background:"#fff", border:"1px solid #e3e8e5", borderRadius:10, overflow:"auto" }}>
         {filtered.length === 0 ? (
-          <p style={{ padding:"32px 20px", textAlign:"center", color:"#8a948e" }}>
+          <p style={{ padding:"32px 20px", textAlign:"center", color:"#5B7168" }}>
             No hay solicitudes que coincidan con los filtros seleccionados.
           </p>
         ) : (
@@ -596,7 +596,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
                     <td style={{ padding:"13px 14px", fontWeight:600 }}>
                       {app.company.legalName}
                       {app.company.taxId && (
-                        <span style={{ display:"block", fontSize:11, color:"#8a948e",
+                        <span style={{ display:"block", fontSize:11, color:"#5B7168",
                           fontFamily:"monospace", marginTop:1, fontWeight:400 }}>
                           {app.company.taxId}
                         </span>
@@ -682,7 +682,7 @@ export function TrackingDashboard({ applications }: { applications: AppRow[] }) 
 
       {/* Legend — cards only */}
       {isCards && (
-        <div style={{ display:"flex", gap:18, flexWrap:"wrap", fontSize:12, color:"#8a948e",
+        <div style={{ display:"flex", gap:18, flexWrap:"wrap", fontSize:12, color:"#5B7168",
           margin:"10px 2px 26px", alignItems:"center" }}>
           <span style={{ display:"flex", alignItems:"center", gap:5 }}><Dot state="on" letter="P"/> firmado</span>
           <span style={{ display:"flex", alignItems:"center", gap:5 }}><Dot state="mid" letter="A"/> enviado / pend. firma</span>

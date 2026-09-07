@@ -46,7 +46,7 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
       })
   }, [])
 
-  // Close on outside click
+  // Close on outside click / Escape
   useEffect(() => {
     if (!open) return
     function handle(e: MouseEvent) {
@@ -54,8 +54,15 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
         setOpen(false)
       }
     }
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false)
+    }
     document.addEventListener("mousedown", handle)
-    return () => document.removeEventListener("mousedown", handle)
+    document.addEventListener("keydown", handleKey)
+    return () => {
+      document.removeEventListener("mousedown", handle)
+      document.removeEventListener("keydown", handleKey)
+    }
   }, [open])
 
   function handleMarkOne(id: string) {
@@ -78,6 +85,8 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={`Notificaciones${unread > 0 ? ` (${unread} sin leer)` : ""}`}
+        aria-expanded={open}
+        aria-haspopup="true"
         style={{ position:"relative", background:"none", border:"none", cursor:"pointer",
           padding:6, borderRadius:6, color: iconColor, display:"flex", alignItems:"center" }}
         onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.06)" }}
@@ -137,11 +146,11 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
           {/* List */}
           <div style={{ maxHeight:320, overflowY:"auto" }}>
             {loading ? (
-              <p style={{ padding:"20px 14px", fontSize:13, color:"#8a948e", textAlign:"center" }}>
+              <p style={{ padding:"20px 14px", fontSize:13, color:"#5B7168", textAlign:"center" }}>
                 Cargando…
               </p>
             ) : items.length === 0 ? (
-              <p style={{ padding:"24px 14px", fontSize:13, color:"#8a948e", textAlign:"center" }}>
+              <p style={{ padding:"24px 14px", fontSize:13, color:"#5B7168", textAlign:"center" }}>
                 No tienes notificaciones.
               </p>
             ) : (
@@ -149,6 +158,18 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
                 <div
                   key={n.id}
                   onClick={() => { if (!n.is_read) handleMarkOne(n.id) }}
+                  {...(!n.is_read && {
+                    role: "button",
+                    tabIndex: 0,
+                    "aria-label": `Marcar como leída: ${n.title}`,
+                    onKeyDown: (e: React.KeyboardEvent) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault()
+                        handleMarkOne(n.id)
+                      }
+                    },
+                  })}
+                  className={n.is_read ? undefined : "data-input-focus"}
                   style={{ padding:"11px 14px", borderBottom:"1px solid #f0f4f2",
                     cursor: n.is_read ? "default" : "pointer",
                     background: n.is_read ? "transparent" : "#EDFBEA" }}
@@ -172,7 +193,7 @@ export function NotificationBell({ variant = "dark", panelAlign = "right" }: Pro
                           {n.message}
                         </p>
                       )}
-                      <p style={{ margin:"4px 0 0", fontSize:11, color:"#8a948e" }}>
+                      <p style={{ margin:"4px 0 0", fontSize:11, color:"#5B7168" }}>
                         {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: es })}
                       </p>
                     </div>

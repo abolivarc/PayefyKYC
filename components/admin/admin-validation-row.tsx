@@ -98,7 +98,7 @@ export function AdminValidationRow({
             {templateName}
           </span>
           {!isRequired && (
-            <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>opcional</span>
+            <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>opcional</span>
           )}
           {isValidated && (
             <span style={{ fontSize: 11, color: "#047857", background: "#E7F8EF", border: "1px solid #CBEFDB", borderRadius: 4, padding: "1px 6px" }}>
@@ -111,7 +111,7 @@ export function AdminValidationRow({
             </span>
           )}
           {!hasValue && (
-            <span style={{ fontSize: 11, color: "#8A99A8", background: "#F3F7F4", border: "1px solid #E4ECE7", borderRadius: 4, padding: "1px 6px" }}>
+            <span style={{ fontSize: 11, color: "#64748B", background: "#F3F7F4", border: "1px solid #E4ECE7", borderRadius: 4, padding: "1px 6px" }}>
               sin dato
             </span>
           )}

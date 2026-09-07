@@ -174,13 +174,13 @@ export default async function AdminDashboardPage() {
                 label="Total solicitudes"
                 value={total}
                 sub="desde el inicio"
-                icon={<FileText size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)" }} />}
+                icon={<FileText size={16} style={{ color: "var(--admin-text-subtle, #64748B)" }} />}
               />
               <StatCard
                 label="Docs por revisar"
                 value={totalPendingDocs}
                 sub="requieren decisión"
-                icon={<Clock size={16} color={totalPendingDocs > 0 ? "#1D4ED8" : "var(--admin-text-subtle, #8A99A8)"} />}
+                icon={<Clock size={16} color={totalPendingDocs > 0 ? "#1D4ED8" : "var(--admin-text-subtle, #64748B)"} />}
                 highlight={totalPendingDocs > 0 ? "blue" : undefined}
               />
               <StatCard
@@ -194,7 +194,7 @@ export default async function AdminDashboardPage() {
                 label="Cambios solicitados"
                 value={changesRequested}
                 sub="esperando al cliente"
-                icon={<AlertCircle size={16} color={changesRequested > 0 ? "#DC2626" : "var(--admin-text-subtle, #8A99A8)"} />}
+                icon={<AlertCircle size={16} color={changesRequested > 0 ? "#DC2626" : "var(--admin-text-subtle, #64748B)"} />}
                 highlight={changesRequested > 0 ? "red" : undefined}
               />
             </div>
@@ -216,7 +216,7 @@ export default async function AdminDashboardPage() {
                     <thead>
                       <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                         {[["Empresa", "20px"], ["Producto", "12px"], ["Estado", "12px"], ["Avance", "12px"], ["Actualizado", "12px"]].map(([h, pl]) => (
-                          <th key={h} style={{ textAlign: "left", padding: `12px ${pl}`, fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}>
+                          <th key={h} style={{ textAlign: "left", padding: `12px ${pl}`, fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)", whiteSpace: "nowrap" }}>
                             {h}
                           </th>
                         ))}
@@ -253,7 +253,7 @@ export default async function AdminDashboardPage() {
                             </td>
                             <td style={{ padding: "14px 12px", verticalAlign: "middle", whiteSpace: "nowrap" }}>
                               {pct === null ? (
-                                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>—</span>
+                                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>—</span>
                               ) : (
                                 <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
                                   <span style={{ display: "inline-block", width: 44, height: 5, borderRadius: 99, background: "var(--admin-border, #E7ECF1)", overflow: "hidden" }}>
@@ -315,7 +315,7 @@ export default async function AdminDashboardPage() {
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                             {company?.legal_name ?? "Empresa"}
                           </p>
-                          <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                          <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>
                             {productLabel} · {statusLabel} · {timeAgo}
                           </p>
                         </div>
@@ -368,7 +368,7 @@ export default async function AdminDashboardPage() {
                             {group.companyName}
                           </p>
                           {productLabel && (
-                            <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                            <p style={{ margin: 0, fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>
                               {productLabel} · {group.count === 1 ? "1 doc" : `${group.count} docs`}
                             </p>
                           )}
@@ -399,7 +399,7 @@ export default async function AdminDashboardPage() {
                     className="flex items-center gap-3 rounded-lg no-underline transition-colors hover:bg-[#F4F8F6]"
                     style={{ padding: "10px 8px" }}
                   >
-                    <Icon size={16} style={{ color: "var(--admin-text-subtle, #8A99A8)", flexShrink: 0 }} />
+                    <Icon size={16} style={{ color: "var(--admin-text-subtle, #64748B)", flexShrink: 0 }} />
                     <span style={{ fontSize: 14, fontWeight: 500, color: "var(--admin-text, #0F1B2A)" }}>{label}</span>
                   </Link>
                 ))}
@@ -441,7 +441,7 @@ function StatCard({
       <p style={{ margin: "0 0 4px", fontSize: 28, fontWeight: 800, fontFamily: "var(--font-display)", color: valueColor, lineHeight: 1 }}>
         {value}
       </p>
-      <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>{sub}</p>
+      <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>{sub}</p>
     </div>
   )
 }

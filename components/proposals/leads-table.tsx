@@ -97,7 +97,7 @@ export function LeadsTable({
             <thead>
               <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                 {["Negocio", "Producto", "Volumen", "Tasas ofrecidas", "Estado", "Cliente KYC", "Creado", ""].map((h) => (
-                  <th key={h} style={{ textAlign: "left", padding: "12px 14px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}>
+                  <th key={h} style={{ textAlign: "left", padding: "12px 14px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
                 ))}
@@ -153,7 +153,7 @@ function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
         <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "var(--admin-text, #0F1B2A)" }}>
           {lead.business_name}
         </p>
-        <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>
           {lead.contact_name ?? "—"}
           {lead.sector_name ? ` · ${lead.sector_name.split("—")[0].trim()}` : ""}
         </p>
@@ -162,7 +162,7 @@ function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
         <Badge variant="outline" className="text-xs whitespace-nowrap">
           {PRODUCT_TYPE_LABELS[(lead.product_type ?? "terminales") as ProductType] ?? lead.product_type}
         </Badge>
-        <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+        <p style={{ margin: "2px 0 0", fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>
           {lead.proposal_type === "comparative" ? "Comparativa" : "General"}
         </p>
       </td>
@@ -204,7 +204,7 @@ function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
           </Button>
         )}
       </td>
-      <td style={{ padding: "13px 14px", verticalAlign: "middle", fontSize: 12, whiteSpace: "nowrap", color: "var(--admin-text-subtle, #8A99A8)" }}>
+      <td style={{ padding: "13px 14px", verticalAlign: "middle", fontSize: 12, whiteSpace: "nowrap", color: "var(--admin-text-subtle, #64748B)" }}>
         {formatDistanceToNow(new Date(lead.created_at), { addSuffix: true, locale: es })}
       </td>
       <td style={{ padding: "13px 8px", verticalAlign: "middle" }}>

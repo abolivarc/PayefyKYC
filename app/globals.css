@@ -108,7 +108,7 @@
   --muted-foreground: oklch(0.435 0.018 155);        /* #5B7168  2° texto */
   --accent: oklch(0.924 0.145 142);                  /* #A8F898  mint     */
   --accent-foreground: oklch(0.132 0.028 160);       /* mint-ink          */
-  --destructive: oklch(0.575 0.17 36);               /* #d1622f           */
+  --destructive: #b23b10;                            /* 5.96:1 sobre blanco (AA) */
   --border: oklch(0.932 0.008 155);                  /* #E4ECE7  hairline */
   --input: oklch(0.932 0.008 155);
   --ring: oklch(0.277 0.056 169);                    /* focus ring brand  */
@@ -131,15 +131,15 @@
 
   /* ── Extended Payefy tokens ─────────────────────────────────────── */
   --border-strong: oklch(0.9 0.008 155);             /* #DCE3E0           */
-  --tertiary: oklch(0.628 0.016 155);                /* #8B9A92  3° texto */
+  --tertiary: #5b7168;                               /* 3° texto — 5.24:1 sobre blanco (AA) */
   --brand-hover: oklch(0.22 0.05 169);               /* #013029           */
   --brand-tint: oklch(0.955 0.02 160);               /* #E8F3EF activo    */
   --mint-tint: oklch(0.972 0.04 145);                /* #EAFBE5           */
   --success: oklch(0.501 0.1 165);                   /* #1f7a4d           */
   --success-tint: oklch(0.968 0.025 155);            /* #e7f6ec           */
-  --warning: oklch(0.585 0.13 52);                   /* #c9772f           */
+  --warning: #b45309;                                /* 5.02:1 sobre blanco (AA) */
   --warning-tint: oklch(0.978 0.015 52);             /* #fdf1e6           */
-  --danger: oklch(0.575 0.17 36);                    /* #d1622f           */
+  --danger: #b23b10;                                 /* 5.96:1 sobre blanco (AA) */
   --danger-tint: oklch(0.978 0.015 20);              /* #fef2f2           */
   --info: oklch(0.43 0.2 264);                       /* #1D4ED8           */
   --info-tint: oklch(0.965 0.018 240);               /* #EFF4FF           */
@@ -223,7 +223,7 @@
   --admin-border: #E4ECE7;
   --admin-text: #0F2A22;
   --admin-text-muted: #5B7168;
-  --admin-text-subtle: #8A9E94;
+  --admin-text-subtle: #5B7168;
   --admin-brand: #A8F898;
   --admin-brand-strong: #1f7a4d;
   --admin-brand-soft: #e7f6ec;
@@ -319,4 +319,19 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Indicador de foco visible para inputs con estilos inline (WCAG 2.4.7) */
+.data-input-focus:focus-visible {
+  outline: 2px solid #004238;
+  outline-offset: 1px;
+}
+
+/* Foco visible en todos los controles del wizard de alta (estilos inline) */
+.kyc-wizard input:focus-visible,
+.kyc-wizard select:focus-visible,
+.kyc-wizard textarea:focus-visible,
+.kyc-wizard button:focus-visible {
+  outline: 2px solid #004238;
+  outline-offset: 2px;
 }

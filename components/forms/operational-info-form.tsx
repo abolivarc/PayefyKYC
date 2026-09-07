@@ -264,8 +264,9 @@ export function OperationalInfoForm({ appId, templateCode, initialData }: Props)
 
       {/* Operativa */}
       <div className="space-y-1.5">
-        <Label>Operativa</Label>
+        <Label htmlFor="operativa">Operativa</Label>
         <Select
+          id="operativa"
           value={form.operativa}
           onChange={(e) => set("operativa", e.target.value)}
           required

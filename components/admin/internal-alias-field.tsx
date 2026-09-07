@@ -54,7 +54,7 @@ export function InternalAliasField({ companyId, alias, variant = "header" }: Pro
         className="group inline-flex items-center gap-1.5 rounded-full border border-dashed px-2.5 py-1 text-xs transition-colors hover:bg-secondary"
         style={{
           borderColor: saved ? "var(--admin-border, #E4ECE7)" : "#D7E2DB",
-          color: saved ? "var(--admin-text, #0F2A22)" : "var(--admin-text-subtle, #8A9E94)",
+          color: saved ? "var(--admin-text, #0F2A22)" : "var(--admin-text-subtle, #5B7168)",
           background: saved ? "var(--brand-tint, #F0FAF3)" : "transparent",
         }}
       >

@@ -60,7 +60,7 @@ function KpiCard({ label, value, sub, accent }: {
       <p style={{ fontSize:12, color:"#5f6b64", margin:0 }}>{label}</p>
       <p style={{ fontSize:28, fontWeight:700, margin:"4px 0 0", letterSpacing:"-.5px",
         color: accent ? PRIMARY : "#16201b" }}>{value}</p>
-      {sub && <p style={{ fontSize:11, color:"#8a948e", marginTop:2 }}>{sub}</p>}
+      {sub && <p style={{ fontSize:11, color:"#5B7168", marginTop:2 }}>{sub}</p>}
     </div>
   )
 }
@@ -202,12 +202,12 @@ export function ReportsDashboard({ apps, monthlyActivations }: Props) {
         <div style={card}>
           <p style={cardTitle}>Distribución del pipeline</p>
           {pipelineData.length === 0 ? (
-            <p style={{ color:"#8a948e", fontSize:13 }}>Sin datos para el filtro seleccionado.</p>
+            <p style={{ color:"#5B7168", fontSize:13 }}>Sin datos para el filtro seleccionado.</p>
           ) : (
             <ResponsiveContainer width="100%" height={Math.max(200, pipelineData.length * 36)}>
               <BarChart data={pipelineData} layout="vertical"
                 margin={{ top:0, right:20, left:0, bottom:0 }}>
-                <XAxis type="number" tick={{ fontSize:11, fill:"#8a948e" }} />
+                <XAxis type="number" tick={{ fontSize:11, fill:"#5B7168" }} />
                 <YAxis dataKey="label" type="category" width={135}
                   tick={{ fontSize:11, fill:"#5f6b64" }} />
                 <Tooltip content={<ChartTooltip />} />
@@ -220,7 +220,7 @@ export function ReportsDashboard({ apps, monthlyActivations }: Props) {
         <div style={card}>
           <p style={cardTitle}>Por producto</p>
           {productData.length === 0 ? (
-            <p style={{ color:"#8a948e", fontSize:13 }}>Sin datos.</p>
+            <p style={{ color:"#5B7168", fontSize:13 }}>Sin datos.</p>
           ) : (
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
@@ -244,12 +244,12 @@ export function ReportsDashboard({ apps, monthlyActivations }: Props) {
         <div style={card}>
           <p style={cardTitle}>Completitud de documentos</p>
           {docsData.length === 0 ? (
-            <p style={{ color:"#8a948e", fontSize:13 }}>Sin datos.</p>
+            <p style={{ color:"#5B7168", fontSize:13 }}>Sin datos.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={docsData} margin={{ top:0, right:10, left:-10, bottom:0 }}>
                 <XAxis dataKey="range" tick={{ fontSize:11, fill:"#5f6b64" }} />
-                <YAxis tick={{ fontSize:11, fill:"#8a948e" }} allowDecimals={false} />
+                <YAxis tick={{ fontSize:11, fill:"#5B7168" }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Bar dataKey="count" name="Solicitudes" radius={[4,4,0,0]}>
                   {docsData.map((d, i) => (
@@ -264,14 +264,14 @@ export function ReportsDashboard({ apps, monthlyActivations }: Props) {
         <div style={card}>
           <p style={cardTitle}>Activaciones por mes (últimos 6 meses)</p>
           {monthlyActivations.every((m) => m.count === 0) ? (
-            <p style={{ color:"#8a948e", fontSize:13 }}>Sin activaciones registradas aún.</p>
+            <p style={{ color:"#5B7168", fontSize:13 }}>Sin activaciones registradas aún.</p>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={monthlyActivations}
                 margin={{ top:0, right:10, left:-10, bottom:0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e3e8e5" />
                 <XAxis dataKey="month" tick={{ fontSize:11, fill:"#5f6b64" }} />
-                <YAxis tick={{ fontSize:11, fill:"#8a948e" }} allowDecimals={false} />
+                <YAxis tick={{ fontSize:11, fill:"#5B7168" }} allowDecimals={false} />
                 <Tooltip content={<ChartTooltip />} />
                 <Line type="monotone" dataKey="count" name="Activadas"
                   stroke={PRIMARY} strokeWidth={2}

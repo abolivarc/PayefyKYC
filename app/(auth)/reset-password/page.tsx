@@ -13,6 +13,7 @@ export default async function ResetPasswordPage({
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Restablecer contraseña — Payefy</h1>
       <p className="text-sm text-center text-muted-foreground mb-6">
         Elige una contraseña segura de al menos 8 caracteres.
       </p>

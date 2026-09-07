@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useId, useState, useTransition } from "react"
 import { saveDataCheckValue } from "@/app/(client)/applications/actions"
 
 interface Props {
@@ -27,6 +27,9 @@ export function DataInputField({
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const [savedStatus, setSavedStatus] = useState(currentStatus)
+  const inputId = useId()
+  const hintId = useId()
+  const errorId = useId()
 
   const isApproved = savedStatus === "approved"
   const hasValue = value.trim().length > 0
@@ -66,6 +69,7 @@ export function DataInputField({
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
         <label
+          htmlFor={inputId}
           style={{
             fontSize: 12,
             fontWeight: 700,
@@ -75,13 +79,14 @@ export function DataInputField({
         >
           {templateName}
           {!isRequired && (
-            <span style={{ fontSize: 10, fontWeight: 500, color: "#8A9E94", marginLeft: 4 }}>
+            <span style={{ fontSize: 10, fontWeight: 500, color: "#5B7168", marginLeft: 4 }}>
               · opcional
             </span>
           )}
         </label>
         {statusCfg && (
           <span
+            role="status"
             style={{
               fontSize: 10,
               fontWeight: 700,
@@ -98,13 +103,14 @@ export function DataInputField({
       </div>
 
       {templateInstructions && (
-        <p style={{ margin: 0, fontSize: 11, color: "#8A9E94", lineHeight: 1.4 }}>
+        <p id={hintId} style={{ margin: 0, fontSize: 11, color: "#5B7168", lineHeight: 1.4 }}>
           {templateInstructions}
         </p>
       )}
 
       <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
         <input
+          id={inputId}
           type="text"
           value={value}
           onChange={(e) => {
@@ -116,13 +122,20 @@ export function DataInputField({
           }}
           placeholder={isApproved ? "—" : "Escribe aquí…"}
           disabled={isPending}
+          required={isRequired}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={
+            [templateInstructions ? hintId : null, error ? errorId : null]
+              .filter(Boolean)
+              .join(" ") || undefined
+          }
+          className="data-input-focus"
           style={{
             flex: 1,
             fontSize: 13,
             padding: "6px 10px",
             border: "1px solid #E4ECE7",
             borderRadius: 7,
-            outline: "none",
             background: "#fff",
             color: "#0F2A22",
             fontFamily: "inherit",
@@ -132,6 +145,7 @@ export function DataInputField({
           <button
             onClick={handleSave}
             disabled={!hasValue || !dirty || isPending}
+            aria-label={`Guardar ${templateName}`}
             style={{
               fontSize: 11,
               fontWeight: 700,
@@ -141,7 +155,7 @@ export function DataInputField({
               background:
                 hasValue && dirty && !isPending ? "#004238" : "#E4ECE7",
               color:
-                hasValue && dirty && !isPending ? "#A8F898" : "#8A9E94",
+                hasValue && dirty && !isPending ? "#A8F898" : "#5B7168",
               cursor: hasValue && dirty && !isPending ? "pointer" : "default",
               flexShrink: 0,
               transition: "background .15s, color .15s",
@@ -153,7 +167,9 @@ export function DataInputField({
       </div>
 
       {error && (
-        <p style={{ margin: 0, fontSize: 10, color: "#d1622f" }}>{error}</p>
+        <p id={errorId} role="alert" style={{ margin: 0, fontSize: 12, color: "#b23b10" }}>
+          {error}
+        </p>
       )}
     </div>
   )

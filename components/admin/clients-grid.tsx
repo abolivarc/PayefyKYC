@@ -394,7 +394,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                       {company.legal_name}
                     </p>
                     {company.tax_id && (
-                      <p className="font-mono text-xs tracking-wide" style={{ color: "#8A9E94" }}>
+                      <p className="font-mono text-xs tracking-wide" style={{ color: "#5B7168" }}>
                         {company.tax_id}
                       </p>
                     )}
@@ -403,7 +403,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                   {/* Status chips — cada solicitud lleva a su propio expediente */}
                   <div className="relative z-10 flex flex-col gap-1.5 mt-auto">
                     {apps.length === 0 ? (
-                      <span className="text-xs pointer-events-none" style={{ color: "#8A9E94" }}>Sin solicitudes</span>
+                      <span className="text-xs pointer-events-none" style={{ color: "#5B7168" }}>Sin solicitudes</span>
                     ) : (
                       apps.map((app) => {
                         const prod = app.products?.code ? PRODUCT_MAP[app.products.code] : null
@@ -427,7 +427,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                             {typeof app.pct === "number" && (
                               <span
                                 className="inline-flex items-center gap-1 text-[11px] font-bold font-mono"
-                                style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#8A9E94" }}
+                                style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#5B7168" }}
                                 title="Avance del expediente"
                               >
                                 <span
@@ -455,7 +455,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                   className="px-5 pb-4 pt-3 flex items-center justify-between relative z-10"
                   style={{ borderTop: "1px solid #F0F4F1" }}
                 >
-                  <span className="text-[11px] pointer-events-none" style={{ color: "#8A9E94" }}>
+                  <span className="text-[11px] pointer-events-none" style={{ color: "#5B7168" }}>
                     {timeAgo}
                   </span>
                   <span className="text-[11px] font-medium pointer-events-none" style={{ color: "#5B7168" }}>
@@ -512,7 +512,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                     )}
                   </p>
                   {company.tax_id && (
-                    <p className="font-mono text-xs" style={{ color: "#8A9E94" }}>{company.tax_id}</p>
+                    <p className="font-mono text-xs" style={{ color: "#5B7168" }}>{company.tax_id}</p>
                   )}
                 </div>
 
@@ -535,7 +535,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                         {typeof app.pct === "number" && (
                           <span
                             className="text-[11px] font-bold font-mono"
-                            style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#8A9E94" }}
+                            style={{ color: app.pct >= 100 ? "#1f7a4d" : app.pct >= 60 ? "#C9772F" : "#5B7168" }}
                           >
                             {app.pct}%
                           </span>
@@ -546,7 +546,7 @@ export function ClientsGrid({ companies, isSuperAdmin }: Props) {
                 </div>
 
                 {/* Date */}
-                <span className="hidden lg:block text-xs shrink-0 relative z-10 pointer-events-none" style={{ color: "#8A9E94" }}>
+                <span className="hidden lg:block text-xs shrink-0 relative z-10 pointer-events-none" style={{ color: "#5B7168" }}>
                   {timeAgo}
                 </span>
 

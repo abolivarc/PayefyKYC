@@ -70,7 +70,7 @@ export function StaffUsersPanel({
             <thead>
               <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                 {["Usuario", "Rol", "Estado", "Acceso", ""].map((h) => (
-                  <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}>
+                  <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
                 ))}
@@ -154,10 +154,10 @@ function StaffRowItem({
         <p style={{ margin: 0, fontWeight: 600, fontSize: 14, color: "var(--admin-text, #0F1B2A)" }}>
           {user.full_name ?? "—"}
           {isSelf && (
-            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--admin-text-subtle, #8A99A8)" }}> (tú)</span>
+            <span style={{ fontSize: 11, fontWeight: 500, color: "var(--admin-text-subtle, #64748B)" }}> (tú)</span>
           )}
         </p>
-        <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+        <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>
           {user.email ?? "—"}
         </p>
       </td>

@@ -32,7 +32,7 @@ const STATUS_CONFIG: Record<GroupStatus, { icon: string; color: string; bg: stri
   done:    { icon: "✓", color: "#047857", bg: "#E7F8EF", label: "Listo" },
   review:  { icon: "●", color: "#1D4ED8", bg: "#EFF6FF", label: "En revisión" },
   changes: { icon: "⚠", color: "#B45309", bg: "#FFFBEB", label: "Requiere cambios" },
-  empty:   { icon: "○", color: "#8A99A8", bg: "#F4F8F6", label: "Pendiente" },
+  empty:   { icon: "○", color: "#64748B", bg: "#F4F8F6", label: "Pendiente" },
 }
 
 interface Props {
@@ -104,7 +104,7 @@ export function KycSummaryPanel({ categories }: Props) {
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#8A99A8",
+                color: "#64748B",
                 margin: "0 0 6px",
               }}
             >
@@ -158,7 +158,7 @@ export function KycSummaryPanel({ categories }: Props) {
                     >
                       {group.templateName}
                       {!group.is_required && (
-                        <span style={{ fontSize: 10, marginLeft: 4, color: "#8A99A8" }}>
+                        <span style={{ fontSize: 10, marginLeft: 4, color: "#64748B" }}>
                           opc.
                         </span>
                       )}

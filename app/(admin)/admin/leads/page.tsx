@@ -92,7 +92,7 @@ export default async function LeadsPage() {
                     {["Empresa", "Correo", "Producto", "Agente", "Estado", "Invitado", ""].map((h) => (
                       <th
                         key={h}
-                        style={{ textAlign: "left", padding: "12px 20px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)", whiteSpace: "nowrap" }}
+                        style={{ textAlign: "left", padding: "12px 20px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)", whiteSpace: "nowrap" }}
                       >
                         {h}
                       </th>
@@ -115,7 +115,7 @@ export default async function LeadsPage() {
                             {lead.legal_name}
                           </span>
                           {lead.tax_id && (
-                            <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)", fontFamily: "var(--font-mono)", letterSpacing: ".02em", display: "block", marginTop: 2 }}>
+                            <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #64748B)", fontFamily: "var(--font-mono)", letterSpacing: ".02em", display: "block", marginTop: 2 }}>
                               {lead.tax_id}
                             </span>
                           )}

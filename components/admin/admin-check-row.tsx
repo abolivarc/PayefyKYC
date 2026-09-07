@@ -60,7 +60,7 @@ export function AdminCheckRow({
       <span style={{ fontSize: 13, color: "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
         {templateName}
         {!isRequired && (
-          <span style={{ fontSize: 11, marginLeft: 6, color: "var(--admin-text-subtle, #8A99A8)" }}>
+          <span style={{ fontSize: 11, marginLeft: 6, color: "var(--admin-text-subtle, #64748B)" }}>
             opcional
           </span>
         )}

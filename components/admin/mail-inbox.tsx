@@ -124,7 +124,7 @@ export function MailInbox({ mails }: { mails: MailRow[] }) {
                       : categoria(m.to) === "clientes"
                         ? "#1f7a4d"
                         : categoria(m.to) === "yo"
-                          ? "#8A9E94"
+                          ? "#5B7168"
                           : "#1D4ED8",
                 }}
                 title={m.direction === "inbound" ? `De: ${m.from ?? "?"}` : m.to}

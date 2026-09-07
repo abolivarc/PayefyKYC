@@ -84,7 +84,7 @@ function PayefyRow({
           <span style={{ fontSize: 13, fontWeight: 600, color: "#0F1B2A" }}>
             Contrato Payefy
           </span>
-          <span style={{ fontSize: 11, color: "#8A9E94", marginLeft: 6 }}>(DocuSign)</span>
+          <span style={{ fontSize: 11, color: "#5B7168", marginLeft: 6 }}>(DocuSign)</span>
         </div>
         {isSigned && (
           <span style={{ fontSize: 11, fontWeight: 700, color: "#0f6e56", background: "#e7f6ec", borderRadius: 99, padding: "2px 8px" }}>
@@ -99,7 +99,7 @@ function PayefyRow({
           padding: "14px 16px", display: "flex", flexDirection: "column",
           alignItems: "center", gap: 10, background: "#FAFAFA",
         }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8A9E94" strokeWidth="1.5">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#5B7168" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="12" y1="18" x2="12" y2="12"/>
@@ -177,7 +177,7 @@ function PayefyRow({
           <button
             onClick={handleReset}
             disabled={pending}
-            style={{ fontSize: 11, color: "#8A9E94", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
+            style={{ fontSize: 11, color: "#5B7168", background: "transparent", border: "none", cursor: "pointer", padding: 0 }}
           >
             Deshacer
           </button>
@@ -267,7 +267,7 @@ export function ContractManager({ applicationId, contracts, productCode }: Props
     <div>
       <p style={{
         fontSize: 11, textTransform: "uppercase", letterSpacing: ".06em",
-        color: "var(--admin-text-subtle, #8A99A8)", margin: "0 0 14px", fontWeight: 700,
+        color: "var(--admin-text-subtle, #64748B)", margin: "0 0 14px", fontWeight: 700,
       }}>
         Contratos y firmas
       </p>

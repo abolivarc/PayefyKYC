@@ -160,7 +160,7 @@ export default async function ChangesPage({
             <p style={{ margin: 0, fontSize: 14, color: "var(--admin-text-muted, #5A6B7B)" }}>
               No se han solicitado cambios en este expediente.
             </p>
-            <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--admin-text-subtle, #8A99A8)" }}>
+            <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--admin-text-subtle, #64748B)" }}>
               Usa &ldquo;Solicitar cambios en general&rdquo; para escribirle al cliente
               sobre el expediente completo.
             </p>
@@ -225,7 +225,7 @@ export default async function ChangesPage({
                     </p>
                   )}
 
-                  <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  <p style={{ margin: 0, fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>
                     {log.profiles?.full_name ?? log.profiles?.email ?? "Sistema"} · {dateStr} ({timeAgo})
                   </p>
                 </div>

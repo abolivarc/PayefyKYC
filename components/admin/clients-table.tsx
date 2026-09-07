@@ -219,7 +219,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search
             className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 pointer-events-none"
-            style={{ color: "#8A9E94" }}
+            style={{ color: "#5B7168" }}
           />
           <input
             type="text"
@@ -289,7 +289,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                       fontWeight: 600,
                       letterSpacing: "0.06em",
                       textTransform: "uppercase",
-                      color: "#8A9E94",
+                      color: "#5B7168",
                       borderColor: "#E4ECE7",
                       textAlign: "left",
                     }}
@@ -305,7 +305,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                   <td
                     colSpan={5}
                     className="px-5 py-16 text-center"
-                    style={{ color: "#8A9E94", fontSize: 14 }}
+                    style={{ color: "#5B7168", fontSize: 14 }}
                   >
                     {search ? `Sin resultados para "${search}"` : "Sin clientes registrados"}
                   </td>
@@ -352,7 +352,7 @@ export function ClientsTable({ companies, isSuperAdmin }: Props) {
                       <td className="px-5 py-3.5">
                         <div className="flex flex-col gap-1.5 items-start">
                           {apps.length === 0 ? (
-                            <span className="text-xs" style={{ color: "#8A9E94" }}>
+                            <span className="text-xs" style={{ color: "#5B7168" }}>
                               Sin solicitudes
                             </span>
                           ) : (

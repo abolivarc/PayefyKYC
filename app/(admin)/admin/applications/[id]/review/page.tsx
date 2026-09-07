@@ -647,7 +647,7 @@ export default async function ReviewPage({
             {/* Otras solicitudes de esta empresa */}
             {(siblingApps ?? []).length > 0 && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
-                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>
                   Este cliente también tiene:
                 </span>
                 {(siblingApps ?? []).map((sib) => {
@@ -764,7 +764,7 @@ export default async function ReviewPage({
             <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "#7F1D1D" }}>
               {faltantesPostEnvio.join(" · ")}
             </p>
-            <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#8A9E94" }}>
+            <p style={{ margin: "4px 0 0", fontSize: 11.5, color: "#5B7168" }}>
               No conviene revisarlo ni reenviarlo al adquirente hasta que esté completo.
             </p>
           </div>
@@ -783,7 +783,7 @@ export default async function ReviewPage({
                   ? `Ronda del proveedor #${providerRound.roundNo} — COMPLETA ✓ lista para reenviar`
                   : `Ronda del proveedor #${providerRound.roundNo} — en curso (${providerRound.items.filter((i) => i.done).length}/${providerRound.items.length})`}
               </span>
-              <span style={{ fontSize: 11, color: "#8A9E94" }}>registrada el {providerRound.createdAt}</span>
+              <span style={{ fontSize: 11, color: "#5B7168" }}>registrada el {providerRound.createdAt}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 3, marginTop: 8 }}>
               {providerRound.items.map((it, i) => (
@@ -793,7 +793,7 @@ export default async function ReviewPage({
                   {it.kind === "new" && (
                     <span style={{ fontSize: 10, background: "#FDF1E6", color: "#C9772F", border: "1px solid #F5D9B5", borderRadius: 999, padding: "0 6px", fontWeight: 700 }}>nuevo</span>
                   )}
-                  <span style={{ color: "#8A9E94" }}>· {it.detail}</span>
+                  <span style={{ color: "#5B7168" }}>· {it.detail}</span>
                 </div>
               ))}
             </div>
@@ -837,7 +837,7 @@ export default async function ReviewPage({
 
             {/* Left: upload documents (one per template) */}
             <div style={{ padding: "20px 24px" }}>
-              <p style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+              <p style={{ margin: "0 0 14px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                 Documentos · {overviewUpload.length} plantillas
               </p>
               <div style={{ display: "flex", flexDirection: "column" }}>
@@ -846,11 +846,11 @@ export default async function ReviewPage({
                 ) : overviewUpload.map((g) => (
                   <div key={g.code} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                     <DocIcon status={g.displayStatus} />
-                    <span style={{ fontSize: 13, color: g.displayStatus === "approved" ? "var(--admin-text, #0F1B2A)" : g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #8A99A8)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
+                    <span style={{ fontSize: 13, color: g.displayStatus === "approved" ? "var(--admin-text, #0F1B2A)" : g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #64748B)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
                       {g.name}
-                      {!g.isRequired && <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 4 }}>opcional</span>}
+                      {!g.isRequired && <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)", marginLeft: 4 }}>opcional</span>}
                       {(docsByCode.get(g.code)?.length ?? 0) > 1 && (
-                        <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)", marginLeft: 4 }}>
+                        <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)", marginLeft: 4 }}>
                           · {docsByCode.get(g.code)!.length} arch.
                         </span>
                       )}
@@ -872,17 +872,17 @@ export default async function ReviewPage({
 
                 {overviewForms.length > 0 && (
                   <>
-                    <p style={{ margin: "12px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                    <p style={{ margin: "12px 0 4px", fontSize: 10, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                       Formularios del cliente
                     </p>
                     {overviewForms.map((g) => (
                       <div key={g.code} style={{ display: "flex", alignItems: "center", gap: 10, padding: "7px 0", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
                         <DocIcon status={g.displayStatus} />
-                        <span style={{ fontSize: 13, color: g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #8A99A8)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
+                        <span style={{ fontSize: 13, color: g.displayStatus === "pending_upload" ? "var(--admin-text-subtle, #64748B)" : "var(--admin-text, #0F1B2A)", flex: 1, lineHeight: 1.3 }}>
                           {g.name}
                         </span>
                         {g.displayStatus === "pending_upload" && (
-                          <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>sin contestar</span>
+                          <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>sin contestar</span>
                         )}
                         {g.storagePath ? (
                           <a href={`/api/documents/${g.primaryDocId}/view`} target="_blank" rel="noopener noreferrer"
@@ -906,7 +906,7 @@ export default async function ReviewPage({
               {/* Feature 2: interactive check items */}
               {overviewCheck.length > 0 && (
                 <div>
-                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                     Casillas Sí/No
                   </p>
                   {overviewCheck.map((g) => {
@@ -929,7 +929,7 @@ export default async function ReviewPage({
               {/* Datos solicitados (data_check) */}
               {overviewDataCheck.length > 0 && (
                 <div>
-                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  <p style={{ margin: "0 0 4px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                     Datos solicitados
                   </p>
                   {overviewDataCheck.map((g) => {
@@ -955,7 +955,7 @@ export default async function ReviewPage({
               {/* Bitácora */}
               {logs.length > 0 && (
                 <div>
-                  <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                  <p style={{ margin: "0 0 10px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                     Bitácora
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -966,7 +966,7 @@ export default async function ReviewPage({
                         <p key={log.id} style={{ margin: 0, fontSize: 13, color, lineHeight: 1.5 }}>
                           <span style={{ fontWeight: 600, color: "var(--admin-text, #0F1B2A)", marginRight: 4 }}>{dateStr}</span>
                           — {log.texto}
-                          {log.quien && <span style={{ color: "var(--admin-text-subtle, #8A99A8)" }}> ({log.quien})</span>}
+                          {log.quien && <span style={{ color: "var(--admin-text-subtle, #64748B)" }}> ({log.quien})</span>}
                         </p>
                       )
                     })}
@@ -979,7 +979,7 @@ export default async function ReviewPage({
 
         {/* ── Feature 1a: Full status selector (always visible) ── */}
         <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, padding: "16px 20px", marginBottom: 20, boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
-          <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+          <p style={{ margin: "0 0 12px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
             Etapa de la solicitud
           </p>
           <AdminFullStatusSelector applicationId={appId} currentStatus={app.status} />
@@ -997,7 +997,7 @@ export default async function ReviewPage({
 
             return (
               <section key={title}>
-                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                   {title}
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
@@ -1049,7 +1049,7 @@ export default async function ReviewPage({
                                   opcional
                                 </span>
                               )}
-                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>
                                 {codeDocs.length} archivos
                               </span>
                             </div>
@@ -1090,7 +1090,7 @@ export default async function ReviewPage({
 
             return (
               <section>
-                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                   Anexos / Contratos
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
@@ -1108,7 +1108,7 @@ export default async function ReviewPage({
                               <span style={{ fontSize: 11, padding: "1px 6px", borderRadius: 4, background: "#F1F5F9", color: "#64748B" }}>
                                 opcional
                               </span>
-                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>
                                 {codeDocs.length} archivos
                               </span>
                             </div>
@@ -1155,7 +1155,7 @@ export default async function ReviewPage({
 
             return (
               <section>
-                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+                <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
                   Otros documentos
                 </p>
                 <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>
@@ -1168,7 +1168,7 @@ export default async function ReviewPage({
                           {isMulti && (
                             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "4px 0" }}>
                               <span style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>{tmpl.name}</span>
-                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #8A99A8)" }}>{codeDocs.length} archivos</span>
+                              <span style={{ fontSize: 11, color: "var(--admin-text-subtle, #64748B)" }}>{codeDocs.length} archivos</span>
                             </div>
                           )}
                           {codeDocs.map((doc, idx) => (
@@ -1199,7 +1199,7 @@ export default async function ReviewPage({
           })()}
           {/* ── Documentos adicionales (template_id IS NULL) ── */}
           <section>
-            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #8A99A8)" }}>
+            <p style={{ margin: "0 0 8px", fontSize: 11, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)" }}>
               Documentos adicionales / sin título
             </p>
             <div style={{ background: "var(--admin-surface, #fff)", border: "1px solid var(--admin-border, #E7ECF1)", borderRadius: 12, overflow: "hidden", boxShadow: "0 1px 2px rgba(16,30,45,.04)" }}>

@@ -13,7 +13,7 @@ type DocStatus =
   | "changes_requested"
 
 const STATUS: Record<string, { label: string; color: string; bg: string; stripe: string }> = {
-  pending_upload:    { label: "Pendiente",     color: "#8A9E94", bg: "#F3F7F4", stripe: "#D1D5DB" },
+  pending_upload:    { label: "Pendiente",     color: "#5B7168", bg: "#F3F7F4", stripe: "#D1D5DB" },
   pending_review:    { label: "En revisión",   color: "#1D4ED8", bg: "#EFF4FF", stripe: "#1D4ED8" },
   approved:          { label: "Aprobado",      color: "#1f7a4d", bg: "#e7f6ec", stripe: "#1f7a4d" },
   rejected:          { label: "Rechazado",     color: "#d1622f", bg: "#fef2f2", stripe: "#d1622f" },
@@ -132,6 +132,7 @@ export function CheckOrUploadRow({
               href={`/api/documents/${documentId}/view`}
               target="_blank"
               rel="noopener noreferrer"
+              aria-label={`Ver ${templateName}`}
               style={{
                 fontSize: 10,
                 fontWeight: 600,
@@ -152,6 +153,7 @@ export function CheckOrUploadRow({
               <button
                 onClick={() => inputRef.current?.click()}
                 disabled={isPending}
+                aria-label={`${status === "pending_upload" ? "Subir" : "Cambiar"} ${templateName}`}
                 style={{
                   fontSize: 10,
                   fontWeight: 700,

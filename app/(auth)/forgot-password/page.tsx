@@ -14,6 +14,7 @@ export default async function ForgotPasswordPage({
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Recuperar contraseña — Payefy</h1>
       <p className="text-sm text-center text-muted-foreground mb-6">
         Ingresa tu correo y te enviaremos un enlace para restablecer tu
         contraseña.

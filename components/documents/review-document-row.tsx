@@ -116,7 +116,7 @@ export function ReviewDocumentRow({
               {cfg.label}
             </span>
             {!isRequired && (
-              <span style={{ fontSize: 11, color: "#8A9E94", background: "#F3F7F4", borderRadius: 999, padding: "2px 7px" }}>
+              <span style={{ fontSize: 11, color: "#5B7168", background: "#F3F7F4", borderRadius: 999, padding: "2px 7px" }}>
                 Opcional
               </span>
             )}
@@ -135,7 +135,7 @@ export function ReviewDocumentRow({
               <span style={{
                 fontSize: 10, fontWeight: 700, borderRadius: 999, padding: "1px 8px",
                 background: version > 1 ? "#EFF4FF" : "#F3F7F4",
-                color: version > 1 ? "#1D4ED8" : "#8A9E94",
+                color: version > 1 ? "#1D4ED8" : "#5B7168",
                 border: `1px solid ${version > 1 ? "#C7D9FF" : "#E4ECE7"}`,
               }}>
                 {version > 1 ? `v${version} · actualizado` : "v1 · original"}

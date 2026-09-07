@@ -75,7 +75,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
               fontWeight: 700,
               letterSpacing: "0.08em",
               textTransform: "uppercase",
-              color: "#8A9E94",
+              color: "#5B7168",
             }}
           >
             Datos solicitados
@@ -120,11 +120,11 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#8A9E94",
+                color: "#5B7168",
               }}
             >
               {cat.title}{" "}
-              <span style={{ color: "#C8D5CC", fontWeight: 600 }}>
+              <span style={{ color: "#5B7168", fontWeight: 600 }}>
                 {uploadGroups.length}
               </span>
             </p>

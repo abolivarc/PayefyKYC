@@ -114,7 +114,7 @@ export function PhotosUploadRow({
             {templateName}
           </p>
           {templateInstructions && (
-            <p className="text-xs leading-relaxed" style={{ color: "#8A9E94" }}>
+            <p className="text-xs leading-relaxed" style={{ color: "#5B7168" }}>
               {templateInstructions}
             </p>
           )}
@@ -165,7 +165,7 @@ export function PhotosUploadRow({
                 </span>
               </div>
               {slot.fileName && (
-                <p className="text-[10px] truncate" style={{ color: "#8A9E94", margin: 0 }}>
+                <p className="text-[10px] truncate" style={{ color: "#5B7168", margin: 0 }}>
                   {slot.fileName}
                 </p>
               )}

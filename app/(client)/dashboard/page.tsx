@@ -86,7 +86,7 @@ export default async function ClientDashboardPage() {
               <div className="flex items-center justify-center p-6 min-h-[140px] bg-[#0E1A26]">
                 <Image
                   src="/products/tarjeta-stack.png"
-                  alt="Tarjeta Payefy"
+                  alt=""
                   width={180} height={110}
                   className="object-contain"
                 />
@@ -115,7 +115,7 @@ export default async function ClientDashboardPage() {
               <div className="flex items-center justify-center p-6 min-h-[140px] bg-[#0E1A26]">
                 <Image
                   src="/products/terminal.png"
-                  alt="Terminal Payefy"
+                  alt=""
                   width={100} height={140}
                   className="object-contain"
                 />

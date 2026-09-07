@@ -24,7 +24,7 @@ export function Header({ userNav, variant = "client" }: HeaderProps) {
           />
           <span
             className="text-xs border-l pl-2.5 ml-0.5 hidden sm:block"
-            style={{ color: "rgba(168,248,152,0.45)", borderColor: "rgba(168,248,152,0.15)" }}
+            style={{ color: "rgba(168,248,152,0.85)", borderColor: "rgba(168,248,152,0.25)" }}
           >
             Portal del Cliente
           </span>

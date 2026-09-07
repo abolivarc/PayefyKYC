@@ -37,7 +37,7 @@ export function DataCheckRow({ templateName, currentStatus, isRequired }: Props)
           {cfg.label}
         </span>
         {!isRequired && (
-          <span className="text-[11px] font-medium rounded-full" style={{ background: "#F3F7F4", color: "#8A9E94", padding: "3px 8px" }}>
+          <span className="text-[11px] font-medium rounded-full" style={{ background: "#F3F7F4", color: "#5B7168", padding: "3px 8px" }}>
             Opcional
           </span>
         )}
@@ -49,7 +49,7 @@ export function DataCheckRow({ templateName, currentStatus, isRequired }: Props)
       </p>
 
       {/* Note */}
-      <p className="text-xs leading-relaxed" style={{ color: "#8A9E94" }}>
+      <p className="text-xs leading-relaxed" style={{ color: "#5B7168" }}>
         Este dato es validado por el equipo de cumplimiento — no se requiere acción de tu parte.
       </p>
     </div>

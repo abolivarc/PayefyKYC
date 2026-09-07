@@ -49,7 +49,7 @@ const T = {
   borderStrong: "#D6DEE6",
   text: "#0F1B2A",
   textMuted: "#5A6B7B",
-  textSubtle: "#8A99A8",
+  textSubtle: "#64748B",
   brand: "#A8F898",
   brandStrong: "#0B7A44",
   brandSoft: "#EDFBEA",
@@ -66,7 +66,6 @@ const inputStyle: React.CSSProperties = {
   background: T.surface,
   border: `1px solid ${T.border}`,
   borderRadius: 10,
-  outline: "none",
   boxSizing: "border-box",
 }
 
@@ -136,9 +135,12 @@ function WizardContent() {
   const hasTerminals = selected === "terminals" || selected === "both"
   const products = selected ? OPTION_META[selected].products : []
   const selectedLabel = selected ? OPTION_META[selected].label : ""
+  // El selector de tipo de persona solo existe en flujos con terminales; si el
+  // usuario regresa a solo-tarjetas, los textos vuelven al modo empresa.
+  const esFisica = hasTerminals && personType === "persona_fisica"
 
   return (
-    <div style={{ background: T.bg, minHeight: "100vh" }}>
+    <div className="kyc-wizard" style={{ background: T.bg, minHeight: "100vh" }}>
       <div style={{ maxWidth: 680, margin: "0 auto", padding: "28px 20px 72px" }}>
 
         {/* Step rail */}
@@ -277,7 +279,11 @@ function WizardContent() {
                 padding: "24px 24px 20px",
               }}
             >
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div
+                role="radiogroup"
+                aria-label="Producto que deseas contratar"
+                style={{ display: "flex", flexDirection: "column", gap: 10 }}
+              >
                 {(["cards", "terminals", "both"] as ProductOption[]).map((opt) => {
                   const meta = OPTION_META[opt]
                   const isSelected = selected === opt
@@ -285,6 +291,8 @@ function WizardContent() {
                     <button
                       key={opt}
                       type="button"
+                      role="radio"
+                      aria-checked={isSelected}
                       onClick={() => setSelected(opt)}
                       style={{
                         width: "100%",
@@ -457,7 +465,11 @@ function WizardContent() {
                 {hasTerminals && (
                   <div style={{ marginBottom: 28 }}>
                     <div style={sectionHeadStyle}>Tipo de empresa</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div
+                      role="radiogroup"
+                      aria-label="Tipo de empresa"
+                      style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}
+                    >
                       {(
                         [
                           { value: "persona_moral", label: "Persona Moral", sub: "Empresa / Sociedad" },
@@ -467,6 +479,8 @@ function WizardContent() {
                         <button
                           key={value}
                           type="button"
+                          role="radio"
+                          aria-checked={personType === value}
                           onClick={() => setPersonType(value)}
                           style={{
                             textAlign: "left",
@@ -565,17 +579,18 @@ function WizardContent() {
                   <div style={{ marginBottom: 28 }}>
                     <div style={sectionHeadStyle}>American Express</div>
                     <div>
-                      <label style={labelStyle}>
+                      <span id="amex-question" style={labelStyle}>
                         ¿Vas a aceptar American Express?{" "}
-                        <span style={{ color: T.req }}>*</span>
-                      </label>
+                        <span style={{ color: T.req }} aria-hidden="true">*</span>
+                        <span className="sr-only">(obligatorio)</span>
+                      </span>
                       <p style={helpStyle}>
                         Aplica igual si cobras en punto de venta, en línea o por
                         link de pago. Si aceptas AMEX, más adelante te pediremos la
                         carátula de afiliación firmada: la generamos con tus datos,
                         tú solo la firmas y la subes.
                       </p>
-                      <div style={{ display: "flex", gap: 10 }}>
+                      <div role="radiogroup" aria-labelledby="amex-question" style={{ display: "flex", gap: 10 }}>
                         {[
                           { v: "si", label: "Sí, quiero AMEX" },
                           { v: "no", label: "No, por ahora no" },
@@ -585,6 +600,8 @@ function WizardContent() {
                             <button
                               key={opt.v}
                               type="button"
+                              role="radio"
+                              aria-checked={active}
                               onClick={() => setWantsAmex(opt.v)}
                               style={{
                                 flex: 1,
@@ -609,18 +626,28 @@ function WizardContent() {
                   </div>
                 )}
 
-                {/* Datos fiscales */}
+                {/* Datos fiscales — los textos se adaptan al tipo de persona:
+                    una persona física no tiene "razón social" y su RFC es de
+                    13 caracteres (la moral, de 12). */}
                 <div>
-                  <div style={sectionHeadStyle}>Datos de la empresa</div>
+                  <div style={sectionHeadStyle}>
+                    {esFisica ? "Datos del titular" : "Datos de la empresa"}
+                  </div>
 
                   <div style={{ marginBottom: 16 }}>
                     <label htmlFor="legal_name" style={labelStyle}>
-                      Razón social <span style={{ color: T.req }}>*</span>
+                      {esFisica ? "Nombre completo" : "Razón social"}{" "}
+                      <span style={{ color: T.req }}>*</span>
                     </label>
+                    {esFisica && (
+                      <p style={helpStyle}>
+                        Tal como aparece en tu Constancia de Situación Fiscal.
+                      </p>
+                    )}
                     <input
                       id="legal_name"
                       name="legal_name"
-                      placeholder="Empresa Ejemplo S.A. de C.V."
+                      placeholder={esFisica ? "Juan Pérez García" : "Empresa Ejemplo S.A. de C.V."}
                       required
                       minLength={3}
                       style={inputStyle}
@@ -631,14 +658,24 @@ function WizardContent() {
                     <label htmlFor="tax_id" style={labelStyle}>
                       RFC <span style={{ color: T.req }}>*</span>
                     </label>
-                    <p style={helpStyle}>12 caracteres para personas físicas, 13 para personas morales.</p>
+                    <p style={helpStyle}>
+                      {esFisica
+                        ? "13 caracteres (persona física con actividad empresarial)."
+                        : "12 caracteres (persona moral)."}
+                    </p>
                     <input
                       id="tax_id"
                       name="tax_id"
-                      placeholder="EJE900101ABC"
+                      placeholder={esFisica ? "PEGJ900101AB1" : "EJE900101ABC"}
                       required
-                      minLength={12}
-                      maxLength={13}
+                      minLength={esFisica ? 13 : 12}
+                      maxLength={esFisica ? 13 : 12}
+                      pattern={esFisica ? "[A-Za-zÑñ&]{4}[0-9]{6}[A-Za-z0-9]{3}" : "[A-Za-zÑñ&]{3}[0-9]{6}[A-Za-z0-9]{3}"}
+                      title={
+                        esFisica
+                          ? "RFC de persona física: 4 letras, 6 dígitos de fecha y 3 de homoclave (13 caracteres)"
+                          : "RFC de persona moral: 3 letras, 6 dígitos de fecha y 3 de homoclave (12 caracteres)"
+                      }
                       style={{
                         ...inputStyle,
                         fontFamily: "var(--font-mono)",
@@ -650,14 +687,15 @@ function WizardContent() {
 
                   <div>
                     <label htmlFor="operator_email" style={labelStyle}>
-                      Correo empresarial <span style={{ color: T.req }}>*</span>
+                      {esFisica ? "Correo del negocio" : "Correo empresarial"}{" "}
+                      <span style={{ color: T.req }}>*</span>
                     </label>
                     <p style={helpStyle}>Se usará para comunicaciones operativas.</p>
                     <input
                       id="operator_email"
                       name="operator_email"
                       type="email"
-                      placeholder="operaciones@miempresa.com"
+                      placeholder={esFisica ? "contacto@minegocio.com" : "operaciones@miempresa.com"}
                       required
                       style={inputStyle}
                     />
@@ -665,7 +703,7 @@ function WizardContent() {
 
                   <div style={{ marginTop: 16 }}>
                     <label htmlFor="business_activity" style={labelStyle}>
-                      ¿Cuál es la actividad o giro de tu empresa? <span style={{ color: T.req }}>*</span>
+                      ¿Cuál es la actividad o giro de tu {esFisica ? "negocio" : "empresa"}? <span style={{ color: T.req }}>*</span>
                     </label>
                     <p style={helpStyle}>
                       Descríbelo con tus palabras: a qué se dedica realmente tu negocio
@@ -720,7 +758,11 @@ function WizardContent() {
                       <option value="recomendación">Me lo recomendaron</option>
                       <option value="otro">Otro</option>
                     </select>
+                    <label htmlFor="acquisition_channel_detail" className="sr-only">
+                      ¿Quién te atendió o te recomendó? (opcional)
+                    </label>
                     <input
+                      id="acquisition_channel_detail"
                       name="acquisition_channel_detail"
                       placeholder="¿Quién te atendió o te recomendó? (opcional)"
                       style={{ ...inputStyle, marginTop: 8 }}

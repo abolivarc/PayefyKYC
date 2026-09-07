@@ -49,7 +49,7 @@ export function StageStepper({ status }: StageStepperProps) {
             <div
               className="flex items-center gap-2 shrink-0 whitespace-nowrap"
               style={{
-                color: isCurrent ? "#0F2A22" : isDone ? "#5B7168" : "#8A9E94",
+                color: isCurrent ? "#0F2A22" : isDone ? "#5B7168" : "#5B7168",
               }}
             >
               {/* Círculo paso */}
@@ -71,7 +71,7 @@ export function StageStepper({ status }: StageStepperProps) {
                     ? "#fff"
                     : isCurrent
                     ? "#004238"
-                    : "#8A9E94",
+                    : "#5B7168",
                 }}
               >
                 {isDone ? (
