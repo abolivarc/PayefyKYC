@@ -147,10 +147,16 @@ export default async function DocumentsPage({
 
   let productTemplates = (rawTemplates ?? []) as TemplateMeta[]
 
-  // Para terminales: filtrar según tipo de persona (PF o PM)
+  // Para terminales: filtrar según tipo de persona (PF o PM).
+  // La carátula AMEX (amex_cover) no tiene variante pf_ — es la misma para
+  // ambos tipos de persona — así que se conserva; más abajo el filtro de
+  // wants_amex decide si aplica. Sin esta excepción, una persona física que
+  // pide AMEX se quedaba sin el requisito de la carátula firmada.
   if (productCode === "terminals" && company?.person_type) {
     if (company.person_type === "persona_fisica") {
-      productTemplates = productTemplates.filter((t) => t.code.startsWith("pf_"))
+      productTemplates = productTemplates.filter(
+        (t) => t.code.startsWith("pf_") || t.code === "amex_cover"
+      )
     } else {
       productTemplates = productTemplates.filter((t) => !t.code.startsWith("pf_"))
     }
