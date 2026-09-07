@@ -242,9 +242,12 @@ function filterTerminalTemplates<T extends { code: string }>(
   terminalType: string | null,
   wantsAmex?: boolean | null
 ): T[] {
+  // La carátula AMEX no tiene variante pf_: es la misma para ambos tipos de
+  // persona. Sin esta excepción, una persona física que pide AMEX se quedaba
+  // sin el casillero (el filtro pf_ la descartaba).
   let result =
     personType === "persona_fisica"
-      ? templates.filter((t) => t.code.startsWith("pf_"))
+      ? templates.filter((t) => t.code.startsWith("pf_") || t.code === "amex_cover")
       : templates.filter((t) => !t.code.startsWith("pf_"))
 
   const PHOTO_CODES = ["business_photos", "pf_business_photos"]
