@@ -1,9 +1,10 @@
 import type { ReactNode } from "react"
 import { PayefyLogo } from "@/components/layout/payefy-logo"
+import { SiteFooter } from "@/components/layout/site-footer"
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
-    <div
+    <main
       className="min-h-screen flex flex-col items-center justify-center p-4 relative overflow-hidden"
       style={{ background: "linear-gradient(145deg, #004238 0%, #00281f 100%)" }}
     >
@@ -48,11 +49,12 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
 
         <p
           className="mt-5 text-center text-xs tracking-wide"
-          style={{ color: "rgba(168,248,152,.35)" }}
+          style={{ color: "rgba(168,248,152,.75)" }}
         >
           Payefy · KYC
         </p>
+        <SiteFooter variant="dark" className="mt-4" />
       </div>
-    </div>
+    </main>
   )
 }

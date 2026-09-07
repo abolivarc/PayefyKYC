@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation"
 import { revalidatePath } from "next/cache"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
@@ -39,12 +40,24 @@ export async function recordTermsAcceptance() {
     })
     .eq("id", membership.company_id)
 
+  // La nota bajo el formulario promete registrar la IP de la aceptación;
+  // se captura aquí para que la bitácora tenga valor probatorio real.
+  const h = await headers()
+  const ip =
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    h.get("x-real-ip") ??
+    null
+
   await logAudit({
     actorId: user.id,
     action: "terms_accepted",
     entityType: "company",
     entityId: membership.company_id,
-    metadata: { version: CURRENT_TERMS_VERSION },
+    metadata: {
+      version: CURRENT_TERMS_VERSION,
+      ip,
+      user_agent: h.get("user-agent"),
+    },
   })
 
   revalidatePath("/", "layout")

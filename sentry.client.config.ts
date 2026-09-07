@@ -6,7 +6,9 @@ Sentry.init({
   enabled: !!process.env.NEXT_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 0.2,
   replaysOnErrorSampleRate: 1.0,
-  replaysSessionSampleRate: 0.05,
+  // Nunca grabar sesiones sin error: el portal captura datos KYC sensibles y
+  // una grabación de sesión ordinaria no está cubierta por consentimiento.
+  replaysSessionSampleRate: 0,
   integrations: [
     Sentry.replayIntegration({
       maskAllText: true,

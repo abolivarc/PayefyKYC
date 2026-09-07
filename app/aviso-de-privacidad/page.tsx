@@ -29,9 +29,12 @@ export default function AvisoPrivacidadPage() {
           <h1 className="text-2xl font-bold text-white leading-snug">
             Aviso de Privacidad
           </h1>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.6)" }}>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.75)" }}>
             Espacio Santa Fe, Carretera México–Toluca 5420, 701-B,
             Col. El Yaqui, Cuajimalpa de Morelos, C.P. 05320, CDMX
+          </p>
+          <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.75)" }}>
+            Última actualización: 6 de septiembre de 2026
           </p>
         </div>
 
@@ -176,12 +179,18 @@ export default function AvisoPrivacidadPage() {
             </p>
           </Section>
 
-          <Section title="Uso de Tecnologías de Rastreo">
+          <Section title="Uso de Cookies">
             <p>
-              Payefy utiliza tecnologías de rastreo como <em>cookies</em> y <em>web beacons</em>{" "}
-              en su página de Internet, aplicaciones y plataformas tecnológicas para monitorear
-              el comportamiento del usuario y brindar un mejor servicio y experiencia. El usuario
-              puede ajustar las preferencias de su navegador para aceptar o rechazar las cookies.
+              La plataforma de Payefy utiliza únicamente <em>cookies</em> estrictamente
+              necesarias para mantener la sesión iniciada del usuario. No se utilizan cookies
+              de analítica, publicidad o rastreo de terceros, ni <em>web beacons</em>. El
+              detalle está disponible en la{" "}
+              <Link href="/cookies" className="text-emerald-700 hover:underline">
+                Política de Cookies
+              </Link>
+              . El usuario puede ajustar las preferencias de su navegador para aceptar o
+              rechazar las cookies; sin las cookies esenciales no es posible mantener una
+              sesión iniciada.
             </p>
           </Section>
 

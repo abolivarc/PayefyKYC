@@ -62,7 +62,10 @@ export async function uploadChangeImages(
 
 /**
  * URLs firmadas para mostrar las capturas (correo y portal del cliente).
- * Un año: el correo queda en la bandeja del cliente y debe seguir abriendo.
+ * 14 días: suficiente para que el cliente atienda el correo, sin dejar
+ * capturas del expediente KYC accesibles por un año a quien reenvíe o
+ * intercepte el mensaje. Pasado el plazo, las capturas siguen visibles
+ * en el portal (ahí se firman de nuevo en cada carga).
  */
 export async function signChangeImages(
   admin: AdminClient,
@@ -73,7 +76,7 @@ export async function signChangeImages(
   for (const path of paths) {
     const { data } = await admin.storage
       .from("kyc-documents")
-      .createSignedUrl(path, 60 * 60 * 24 * 365)
+      .createSignedUrl(path, 60 * 60 * 24 * 14)
     if (data?.signedUrl) urls.push(data.signedUrl)
   }
   return urls

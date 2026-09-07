@@ -14,6 +14,7 @@ export default async function RegisterPage({
 
   return (
     <div className="space-y-4">
+      <h1 className="sr-only">Crear cuenta — Payefy</h1>
       <p className="text-sm text-center text-muted-foreground mb-6">
         Crea tu cuenta para iniciar tu proceso KYC con Payefy.
       </p>
@@ -62,6 +63,28 @@ export default async function RegisterPage({
             minLength={8}
           />
         </div>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Al crear tu cuenta aceptas nuestros{" "}
+          <a
+            href="/terminos-y-condiciones"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-primary underline underline-offset-2"
+          >
+            Términos y Condiciones
+          </a>{" "}
+          y el tratamiento de tus datos conforme a nuestro{" "}
+          <a
+            href="/aviso-de-privacidad"
+            target="_blank"
+            rel="noopener"
+            className="font-medium text-primary underline underline-offset-2"
+          >
+            Aviso de Privacidad
+          </a>
+          .
+        </p>
 
         <Button type="submit" className="w-full">
           Crear cuenta

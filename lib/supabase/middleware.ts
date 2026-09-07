@@ -73,20 +73,24 @@ export async function updateSession(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/admin/login" ||
     pathname === "/admin/registro" ||
+    pathname === "/admin/forgot-password" ||
     pathname === "/register" ||
     pathname === "/forgot-password" ||
     pathname.startsWith("/auth/")
   // /reset-password requiere sesión (recovery) → va en isProtected, no en isAuthPage
+  // /terminos es la puerta de aceptación (requiere sesión); la copia pública de
+  // lectura vive en /terminos-y-condiciones — por eso el match es exacto.
   const isProtected =
     (pathname === "/" ||
       pathname.startsWith("/dashboard") ||
       pathname.startsWith("/applications") ||
       pathname.startsWith("/profile") ||
-      pathname.startsWith("/terminos") ||
+      pathname === "/terminos" ||
       pathname.startsWith("/admin") ||
       pathname === "/reset-password") &&
     pathname !== "/admin/login" &&
-    pathname !== "/admin/registro"
+    pathname !== "/admin/registro" &&
+    pathname !== "/admin/forgot-password"
 
   // Sin sesión + ruta protegida → /login
   if (!user && isProtected) {
