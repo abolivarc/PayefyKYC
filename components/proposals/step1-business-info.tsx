@@ -9,6 +9,9 @@ import {
   EntityType,
   ENTITY_TYPE_LABELS,
   ProductType,
+  COMODATO_MIN_VOLUME,
+  qualifiesForComodato,
+  formatCurrency,
 } from "@/lib/proposals/types"
 import { MCC_CATALOG, GiroMcc } from "@/lib/proposals/mcc-catalog"
 import {
@@ -241,6 +244,18 @@ export function Step1BusinessInfo({ data, updateData }: StepProps) {
               }
               placeholder="Ej: 500000"
             />
+            {/* Regla comercial: comodato solo desde COMODATO_MIN_VOLUME */}
+            {(data.monthlyVolume || 0) > 0 && (
+              qualifiesForComodato(data.monthlyVolume) ? (
+                <p className="text-xs font-medium" style={{ color: "#0B7A44" }}>
+                  ✓ Califica para terminal en comodato (equipo sin costo)
+                </p>
+              ) : (
+                <p className="text-xs" style={{ color: "#B45309" }}>
+                  No ofrecer comodato: aplica desde {formatCurrency(COMODATO_MIN_VOLUME)}/mes
+                </p>
+              )
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="averageTicket">Ticket Promedio (opcional)</Label>

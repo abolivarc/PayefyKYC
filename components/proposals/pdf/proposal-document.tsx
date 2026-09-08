@@ -12,6 +12,7 @@ import {
   formatCurrency,
   AMEX_FLOOR_RATE,
   INTERNATIONAL_FLOOR_RATE,
+  qualifiesForComodato,
 } from "@/lib/proposals/types"
 
 // ─── Paleta de marca ─────────────────────────────────────────────
@@ -113,11 +114,9 @@ function CoverPage({
 }) {
   const isComparative = data.proposalType === "comparative"
   const showSavings = isComparative && calc.annualSavings > 0
-  // Enfoque comercial: el primer golpe es lo que el cliente RECIBE, nunca
-  // lo que Payefy le cuesta. El costo se detalla en la página de tasas.
-  const volume = data.monthlyVolume || 0
-  const netoMensual = volume - calc.payefyMonthlyCost
-  const effectiveRate = volume > 0 ? (calc.payefyMonthlyCost / volume) * 100 : 0
+  // Enfoque comercial: la general muestra SOLO tasas — ningún monto en pesos
+  // que le haga la calculadora del costo al cliente. En la comparativa los
+  // pesos sí aparecen porque ahí son ahorro, no costo.
 
   return (
     <>
@@ -128,7 +127,7 @@ function CoverPage({
           <div>
             <img src={LOGO} alt="Payefy" style={{ height: 30, filter: "brightness(0) invert(1)" }} />
             <p style={{ margin: "18px 0 0", fontSize: 10, fontWeight: 700, letterSpacing: ".18em", textTransform: "uppercase", color: MINT }}>
-              Propuesta comercial
+              {showSavings ? "Propuesta de ahorro" : "Propuesta comercial"}
             </p>
             <h1 style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: 34, lineHeight: 1.05, fontWeight: 800, letterSpacing: "-.03em", color: "#fff", maxWidth: "115mm" }}>
               {data.businessName}
@@ -143,32 +142,49 @@ function CoverPage({
       </div>
 
       <div className="flex-1 flex flex-col px-[14mm] pt-[10mm]">
-        {/* Cifra protagonista — siempre en positivo y en el verde menta del logo */}
-        <div
-          style={{
-            background: MINT,
-            borderRadius: 20,
-            padding: "20px 24px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 20,
-          }}
-        >
-          <div>
+        {/* Protagonista en el verde menta del logo — comparativa: el ahorro;
+            general: las tasas mismas, sin un solo peso calculado */}
+        {showSavings ? (
+          <div style={{ background: MINT, borderRadius: 20, padding: "20px 24px" }}>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: DEEP }}>
-              {showSavings ? `Ahorro anual estimado vs ${data.competitorName}` : "Recibes neto en tu cuenta"}
+              Ahorro anual estimado vs {data.competitorName}
             </p>
             <p style={{ margin: "6px 0 0", fontFamily: "var(--font-display)", fontSize: 46, fontWeight: 800, lineHeight: 1, letterSpacing: "-.035em", color: DEEP }}>
-              {formatCurrency(showSavings ? calc.annualSavings : netoMensual)}
+              {formatCurrency(calc.annualSavings)}
             </p>
             <p style={{ margin: "8px 0 0", fontSize: 12, color: "#2E5548" }}>
-              {showSavings
-                ? `${calc.savingsPercentage.toFixed(1)}% menos de lo que pagas hoy · ${formatCurrency(calc.monthlySavings)} cada mes`
-                : `Cada mes, de tus ${formatCurrency(volume)} en ventas · comisión efectiva de ${effectiveRate.toFixed(2)}% ya con IVA, sin renta ni cargos ocultos`}
+              {calc.savingsPercentage.toFixed(1)}% menos de lo que pagas hoy · {formatCurrency(calc.monthlySavings)} cada mes
             </p>
           </div>
-        </div>
+        ) : (
+          <div style={{ background: MINT, borderRadius: 20, padding: "18px 24px 16px" }}>
+            <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: DEEP }}>
+              Tus tasas Payefy — negociadas para tu giro
+            </p>
+            <div className="flex" style={{ marginTop: 10 }}>
+              {[
+                { k: "Débito", v: data.negotiatedDebitRate || 0 },
+                { k: "Crédito", v: data.negotiatedCreditRate || 0 },
+                { k: "AMEX", v: data.negotiatedAmexRate ?? AMEX_FLOOR_RATE },
+                { k: "Internacional", v: data.negotiatedInternationalRate ?? INTERNATIONAL_FLOOR_RATE },
+              ].map((t, i) => (
+                <div key={t.k} style={{ flex: 1, paddingLeft: i > 0 ? 16 : 0, borderLeft: i > 0 ? "1px solid rgba(0,66,56,.18)" : "none" }}>
+                  <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#2E5548" }}>
+                    {t.k}
+                  </p>
+                  <p style={{ margin: "4px 0 0", fontFamily: "var(--font-display)", fontSize: 34, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: DEEP }}>
+                    {t.v}
+                    <span style={{ fontSize: 17, fontWeight: 700 }}>%</span>
+                  </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 9, color: "#2E5548", opacity: 0.75 }}>{rateWithIVA(t.v)}% con IVA</p>
+                </div>
+              ))}
+            </div>
+            <p style={{ margin: "12px 0 0", fontSize: 11.5, color: "#2E5548" }}>
+              Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que cobras.
+            </p>
+          </div>
+        )}
 
         {/* Datos del negocio */}
         <div className="grid grid-cols-3 gap-3 mt-[8mm]">
@@ -188,24 +204,58 @@ function CoverPage({
           ))}
         </div>
 
-        {/* Tasas de un vistazo */}
-        <p style={{ margin: "10mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
-          Tus tasas Payefy
-        </p>
-        <div className="flex gap-3">
-          <RateCard label="Débito" value={data.negotiatedDebitRate || 0} accent />
-          <RateCard label="Crédito" value={data.negotiatedCreditRate || 0} accent />
-          <RateCard label="AMEX" value={data.negotiatedAmexRate ?? AMEX_FLOOR_RATE} />
-          <RateCard label="Internacional" value={data.negotiatedInternationalRate ?? INTERNATIONAL_FLOOR_RATE} />
-        </div>
+        {/* Comparativa: el cambio en números · General: tasas de un vistazo */}
+        {showSavings ? (
+          <>
+            <p style={{ margin: "10mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
+              El cambio en números
+            </p>
+            <div className="flex items-stretch gap-3">
+              <div style={{ flex: 1, background: "#fff", border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px" }}>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#B4443A" }}>
+                  Pagas hoy con {data.competitorName}
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: "#B4443A", fontFamily: "var(--font-display)" }}>
+                  {formatCurrency(calc.competitorMonthlyCost)}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 9, color: "#9BAFA7" }}>al mes en comisiones</p>
+              </div>
+              <div style={{ flex: 1, background: DEEP, borderRadius: 14, padding: "14px 16px" }}>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: MINT }}>
+                  Pagarías con Payefy
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: "#fff", fontFamily: "var(--font-display)" }}>
+                  {formatCurrency(calc.payefyMonthlyCost)}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 9, color: "rgba(255,255,255,.6)" }}>misma operación, mismas tarjetas</p>
+              </div>
+              <div style={{ flex: 1, background: MINT, borderRadius: 14, padding: "14px 16px" }}>
+                <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: DEEP }}>
+                  Se queda en tu negocio
+                </p>
+                <p style={{ margin: "6px 0 0", fontSize: 26, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: DEEP, fontFamily: "var(--font-display)" }}>
+                  {formatCurrency(calc.monthlySavings)}
+                </p>
+                <p style={{ margin: "4px 0 0", fontSize: 9, color: "#2E5548" }}>cada mes, desde el primer mes</p>
+              </div>
+            </div>
+          </>
+        ) : null}
 
-        {/* Propuesta de valor */}
+        {/* Propuesta de valor — la comparativa vende el CAMBIO, la general el ARRANQUE */}
         <div className="grid grid-cols-3 gap-3" style={{ marginTop: "9mm" }}>
-          {[
-            { t: "Sin renta ni permanencia", s: "Pagas solo por lo que cobras. Sin contratos forzosos." },
-            { t: "Tu dinero al día siguiente", s: "Depósito directo a tu cuenta, sin retenciones." },
-            { t: "Un equipo, no un call center", s: "Ejecutivo asignado y soporte 24/7." },
-          ].map((v) => (
+          {(showSavings
+            ? [
+                { t: "Cambiarte no cuesta nada", s: "Sin costo de alta, sin penalizaciones y sin plazos forzosos." },
+                { t: "Mismo negocio, más margen", s: "Sigues cobrando igual: solo baja la comisión de cada venta." },
+                { t: "Migración acompañada", s: "Un ejecutivo lleva tu alta completa sin detener tu operación." },
+              ]
+            : [
+                { t: "Sin renta ni permanencia", s: "Pagas solo por lo que cobras. Sin contratos forzosos." },
+                { t: "Tu dinero al día siguiente", s: "Depósito directo a tu cuenta, sin retenciones." },
+                { t: "Un equipo, no un call center", s: "Ejecutivo asignado y soporte 24/7." },
+              ]
+          ).map((v) => (
             <div key={v.t} style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: "13px 15px" }}>
               <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: INK, lineHeight: 1.3, letterSpacing: "-.01em" }}>
                 {v.t}
@@ -270,12 +320,12 @@ function RatesPage({
       <RunningHead eyebrow="Tasas y ahorro" page={page} total={total} />
       <div className="flex-1 px-[14mm] pt-[9mm] flex flex-col">
         <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, letterSpacing: "-.025em", color: INK }}>
-          {isComparative ? "Lo que pagas hoy vs. lo que pagarías con Payefy" : "Tus tasas negociadas"}
+          {isComparative ? "Lo que pagas hoy vs. lo que pagarías con Payefy" : "Tus tasas, claras y por escrito"}
         </h2>
         <p style={{ margin: "6px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "150mm", lineHeight: 1.5 }}>
           {isComparative
             ? `Cálculo sobre tu volumen real de ${formatCurrency(data.monthlyVolume || 0)} mensuales. Todas las cifras incluyen IVA.`
-            : `Tasas fijas por tipo de tarjeta, sin renta mensual ni costos ocultos. Cálculo sobre ${formatCurrency(data.monthlyVolume || 0)} mensuales.`}
+            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas."}
         </p>
 
         {isComparative ? (
@@ -376,6 +426,20 @@ function RatesPage({
                 <p style={{ margin: 0, fontSize: 10, color: "rgba(255,255,255,.65)" }}>al año</p>
               </div>
             </div>
+
+            {/* La cifra que se recuerda: el ahorro proyectado a 3 años */}
+            {calc.annualSavings > 0 && (
+              <div style={{ marginTop: "6mm", background: MINT, borderRadius: 14, padding: "12px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+                <p style={{ margin: 0, fontSize: 11.5, fontWeight: 700, color: DEEP, lineHeight: 1.4 }}>
+                  Proyección a 3 años: dinero que se queda en tu negocio
+                  <br />
+                  <span style={{ fontWeight: 400, fontSize: 10.5, color: "#2E5548" }}>en lugar de irse en comisiones, con tu volumen actual</span>
+                </p>
+                <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: "-.03em", color: DEEP, whiteSpace: "nowrap" }}>
+                  {formatCurrency(calc.annualSavings * 3)}
+                </p>
+              </div>
+            )}
           </>
         ) : (
           <>
@@ -386,16 +450,17 @@ function RatesPage({
               <RateCard label="Internacional" value={intl} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3" style={{ marginTop: "9mm" }}>
+            {/* Lo único que va en pesos en la general: los ceros */}
+            <div className="grid grid-cols-3 gap-3" style={{ marginTop: "8mm" }}>
               {[
-                { k: "Te queda neto", v: formatCurrency((data.monthlyVolume || 0) - calc.payefyMonthlyCost), s: "cada mes" },
-                { k: "Comisión mensual", v: formatCurrency(calc.payefyMonthlyCost), s: "IVA incluido" },
-                { k: "Comisión anual", v: formatCurrency(calc.payefyAnnualCost), s: "proyectada" },
+                { k: "Renta mensual", s: "hoy y siempre" },
+                { k: "Costo de alta", s: "sin letras chicas" },
+                { k: "Permanencia forzosa", s: "te quedas porque quieres" },
               ].map((it) => (
-                <div key={it.k} style={{ background: CANVAS, borderRadius: 14, padding: "14px 16px" }}>
-                  <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GRAY }}>{it.k}</p>
-                  <p style={{ margin: "5px 0 0", fontSize: 21, fontWeight: 800, color: INK, fontFamily: "var(--font-display)", letterSpacing: "-.02em" }}>{it.v}</p>
-                  <p style={{ margin: 0, fontSize: 10, color: "#9BAFA7" }}>{it.s}</p>
+                <div key={it.k} style={{ background: MINT, borderRadius: 14, padding: "14px 16px" }}>
+                  <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: DEEP }}>{it.k}</p>
+                  <p style={{ margin: "5px 0 0", fontSize: 21, fontWeight: 800, color: DEEP, fontFamily: "var(--font-display)", letterSpacing: "-.02em" }}>$0</p>
+                  <p style={{ margin: 0, fontSize: 10, color: "#2E5548" }}>{it.s}</p>
                 </div>
               ))}
             </div>
@@ -404,11 +469,14 @@ function RatesPage({
 
         {/* Qué incluye */}
         <p style={{ margin: "10mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
-          Incluido sin costo extra
+          {isComparative ? "Incluido sin costo extra" : "Esa comisión ya lo incluye todo"}
         </p>
         <div className="grid grid-cols-2 gap-x-6 gap-y-2">
           {[
-            "Terminal física o virtual para cobros con tarjeta",
+            // Regla comercial: el comodato solo se menciona si el volumen califica
+            qualifiesForComodato(data.monthlyVolume)
+              ? "Terminal en comodato: el equipo sin costo mientras operes con Payefy"
+              : "Terminal física o virtual para cobros con tarjeta",
             "Depósito directo a tu cuenta al siguiente día hábil",
             "Tasas diferenciadas por tipo de tarjeta",
             "Dashboard de transacciones en tiempo real",
@@ -423,6 +491,17 @@ function RatesPage({
             </div>
           ))}
         </div>
+
+        {/* El único "enemigo" disponible sin comparativa: no cobrar con tarjeta */}
+        {!isComparative && (
+          <div style={{ marginTop: "8mm", background: CANVAS, borderRadius: 14, padding: "13px 18px" }}>
+            <p style={{ margin: 0, fontSize: 12, color: "#3E5049", lineHeight: 1.55 }}>
+              <strong style={{ color: DEEP }}>Cobrar con tarjeta no es un gasto:</strong> es
+              la venta que ya no se te va cuando el cliente no trae efectivo — y el
+              cliente que regresa porque pagar contigo fue fácil.
+            </p>
+          </div>
+        )}
       </div>
       <Foot />
     </>
@@ -568,6 +647,81 @@ function DispersionPage({
   )
 }
 
+// ─── PÁGINA · Tecnología a tu medida ─────────────────────────────
+// Payefy no solo vende la infraestructura de pagos: también el sistema
+// de control operativo hecho a la medida (embebido, con la marca del
+// cliente) y la consultoría para construir herramientas que no existen.
+const TECH_CAPABILITIES = [
+  { t: "Link de pago", s: "Cobra a distancia con un enlace: por WhatsApp, correo o redes sociales." },
+  { t: "Cobros recurrentes", s: "Suscripciones y pagos programados que se cobran solos, cada periodo." },
+  { t: "Catálogo y precios", s: "Tus productos y costos cargados en el sistema, listos para cobrar sin errores." },
+  { t: "Integración con tu POS", s: "Conectamos tu punto de venta para que cobro y ticket sean un solo paso." },
+  { t: "Control operativo", s: "Ventas, depósitos y conciliación en tiempo real, en una sola pantalla." },
+  { t: "Embebido en tu interfaz", s: "La tecnología vive dentro de tu sistema, con tu marca y tu flujo de trabajo." },
+]
+
+function TechPage({ page, total }: { page: number; total: number }) {
+  return (
+    <>
+      <RunningHead eyebrow="Tecnología Payefy" page={page} total={total} />
+      <div className="flex-1 px-[14mm] pt-[9mm] flex flex-col">
+        <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, letterSpacing: "-.025em", color: INK, maxWidth: "150mm" }}>
+          Más que cobrar: tu operación completa, en una sola interfaz
+        </h2>
+        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "155mm", lineHeight: 1.55 }}>
+          La infraestructura de pagos es la base. Encima de ella construimos el
+          sistema con el que <strong style={{ color: INK }}>controlas tu operación día a día</strong> —
+          y si tu negocio necesita algo especial, lo desarrollamos a tu medida.
+        </p>
+
+        <div className="grid grid-cols-3 gap-3" style={{ marginTop: "8mm" }}>
+          {TECH_CAPABILITIES.map((c) => (
+            <div key={c.t} style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px" }}>
+              <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: DEEP, lineHeight: 1.3, letterSpacing: "-.01em" }}>
+                {c.t}
+              </p>
+              <p style={{ margin: "5px 0 0", fontSize: 10.5, color: GRAY, lineHeight: 1.45 }}>{c.s}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Consultoría de desarrollo a la medida */}
+        <div style={{ marginTop: "9mm", background: DEEP, borderRadius: 20, padding: "20px 24px", position: "relative", overflow: "hidden" }}>
+          <div style={{ position: "absolute", right: "-12mm", top: "-14mm", width: "48mm", height: "48mm", borderRadius: "50%", background: "rgba(174,255,153,.08)" }} />
+          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MINT, position: "relative" }}>
+            Consultoría de tecnología
+          </p>
+          <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: "-.02em", lineHeight: 1.25, maxWidth: "150mm", position: "relative" }}>
+            ¿Tu operación necesita algo que no existe todavía? Lo construimos contigo.
+          </p>
+          <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "rgba(255,255,255,.75)", lineHeight: 1.55, maxWidth: "155mm", position: "relative" }}>
+            Nuestro equipo de tecnología diseña herramientas a la medida sobre la
+            infraestructura Payefy: desde flujos de cobro especiales hasta sistemas
+            completos de control operativo integrados con lo que ya usas. Cuéntanos
+            cómo trabajas y te proponemos la solución.
+          </p>
+        </div>
+
+        <div style={{ marginTop: "7mm", background: CANVAS, borderRadius: 16, padding: "14px 20px" }}>
+          <p style={{ margin: "0 0 7px", fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: DEEP }}>
+            Cómo se ve en la práctica
+          </p>
+          {[
+            "Un restaurante con cobros en mesa integrados a su punto de venta y propinas en el mismo flujo",
+            "Una escuela con colegiaturas recurrentes y recordatorios automáticos a los padres",
+            "Un mayorista con catálogo de precios por cliente y links de pago generados desde su propio sistema",
+          ].map((t) => (
+            <p key={t} style={{ margin: "0 0 5px", fontSize: 11.5, color: "#3E5049", lineHeight: 1.45 }}>
+              · {t}
+            </p>
+          ))}
+        </div>
+      </div>
+      <Foot />
+    </>
+  )
+}
+
 // ─── Requisitos de documentación (fuente: payefy_requisitos v14.4) ───
 const TERMINALS_PF = [
   "Identificación oficial (vigente)",
@@ -645,6 +799,58 @@ function ReqList({
   )
 }
 
+// ─── Recuadro de requisitos de Terminal ──────────────────────────
+// Reutilizado: en la página de Documentación (cuando la propuesta incluye
+// Tarjeta Payefy) o consolidado dentro de Siguientes pasos (caso común).
+function TerminalDocsCard({ data, dense = false }: { data: Partial<ProposalData>; dense?: boolean }) {
+  const isMoral = data.entityType === "moral"
+  const isCardPresent = data.productType === "terminales"
+  const docs = isMoral ? TERMINALS_PM : TERMINALS_PF
+  const datos = isMoral ? TERMINALS_DATA_PM : TERMINALS_DATA_PF
+
+  return (
+    <div style={{ border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
+      <div style={{ background: DEEP, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#fff" }}>
+          Terminal Payefy
+        </p>
+        <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: MINT }}>
+          {isMoral ? "Persona Moral" : "Persona Física"} · {isCardPresent ? "Tarjeta presente" : "E-commerce"}
+        </p>
+      </div>
+      <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
+        <ReqList title="Documentos" items={docs} dense={dense} />
+        <div>
+          <ReqList title="Datos que te pediremos" items={datos} numbered={false} dense={dense} />
+          <div style={{ marginTop: 10, background: "#F0FAF3", border: "1px solid #CBEFDB", borderRadius: 10, padding: "9px 12px" }}>
+            <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GREEN }}>
+              Según tu modalidad
+            </p>
+            <p style={{ margin: "4px 0 0", fontSize: 10.8, color: "#3E5049", lineHeight: 1.4 }}>
+              {isCardPresent
+                ? "2 fotos del interior y 2 del exterior de tu negocio"
+                : "URL de tu sitio web o link de pago. El sitio debe contar con Términos y Condiciones y Aviso de Privacidad publicados."}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Notas de formato de los documentos (comparten Documentación y cierre)
+function DocFormatNotes() {
+  return (
+    <p style={{ margin: 0, fontSize: 9.5, color: GRAY, lineHeight: 1.55 }}>
+      · Documentos en <strong style={{ color: INK }}>PDF</strong>; fotos e identificaciones en{" "}
+      <strong style={{ color: INK }}>JPG</strong>. Las identificaciones deben ir en foto, por ambos lados.
+      <br />
+      · Cada escritura constitutiva y otorgamiento de poderes debe estar inscrito en el
+      Registro Público de la Propiedad y el Comercio.
+    </p>
+  )
+}
+
 // ─── PÁGINA · Documentación requerida ────────────────────────────
 function DocsPage({
   data,
@@ -656,14 +862,6 @@ function DocsPage({
   total: number
 }) {
   const isMoral = data.entityType === "moral"
-  const isCardPresent = data.productType === "terminales"
-  // El bloque de Tarjeta Payefy aplica si la propuesta incluye ese producto
-  // o si se contrató la dispersión con tarjetas.
-  const showCardBlock = !!data.includesCards || !!data.hasDispersionCards
-  const dense = showCardBlock
-
-  const docs = isMoral ? TERMINALS_PM : TERMINALS_PF
-  const datos = isMoral ? TERMINALS_DATA_PM : TERMINALS_DATA_PF
 
   return (
     <>
@@ -678,35 +876,12 @@ function DocsPage({
         </p>
 
         {/* Terminal */}
-        <div style={{ marginTop: "7mm", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
-          <div style={{ background: DEEP, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#fff" }}>
-              Terminal Payefy
-            </p>
-            <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: MINT }}>
-              {isMoral ? "Persona Moral" : "Persona Física"} · {isCardPresent ? "Tarjeta presente" : "E-commerce"}
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
-            <ReqList title="Documentos" items={docs} dense={dense} />
-            <div>
-              <ReqList title="Datos que te pediremos" items={datos} numbered={false} dense={dense} />
-              <div style={{ marginTop: 10, background: "#F0FAF3", border: "1px solid #CBEFDB", borderRadius: 10, padding: "9px 12px" }}>
-                <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: GREEN }}>
-                  Según tu modalidad
-                </p>
-                <p style={{ margin: "4px 0 0", fontSize: 10.8, color: "#3E5049", lineHeight: 1.4 }}>
-                  {isCardPresent
-                    ? "2 fotos del interior y 2 del exterior de tu negocio"
-                    : "URL de tu sitio web o link de pago. El sitio debe contar con Términos y Condiciones y Aviso de Privacidad publicados."}
-                </p>
-              </div>
-            </div>
-          </div>
+        <div style={{ marginTop: "7mm" }}>
+          <TerminalDocsCard data={data} dense />
         </div>
 
         {/* Tarjeta Payefy */}
-        {showCardBlock && (
+        {(
           <div style={{ marginTop: "6mm", border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
             <div style={{ background: CANVAS, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: INK }}>
@@ -741,13 +916,7 @@ function DocsPage({
 
         {/* Notas de formato */}
         <div style={{ marginTop: "auto", marginBottom: "5mm", borderTop: `1px solid ${LINE}`, paddingTop: 10 }}>
-          <p style={{ margin: 0, fontSize: 9.5, color: GRAY, lineHeight: 1.55 }}>
-            · Documentos en <strong style={{ color: INK }}>PDF</strong>; fotos e identificaciones en{" "}
-            <strong style={{ color: INK }}>JPG</strong>. Las identificaciones deben ir en foto, por ambos lados.
-            <br />
-            · Cada escritura constitutiva y otorgamiento de poderes debe estar inscrito en el
-            Registro Público de la Propiedad y el Comercio.
-          </p>
+          <DocFormatNotes />
         </div>
       </div>
       <Foot />
@@ -758,21 +927,26 @@ function DocsPage({
 // ─── PÁGINA FINAL · Siguientes pasos ─────────────────────────────
 function ClosingPage({
   data,
+  calc,
   page,
   total,
 }: {
   data: Partial<ProposalData>
+  calc: ProposalCalculations
   page: number
   total: number
 }) {
-  const comodato = (data.monthlyVolume || 0) >= 300000
+  const showSavings = data.proposalType === "comparative" && calc.annualSavings > 0
+  // Cuando no hay página de Documentación aparte (propuestas sin Tarjeta
+  // Payefy), los requisitos van aquí, consolidados — sin cuartilla propia.
+  const docsAqui = !data.includesCards && !data.hasDispersionCards
 
   return (
     <>
       <RunningHead eyebrow="Siguientes pasos" page={page} total={total} />
       <div className="flex-1 px-[14mm] pt-[9mm] flex flex-col">
         <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, letterSpacing: "-.025em", color: INK }}>
-          Empezar toma menos de lo que crees
+          {showSavings ? "El ahorro empieza el primer mes" : "Empezar toma menos de lo que crees"}
         </h2>
 
         <div className="flex gap-3" style={{ marginTop: "7mm" }}>
@@ -791,15 +965,16 @@ function ClosingPage({
           ))}
         </div>
 
-        {comodato && (
-          <div style={{ marginTop: "7mm", background: "#F0FAF3", border: "1px solid #CBEFDB", borderRadius: 14, padding: "13px 16px" }}>
-            <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: GREEN }}>
-              ✓ Por tu volumen calificas para terminal en comodato
+        {docsAqui && (
+          <>
+            <p style={{ margin: "8mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
+              Lo que necesitamos para tu alta — todo en línea desde payefy.com.mx
             </p>
-            <p style={{ margin: "3px 0 0", fontSize: 11, color: GRAY }}>
-              Sin renta mensual mientras mantengas tu operación con Payefy.
-            </p>
-          </div>
+            <TerminalDocsCard data={data} />
+            <div style={{ marginTop: "4mm" }}>
+              <DocFormatNotes />
+            </div>
+          </>
         )}
 
         <div
@@ -813,8 +988,9 @@ function ClosingPage({
                 ¿Avanzamos, {(data.contactName || "").split(" ")[0] || "equipo"}?
               </p>
               <p style={{ margin: "6px 0 0", fontSize: 12, color: "rgba(255,255,255,.72)", maxWidth: "105mm", lineHeight: 1.5 }}>
-                Responde este correo o escríbenos y arrancamos tu alta hoy mismo.
-                Esta propuesta mantiene sus condiciones por 30 días.
+                {showSavings
+                  ? `Cada mes con tu tasa actual son ${formatCurrency(calc.monthlySavings)} que no regresan. Responde este correo y arrancamos tu cambio hoy mismo — sin detener tu operación.`
+                  : "Responde este correo o escríbenos y arrancamos tu alta hoy mismo. Esta propuesta mantiene sus condiciones por 30 días."}
               </p>
             </div>
             <div style={{ textAlign: "right" }}>
@@ -834,9 +1010,13 @@ function ClosingPage({
 export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
   const calc = calculateProposal(data)
   const hasDispersion = data.hasDispersionCards
-  // Portada · Tasas · [Payefy Card] · Documentación · Siguientes pasos
-  const total = hasDispersion ? 5 : 4
-  const docsPage = hasDispersion ? 4 : 3
+  // La página de Documentación solo existe cuando la propuesta incluye
+  // Tarjeta Payefy (dos bloques de requisitos llenan la cuartilla); si no,
+  // los requisitos van consolidados dentro de Siguientes pasos.
+  const hasDocsPage = !!data.includesCards || !!data.hasDispersionCards
+  // Portada · Tasas · [Payefy Card] · Tecnología · [Documentación] · Siguientes pasos
+  const total = 4 + (hasDispersion ? 1 : 0) + (hasDocsPage ? 1 : 0)
+  const techPage = hasDispersion ? 4 : 3
 
   return (
     <div id="proposal-document" className="bg-white">
@@ -855,11 +1035,17 @@ export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
       )}
 
       <div className={pageClass}>
-        <DocsPage data={data} page={docsPage} total={total} />
+        <TechPage page={techPage} total={total} />
       </div>
 
+      {hasDocsPage && (
+        <div className={pageClass}>
+          <DocsPage data={data} page={techPage + 1} total={total} />
+        </div>
+      )}
+
       <div className={pageClass}>
-        <ClosingPage data={data} page={total} total={total} />
+        <ClosingPage data={data} calc={calc} page={total} total={total} />
       </div>
     </div>
   )

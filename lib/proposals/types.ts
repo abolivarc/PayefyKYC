@@ -81,6 +81,14 @@ export interface StepProps {
 
 export const IVA_RATE = 1.16
 
+// Regla comercial: la terminal en comodato (equipo sin costo) solo se
+// ofrece a comercios que procesan al menos este volumen mensual.
+export const COMODATO_MIN_VOLUME = 300000
+
+export function qualifiesForComodato(monthlyVolume: number | undefined): boolean {
+  return (monthlyVolume || 0) >= COMODATO_MIN_VOLUME
+}
+
 export const COMPETITORS = [
   "Mercado Pago",
   "Clip",
