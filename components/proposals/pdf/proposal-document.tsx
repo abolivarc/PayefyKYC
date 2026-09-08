@@ -95,6 +95,9 @@ function RateCard({
         {value}
         <span style={{ fontSize: 16, fontWeight: 700 }}>%</span>
       </p>
+      <p style={{ margin: "4px 0 0", fontSize: 9, fontWeight: 600, color: accent ? "rgba(255,255,255,.6)" : "#9BAFA7" }}>
+        + IVA
+      </p>
     </div>
   )
 }
@@ -171,12 +174,12 @@ function CoverPage({
                     {t.v}
                     <span style={{ fontSize: 17, fontWeight: 700 }}>%</span>
                   </p>
+                  <p style={{ margin: "3px 0 0", fontSize: 9, fontWeight: 600, color: "#2E5548", opacity: 0.75 }}>+ IVA</p>
                 </div>
               ))}
             </div>
             <p style={{ margin: "12px 0 0", fontSize: 11.5, color: "#2E5548" }}>
-              Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que
-              cobras. <span style={{ opacity: 0.75 }}>Tasas más IVA.</span>
+              Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que cobras.
             </p>
           </div>
         )}
@@ -320,7 +323,7 @@ function RatesPage({
         <p style={{ margin: "6px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "150mm", lineHeight: 1.5 }}>
           {isComparative
             ? `Cálculo sobre tu volumen real de ${formatCurrency(data.monthlyVolume || 0)} mensuales. Todas las cifras incluyen IVA.`
-            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas. Las tasas mostradas son más IVA."}
+            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas."}
         </p>
 
         {isComparative ? (
