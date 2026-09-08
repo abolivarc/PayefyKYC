@@ -29,8 +29,6 @@ const TERMINAL_IMG = "/proposals/terminal-smart.png"
 const TERMINAL_VERTICAL_IMG = "/proposals/terminal-card-vertical.png"
 const CARD_IMG = "/proposals/payefy-card.png"
 
-const rateWithIVA = (rate: number) => (rate * IVA_RATE).toFixed(2)
-
 const pageClass =
   "proposal-pdf-page bg-white w-[210mm] h-[297mm] mx-auto box-border flex flex-col relative overflow-hidden"
 
@@ -96,9 +94,6 @@ function RateCard({
       <p style={{ margin: "6px 0 0", fontSize: 30, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: accent ? "#fff" : INK, fontFamily: "var(--font-display)" }}>
         {value}
         <span style={{ fontSize: 16, fontWeight: 700 }}>%</span>
-      </p>
-      <p style={{ margin: "4px 0 0", fontSize: 9, color: accent ? "rgba(255,255,255,.6)" : "#9BAFA7" }}>
-        {rateWithIVA(value)}% con IVA
       </p>
     </div>
   )
@@ -176,12 +171,12 @@ function CoverPage({
                     {t.v}
                     <span style={{ fontSize: 17, fontWeight: 700 }}>%</span>
                   </p>
-                  <p style={{ margin: "3px 0 0", fontSize: 9, color: "#2E5548", opacity: 0.75 }}>{rateWithIVA(t.v)}% con IVA</p>
                 </div>
               ))}
             </div>
             <p style={{ margin: "12px 0 0", fontSize: 11.5, color: "#2E5548" }}>
-              Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que cobras.
+              Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que
+              cobras. <span style={{ opacity: 0.75 }}>Tasas más IVA.</span>
             </p>
           </div>
         )}
@@ -325,7 +320,7 @@ function RatesPage({
         <p style={{ margin: "6px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "150mm", lineHeight: 1.5 }}>
           {isComparative
             ? `Cálculo sobre tu volumen real de ${formatCurrency(data.monthlyVolume || 0)} mensuales. Todas las cifras incluyen IVA.`
-            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas."}
+            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas. Las tasas mostradas son más IVA."}
         </p>
 
         {isComparative ? (
