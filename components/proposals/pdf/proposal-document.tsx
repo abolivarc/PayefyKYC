@@ -448,20 +448,6 @@ function RatesPage({
               <RateCard label="Internacional" value={intl} />
             </div>
 
-            {/* Lo único que va en pesos en la general: los ceros */}
-            <div className="grid grid-cols-3 gap-3" style={{ marginTop: "8mm" }}>
-              {[
-                { k: "Renta mensual", s: "hoy y siempre" },
-                { k: "Costo de alta", s: "sin letras chicas" },
-                { k: "Permanencia forzosa", s: "te quedas porque quieres" },
-              ].map((it) => (
-                <div key={it.k} style={{ background: MINT, borderRadius: 14, padding: "14px 16px" }}>
-                  <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: DEEP }}>{it.k}</p>
-                  <p style={{ margin: "5px 0 0", fontSize: 21, fontWeight: 800, color: DEEP, fontFamily: "var(--font-display)", letterSpacing: "-.02em" }}>$0</p>
-                  <p style={{ margin: 0, fontSize: 10, color: "#2E5548" }}>{it.s}</p>
-                </div>
-              ))}
-            </div>
           </>
         )}
 
