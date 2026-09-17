@@ -10,6 +10,8 @@ import { AdminValidationRow } from "@/components/admin/admin-validation-row"
 import { CompletionOverrideButton } from "@/components/admin/completion-override-button"
 import { ExportExpedienteButton } from "@/components/admin/export-expediente-button"
 import { ContractManager } from "@/components/admin/contract-manager"
+import { ProposalAttachments } from "@/components/admin/proposal-attachments"
+import type { ApplicationProposal } from "@/lib/proposals/attachment-actions"
 import { SendToTransferButton } from "@/components/admin/send-to-transfer-button"
 import { AmexRequirementButton } from "@/components/admin/amex-requirement-button"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
@@ -171,7 +173,7 @@ export default async function ReviewPage({
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-  const [appResult, docsResult, contractsResult, logsResult] = await Promise.all([
+  const [appResult, docsResult, contractsResult, logsResult, proposalsResult] = await Promise.all([
     supabase
       .from("applications")
       .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
@@ -193,6 +195,11 @@ export default async function ReviewPage({
       .not("action", "like", "cron_%")
       .order("created_at", { ascending: false })
       .limit(8),
+    admin
+      .from("application_proposals")
+      .select("id, application_id, storage_path, file_name, file_size, mime_type, notes, uploaded_by, created_at, profiles(full_name)")
+      .eq("application_id", appId)
+      .order("created_at", { ascending: false }),
   ])
 
   if (!appResult.data) return notFound()
@@ -460,6 +467,12 @@ export default async function ReviewPage({
 
   const contractMap = new Map<string, { status: string; signed_doc_path: string | null }>()
   for (const c of contractsResult.data ?? []) contractMap.set(c.kind, { status: c.status, signed_doc_path: (c as unknown as { signed_doc_path: string | null }).signed_doc_path ?? null })
+
+  // Propuestas comerciales adjuntas (la más reciente es la vigente)
+  const proposals: ApplicationProposal[] = (proposalsResult.data ?? []).map((p) => {
+    const { profiles, ...rest } = p as typeof p & { profiles: { full_name: string | null } | null }
+    return { ...rest, uploader_name: profiles?.full_name ?? null }
+  })
 
   const contractState = {
     payefy: contractMap.get("payefy_service")?.status ?? null,
@@ -951,6 +964,9 @@ export default async function ReviewPage({
 
               {/* Contracts */}
               <ContractManager applicationId={appId} contracts={contractState} productCode={product?.code} />
+
+              {/* Propuesta comercial adjunta (interna, no la ve el cliente) */}
+              <ProposalAttachments applicationId={appId} proposals={proposals} />
 
               {/* Bitácora */}
               {logs.length > 0 && (
