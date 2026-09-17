@@ -73,7 +73,7 @@ export function Step1BusinessInfo({ data, updateData }: StepProps) {
           {(
             [
               { id: "terminales" as ProductType, icon: CreditCard, label: "Terminales", desc: "Terminal punto de venta" },
-              { id: "venta_en_linea" as ProductType, icon: Monitor, label: "Venta en Línea", desc: "Cobros por e-commerce" },
+              { id: "venta_en_linea" as ProductType, icon: Monitor, label: "Venta en Línea", desc: "E-commerce / botón de pago" },
               { id: "link_de_pago" as ProductType, icon: Link2, label: "Link de Pago", desc: "Cobros con link compartido" },
             ]
           ).map((product) => {

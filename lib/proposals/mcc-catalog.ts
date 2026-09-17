@@ -27,6 +27,10 @@ const conMargen = (costo: number) => Math.round((costo + BASE_MARKUP) * 100) / 1
 export const AMEX_FLOOR_RATE = conMargen(AMEX_CONTRACT_COST)                   // 3.1 %
 export const INTERNATIONAL_FLOOR_RATE = conMargen(INTERNATIONAL_CONTRACT_COST) // 3.6 %
 
+/** Cargo fijo por transacción (MXN, sin IVA) de los productos en línea. */
+export const LINK_DE_PAGO_FIXED_FEE = 8   // por cada link generado
+export const BOTON_DE_PAGO_FIXED_FEE = 5  // por cada transacción del botón de pago
+
 export const MCC_CATALOG: GiroMcc[] = [
   { mcc: "4722", familia: "Agencias de Viajes", descripcion: "AGENCIAS DE VIAJES, OPERADORAS DE VIAJES", pisoDebito: 1.7, pisoCredito: 2.18 },
   { mcc: "5399", familia: "Agregador", descripcion: "Agregador de Comercios o Facilitador de Pagos", pisoDebito: 1.75, pisoCredito: 2.36 },

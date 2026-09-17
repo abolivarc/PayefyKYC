@@ -1,7 +1,12 @@
 // Tipos del Generador de Propuestas Comerciales
-import { AMEX_FLOOR_RATE, INTERNATIONAL_FLOOR_RATE } from "./mcc-catalog"
+import {
+  AMEX_FLOOR_RATE,
+  INTERNATIONAL_FLOOR_RATE,
+  LINK_DE_PAGO_FIXED_FEE,
+  BOTON_DE_PAGO_FIXED_FEE,
+} from "./mcc-catalog"
 
-export { AMEX_FLOOR_RATE, INTERNATIONAL_FLOOR_RATE }
+export { AMEX_FLOOR_RATE, INTERNATIONAL_FLOOR_RATE, LINK_DE_PAGO_FIXED_FEE, BOTON_DE_PAGO_FIXED_FEE }
 
 export type EntityType = "fisica" | "fisica_actividad_empresarial" | "moral"
 export type ProposalType = "comparative" | "general"
@@ -87,6 +92,26 @@ export const COMODATO_MIN_VOLUME = 300000
 
 export function qualifiesForComodato(monthlyVolume: number | undefined): boolean {
   return (monthlyVolume || 0) >= COMODATO_MIN_VOLUME
+}
+
+// Regla comercial: los productos en línea llevan un cargo fijo por transacción
+// además de la tasa. No es negociable y no entra a la proyección de costos:
+// solo se muestra con énfasis en el wizard y en la propuesta.
+export interface FixedTransactionFee {
+  amount: number       // MXN sin IVA
+  productLabel: string // cómo se le llama al producto en la propuesta
+  unitLabel: string    // a qué se aplica el cargo
+}
+
+export function fixedFeeForProduct(productType: ProductType | undefined): FixedTransactionFee | null {
+  switch (productType) {
+    case "link_de_pago":
+      return { amount: LINK_DE_PAGO_FIXED_FEE, productLabel: "Link de Pago", unitLabel: "por cada link generado" }
+    case "venta_en_linea":
+      return { amount: BOTON_DE_PAGO_FIXED_FEE, productLabel: "Botón de pago", unitLabel: "por transacción" }
+    default:
+      return null
+  }
 }
 
 export const COMPETITORS = [

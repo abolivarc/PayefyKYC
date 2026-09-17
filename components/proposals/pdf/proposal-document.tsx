@@ -6,6 +6,7 @@
 import {
   ProposalData,
   ProposalCalculations,
+  type ProductType,
   ENTITY_TYPE_LABELS,
   IVA_RATE,
   calculateProposal,
@@ -13,6 +14,8 @@ import {
   AMEX_FLOOR_RATE,
   INTERNATIONAL_FLOOR_RATE,
   qualifiesForComodato,
+  fixedFeeForProduct,
+  type FixedTransactionFee,
 } from "@/lib/proposals/types"
 
 // ─── Paleta de marca ─────────────────────────────────────────────
@@ -102,6 +105,45 @@ function RateCard({
   )
 }
 
+// Cargo fijo por transacción (link / botón de pago). Banda de ancho completo
+// con el monto grande: es un cargo que el comercial no debe omitir al presentar.
+// `compact` es para el bloque mint de la portada, donde el fondo ya es claro.
+function FixedFeeBand({ fee, compact = false }: { fee: FixedTransactionFee; compact?: boolean }) {
+  const bg = compact ? "rgba(0,66,56,.08)" : DEEP
+  const fg = compact ? DEEP : "#fff"
+  const eyebrow = compact ? "#2E5548" : MINT
+  const sub = compact ? "#2E5548" : "rgba(255,255,255,.7)"
+  return (
+    <div
+      className="flex items-center"
+      style={{
+        background: bg,
+        border: compact ? "1px solid rgba(0,66,56,.18)" : `1px solid ${DEEP}`,
+        borderRadius: 14,
+        padding: compact ? "10px 14px" : "12px 16px",
+        marginTop: compact ? 12 : 10,
+        gap: 16,
+      }}
+    >
+      <div style={{ flexShrink: 0 }}>
+        <p style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: compact ? 26 : 30, fontWeight: 800, lineHeight: 1, letterSpacing: "-.03em", color: fg }}>
+          ${fee.amount}
+          <span style={{ fontSize: compact ? 12 : 14, fontWeight: 700, marginLeft: 3 }}>MXN</span>
+        </p>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 9, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: eyebrow }}>
+          Cargo fijo por transacción · {fee.productLabel}
+        </p>
+        <p style={{ margin: "3px 0 0", fontSize: compact ? 10.5 : 11.5, fontWeight: 600, color: fg }}>
+          {fee.unitLabel}, además de la tasa por tipo de tarjeta
+        </p>
+      </div>
+      <p style={{ margin: 0, fontSize: 9, fontWeight: 700, color: sub, flexShrink: 0 }}>+ IVA</p>
+    </div>
+  )
+}
+
 // ─── PÁGINA 1 · Portada ──────────────────────────────────────────
 function CoverPage({
   data,
@@ -112,6 +154,7 @@ function CoverPage({
 }) {
   const isComparative = data.proposalType === "comparative"
   const showSavings = isComparative && calc.annualSavings > 0
+  const coverFee = fixedFeeForProduct(data.productType)
   // Enfoque comercial: la general muestra SOLO tasas — ningún monto en pesos
   // que le haga la calculadora del costo al cliente. En la comparativa los
   // pesos sí aparecen porque ahí son ahorro, no costo.
@@ -178,6 +221,7 @@ function CoverPage({
                 </div>
               ))}
             </div>
+            {coverFee && <FixedFeeBand fee={coverFee} compact />}
             <p style={{ margin: "12px 0 0", fontSize: 11.5, color: "#2E5548" }}>
               Sin renta, sin permanencia y sin cargos ocultos: pagas solo por lo que cobras.
             </p>
@@ -301,6 +345,7 @@ function RatesPage({
   const isComparative = data.proposalType === "comparative"
   const amex = data.negotiatedAmexRate ?? AMEX_FLOOR_RATE
   const intl = data.negotiatedInternationalRate ?? INTERNATIONAL_FLOOR_RATE
+  const fee = fixedFeeForProduct(data.productType)
 
   const rows: { label: string; comp?: number; payefy: number }[] = [
     { label: "Débito", comp: data.competitorDebitRate, payefy: data.negotiatedDebitRate || 0 },
@@ -323,7 +368,9 @@ function RatesPage({
         <p style={{ margin: "6px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "150mm", lineHeight: 1.5 }}>
           {isComparative
             ? `Cálculo sobre tu volumen real de ${formatCurrency(data.monthlyVolume || 0)} mensuales. Todas las cifras incluyen IVA.`
-            : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas."}
+            : fee
+              ? "Una tasa fija por tipo de tarjeta más un cargo fijo por transacción: sin renta, sin mínimos y sin letras chicas."
+              : "Una tasa fija por tipo de tarjeta y nada más: sin renta, sin mínimos y sin letras chicas."}
         </p>
 
         {isComparative ? (
@@ -368,6 +415,9 @@ function RatesPage({
                 })}
               </tbody>
             </table>
+
+            {/* Cargo fijo por transacción: la tabla es solo de tasas, así que va aparte */}
+            {fee && <FixedFeeBand fee={fee} />}
 
             {/* Barras de costo anual */}
             <div style={{ marginTop: "9mm" }}>
@@ -447,7 +497,7 @@ function RatesPage({
               <RateCard label="AMEX" value={amex} />
               <RateCard label="Internacional" value={intl} />
             </div>
-
+            {fee && <FixedFeeBand fee={fee} />}
           </>
         )}
 
@@ -631,80 +681,49 @@ function DispersionPage({
   )
 }
 
-// ─── PÁGINA · Tecnología a tu medida ─────────────────────────────
-// Payefy no solo vende la infraestructura de pagos: también el sistema
-// de control operativo hecho a la medida (embebido, con la marca del
-// cliente) y la consultoría para construir herramientas que no existen.
-const TECH_CAPABILITIES = [
-  { t: "Link de pago", s: "Cobra a distancia con un enlace: por WhatsApp, correo o redes sociales." },
-  { t: "Cobros recurrentes", s: "Suscripciones y pagos programados que se cobran solos, cada periodo." },
-  { t: "Catálogo y precios", s: "Tus productos y costos cargados en el sistema, listos para cobrar sin errores." },
-  { t: "Integración con tu POS", s: "Conectamos tu punto de venta para que cobro y ticket sean un solo paso." },
-  { t: "Control operativo", s: "Ventas, depósitos y conciliación en tiempo real, en una sola pantalla." },
-  { t: "Embebido en tu interfaz", s: "La tecnología vive dentro de tu sistema, con tu marca y tu flujo de trabajo." },
-]
+// ─── Metadatos por producto ──────────────────────────────────────
+// Lo que cambia según lo que el cliente compra: cómo se llama, qué
+// modalidad de KYC le aplica, cuál es su último paso de alta y qué
+// capacidades de la plataforma le son relevantes. Antes la página de
+// tecnología era idéntica para todos y a un cliente de terminal se le
+// vendía "link de pago" como feature.
+type Capability = { t: string; s: string }
 
-function TechPage({ page, total }: { page: number; total: number }) {
-  return (
-    <>
-      <RunningHead eyebrow="Tecnología Payefy" page={page} total={total} />
-      <div className="flex-1 px-[14mm] pt-[9mm] flex flex-col">
-        <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, letterSpacing: "-.025em", color: INK, maxWidth: "150mm" }}>
-          Más que cobrar: tu operación completa, en una sola interfaz
-        </h2>
-        <p style={{ margin: "8px 0 0", fontSize: 12.5, color: GRAY, maxWidth: "155mm", lineHeight: 1.55 }}>
-          La infraestructura de pagos es la base. Encima de ella construimos el
-          sistema con el que <strong style={{ color: INK }}>controlas tu operación día a día</strong> —
-          y si tu negocio necesita algo especial, lo desarrollamos a tu medida.
-        </p>
-
-        <div className="grid grid-cols-3 gap-3" style={{ marginTop: "8mm" }}>
-          {TECH_CAPABILITIES.map((c) => (
-            <div key={c.t} style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: "14px 16px" }}>
-              <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: DEEP, lineHeight: 1.3, letterSpacing: "-.01em" }}>
-                {c.t}
-              </p>
-              <p style={{ margin: "5px 0 0", fontSize: 10.5, color: GRAY, lineHeight: 1.45 }}>{c.s}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Consultoría de desarrollo a la medida */}
-        <div style={{ marginTop: "9mm", background: DEEP, borderRadius: 20, padding: "20px 24px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", right: "-12mm", top: "-14mm", width: "48mm", height: "48mm", borderRadius: "50%", background: "rgba(174,255,153,.08)" }} />
-          <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MINT, position: "relative" }}>
-            Consultoría de tecnología
-          </p>
-          <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: "-.02em", lineHeight: 1.25, maxWidth: "150mm", position: "relative" }}>
-            ¿Tu operación necesita algo que no existe todavía? Lo construimos contigo.
-          </p>
-          <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "rgba(255,255,255,.75)", lineHeight: 1.55, maxWidth: "155mm", position: "relative" }}>
-            Nuestro equipo de tecnología diseña herramientas a la medida sobre la
-            infraestructura Payefy: desde flujos de cobro especiales hasta sistemas
-            completos de control operativo integrados con lo que ya usas. Cuéntanos
-            cómo trabajas y te proponemos la solución.
-          </p>
-        </div>
-
-        <div style={{ marginTop: "7mm", background: CANVAS, borderRadius: 16, padding: "14px 20px" }}>
-          <p style={{ margin: "0 0 7px", fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: DEEP }}>
-            Cómo se ve en la práctica
-          </p>
-          {[
-            "Un restaurante con cobros en mesa integrados a su punto de venta y propinas en el mismo flujo",
-            "Una escuela con colegiaturas recurrentes y recordatorios automáticos a los padres",
-            "Un mayorista con catálogo de precios por cliente y links de pago generados desde su propio sistema",
-          ].map((t) => (
-            <p key={t} style={{ margin: "0 0 5px", fontSize: 11.5, color: "#3E5049", lineHeight: 1.45 }}>
-              · {t}
-            </p>
-          ))}
-        </div>
-      </div>
-      <Foot />
-    </>
-  )
+const CAPABILITIES: Record<string, Capability> = {
+  pos:         { t: "Integración con tu POS",   s: "Cobro y ticket en un solo paso, conectado a tu punto de venta." },
+  catalogo:    { t: "Catálogo y precios",        s: "Tus productos cargados en el sistema, listos para cobrar sin errores." },
+  control:     { t: "Control operativo",         s: "Ventas, depósitos y conciliación en tiempo real, en una sola pantalla." },
+  recurrentes: { t: "Cobros recurrentes",        s: "Suscripciones y pagos programados que se cobran solos, cada periodo." },
+  embebido:    { t: "Embebido en tu interfaz",   s: "La tecnología vive dentro de tu sistema, con tu marca y tu flujo." },
+  link:        { t: "Link de pago",              s: "Cobra a distancia con un enlace por WhatsApp, correo o redes." },
 }
+
+const PRODUCT_META: Record<
+  ProductType,
+  { name: string; modality: string; step3: { t: string; s: string }; caps: string[] }
+> = {
+  terminales: {
+    name: "Terminal Payefy",
+    modality: "Tarjeta presente",
+    step3: { t: "Recibes tu terminal", s: "Y empiezas a cobrar" },
+    caps: ["pos", "catalogo", "control", "link", "recurrentes", "embebido"],
+  },
+  link_de_pago: {
+    name: "Link de Pago",
+    modality: "Link de pago",
+    step3: { t: "Activas tu link de pago", s: "Y cobras desde el primer día" },
+    caps: ["recurrentes", "catalogo", "control", "embebido", "pos", "link"],
+  },
+  venta_en_linea: {
+    name: "Botón de pago",
+    modality: "E-commerce",
+    step3: { t: "Integras el botón de pago", s: "Y tu tienda empieza a cobrar" },
+    caps: ["embebido", "recurrentes", "control", "catalogo", "link", "pos"],
+  },
+}
+
+const productMeta = (productType: ProductType | undefined) =>
+  PRODUCT_META[productType ?? "terminales"]
 
 // ─── Requisitos de documentación (fuente: payefy_requisitos v14.4) ───
 const TERMINALS_PF = [
@@ -789,6 +808,7 @@ function ReqList({
 function TerminalDocsCard({ data, dense = false }: { data: Partial<ProposalData>; dense?: boolean }) {
   const isMoral = data.entityType === "moral"
   const isCardPresent = data.productType === "terminales"
+  const meta = productMeta(data.productType)
   const docs = isMoral ? TERMINALS_PM : TERMINALS_PF
   const datos = isMoral ? TERMINALS_DATA_PM : TERMINALS_DATA_PF
 
@@ -796,10 +816,10 @@ function TerminalDocsCard({ data, dense = false }: { data: Partial<ProposalData>
     <div style={{ border: `1px solid ${LINE}`, borderRadius: 16, overflow: "hidden" }}>
       <div style={{ background: DEEP, padding: "9px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <p style={{ margin: 0, fontSize: 11, fontWeight: 800, color: "#fff" }}>
-          Terminal Payefy
+          {meta.name}
         </p>
         <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: MINT }}>
-          {isMoral ? "Persona Moral" : "Persona Física"} · {isCardPresent ? "Tarjeta presente" : "E-commerce"}
+          {isMoral ? "Persona Moral" : "Persona Física"} · {meta.modality}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-x-7" style={{ padding: "13px 16px" }}>
@@ -825,7 +845,7 @@ function TerminalDocsCard({ data, dense = false }: { data: Partial<ProposalData>
 // Notas de formato de los documentos (comparten Documentación y cierre)
 function DocFormatNotes() {
   return (
-    <p style={{ margin: 0, fontSize: 9.5, color: GRAY, lineHeight: 1.55 }}>
+    <p style={{ margin: 0, fontSize: 10.5, color: GRAY, lineHeight: 1.55 }}>
       · Documentos en <strong style={{ color: INK }}>PDF</strong>; fotos e identificaciones en{" "}
       <strong style={{ color: INK }}>JPG</strong>. Las identificaciones deben ir en foto, por ambos lados.
       <br />
@@ -908,7 +928,10 @@ function DocsPage({
   )
 }
 
-// ─── PÁGINA FINAL · Siguientes pasos ─────────────────────────────
+// ─── PÁGINA FINAL · Así arrancamos ───────────────────────────────
+// Una sola página con todo lo que el cliente necesita para decir que sí:
+// los pasos, los requisitos, lo que viene incluido y cómo contactarnos.
+// Sustituye a las antiguas páginas de Tecnología + Siguientes pasos.
 function ClosingPage({
   data,
   calc,
@@ -921,49 +944,130 @@ function ClosingPage({
   total: number
 }) {
   const showSavings = data.proposalType === "comparative" && calc.annualSavings > 0
+  const meta = productMeta(data.productType)
   // Cuando no hay página de Documentación aparte (propuestas sin Tarjeta
   // Payefy), los requisitos van aquí, consolidados — sin cuartilla propia.
   const docsAqui = !data.includesCards && !data.hasDispersionCards
+  // Con los requisitos en la página hay sitio para 3 capacidades; sin ellos, para 6
+  const caps = meta.caps.slice(0, docsAqui ? 3 : 6).map((k) => CAPABILITIES[k])
+
+  const steps = [
+    { t: "Cargas tus documentos", s: "En línea, desde la plataforma" },
+    { t: "Validamos tu expediente", s: "Te avisamos si falta algo" },
+    meta.step3,
+  ]
 
   return (
     <>
-      <RunningHead eyebrow="Siguientes pasos" page={page} total={total} />
+      <RunningHead eyebrow="Así arrancamos" page={page} total={total} />
       <div className="flex-1 px-[14mm] pt-[9mm] flex flex-col">
         <h2 style={{ margin: 0, fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, letterSpacing: "-.025em", color: INK }}>
           {showSavings ? "El ahorro empieza el primer mes" : "Empezar toma menos de lo que crees"}
         </h2>
+        <p style={{ margin: "6px 0 0", fontSize: 12.5, color: GRAY, lineHeight: 1.5, maxWidth: "150mm" }}>
+          Todo se hace en línea desde <strong style={{ color: DEEP }}>payefy.com.mx</strong> con tu
+          correo registrado. Tres pasos y estás cobrando.
+        </p>
 
-        <div className="flex gap-3" style={{ marginTop: "7mm" }}>
-          {[
-            { n: "1", t: "Cargas tus documentos", s: "En línea, desde la plataforma" },
-            { n: "2", t: "Validamos tu expediente", s: "Te avisamos si falta algo" },
-            { n: "3", t: "Recibes tu terminal", s: "Y empiezas a cobrar" },
-          ].map((s) => (
-            <div key={s.n} style={{ flex: 1, background: CANVAS, borderRadius: 16, padding: "16px 18px" }}>
-              <span style={{ display: "inline-flex", width: 26, height: 26, borderRadius: "50%", background: DEEP, color: MINT, fontSize: 13, fontWeight: 800, alignItems: "center", justifyContent: "center" }}>
-                {s.n}
-              </span>
-              <p style={{ margin: "10px 0 0", fontSize: 13, fontWeight: 700, color: INK, lineHeight: 1.3 }}>{s.t}</p>
-              <p style={{ margin: "3px 0 0", fontSize: 11, color: GRAY }}>{s.s}</p>
-            </div>
-          ))}
+        {/* Línea de tiempo */}
+        <div style={{ marginTop: "10mm", position: "relative" }}>
+          <div style={{ position: "absolute", left: "16.6%", right: "16.6%", top: 13, height: 2, background: LINE }} />
+          <div className="flex">
+            {steps.map((st, i) => {
+              const last = i === steps.length - 1
+              return (
+                <div key={st.t} style={{ flex: 1, textAlign: "center", position: "relative", padding: "0 6px" }}>
+                  <span
+                    style={{
+                      display: "inline-flex", width: 28, height: 28, borderRadius: "50%",
+                      background: last ? MINT : DEEP, color: last ? DEEP : MINT,
+                      fontSize: 13, fontWeight: 800, alignItems: "center", justifyContent: "center",
+                      border: `2px solid ${DEEP}`, boxSizing: "border-box",
+                    }}
+                  >
+                    {i + 1}
+                  </span>
+                  <p style={{ margin: "9px 0 0", fontSize: 12.5, fontWeight: 700, color: INK, lineHeight: 1.3 }}>{st.t}</p>
+                  <p style={{ margin: "2px 0 0", fontSize: 10.5, color: GRAY }}>{st.s}</p>
+                </div>
+              )
+            })}
+          </div>
         </div>
 
+        {/* Requisitos (solo cuando no hay página de Documentación aparte) */}
         {docsAqui && (
-          <>
-            <p style={{ margin: "8mm 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
-              Lo que necesitamos para tu alta — todo en línea desde payefy.com.mx
+          <div style={{ marginTop: "10mm" }}>
+            <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
+              Lo que necesitamos para tu alta
             </p>
             <TerminalDocsCard data={data} />
             <div style={{ marginTop: "4mm" }}>
               <DocFormatNotes />
             </div>
-          </>
+          </div>
         )}
 
+        {/* Incluido con la cuenta — capacidades relevantes al producto */}
+        <div style={{ marginTop: docsAqui ? "9mm" : "11mm" }}>
+          <p style={{ margin: "0 0 8px", fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: GRAY }}>
+            Incluido con tu cuenta
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {caps.map((c) => (
+              <div key={c.t} style={{ background: CANVAS, borderRadius: 14, padding: docsAqui ? "13px 15px" : "16px 18px" }}>
+                <p style={{ margin: 0, fontSize: 12.5, fontWeight: 800, color: DEEP, lineHeight: 1.3, letterSpacing: "-.01em" }}>{c.t}</p>
+                <p style={{ margin: "5px 0 0", fontSize: 10.5, color: GRAY, lineHeight: 1.45 }}>{c.s}</p>
+              </div>
+            ))}
+          </div>
+
+          {docsAqui ? (
+            // Con requisitos en la página: la consultoría cabe en una línea
+            <div className="flex items-center gap-3" style={{ marginTop: 12, border: `1px solid ${LINE}`, borderRadius: 12, padding: "10px 14px" }}>
+              <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: GREEN, flexShrink: 0 }}>
+                A tu medida
+              </span>
+              <p style={{ margin: 0, fontSize: 11, color: "#3E5049", lineHeight: 1.45 }}>
+                ¿Tu operación necesita algo que no existe todavía? Nuestro equipo de tecnología lo
+                construye sobre la infraestructura Payefy, integrado con lo que ya usas.
+              </p>
+            </div>
+          ) : (
+            // Sin requisitos en la página: la consultoría se cuenta completa, con ejemplos
+            <div style={{ marginTop: "9mm", background: DEEP, borderRadius: 20, padding: "22px 26px", position: "relative", overflow: "hidden" }}>
+              <div style={{ position: "absolute", right: "-12mm", top: "-14mm", width: "48mm", height: "48mm", borderRadius: "50%", background: "rgba(174,255,153,.08)" }} />
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".14em", textTransform: "uppercase", color: MINT, position: "relative" }}>
+                Consultoría de tecnología
+              </p>
+              <p style={{ margin: "8px 0 0", fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 800, color: "#fff", letterSpacing: "-.02em", lineHeight: 1.25, maxWidth: "150mm", position: "relative" }}>
+                ¿Tu operación necesita algo que no existe todavía? Lo construimos contigo.
+              </p>
+              <p style={{ margin: "8px 0 0", fontSize: 11.5, color: "rgba(255,255,255,.75)", lineHeight: 1.55, maxWidth: "155mm", position: "relative" }}>
+                Nuestro equipo diseña herramientas a la medida sobre la infraestructura Payefy:
+                desde flujos de cobro especiales hasta sistemas completos de control operativo
+                integrados con lo que ya usas.
+              </p>
+              <div className="grid grid-cols-3 gap-3" style={{ marginTop: 16, position: "relative" }}>
+                {[
+                  { t: "Restaurante", s: "Cobros en mesa integrados al punto de venta, con propinas en el mismo flujo." },
+                  { t: "Escuela", s: "Colegiaturas recurrentes con recordatorios automáticos a los padres." },
+                  { t: "Mayorista", s: "Catálogo de precios por cliente y links de pago desde su propio sistema." },
+                ].map((e) => (
+                  <div key={e.t} style={{ background: "rgba(255,255,255,.07)", border: "1px solid rgba(174,255,153,.18)", borderRadius: 12, padding: "11px 13px" }}>
+                    <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: MINT }}>{e.t}</p>
+                    <p style={{ margin: "4px 0 0", fontSize: 10.5, color: "rgba(255,255,255,.8)", lineHeight: 1.45 }}>{e.s}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* CTA */}
         <div
           className="mt-auto mb-[6mm]"
-          style={{ background: DEEP, borderRadius: 20, padding: "22px 26px", position: "relative", overflow: "hidden" }}
+          style={{ background: DEEP, borderRadius: 20, padding: "20px 26px", position: "relative", overflow: "hidden" }}
         >
           <div style={{ position: "absolute", right: "-10mm", bottom: "-16mm", width: "50mm", height: "50mm", borderRadius: "50%", background: "rgba(174,255,153,.08)" }} />
           <div className="flex items-end justify-between gap-6 relative">
@@ -998,9 +1102,9 @@ export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
   // Tarjeta Payefy (dos bloques de requisitos llenan la cuartilla); si no,
   // los requisitos van consolidados dentro de Siguientes pasos.
   const hasDocsPage = !!data.includesCards || !!data.hasDispersionCards
-  // Portada · Tasas · [Payefy Card] · Tecnología · [Documentación] · Siguientes pasos
-  const total = 4 + (hasDispersion ? 1 : 0) + (hasDocsPage ? 1 : 0)
-  const techPage = hasDispersion ? 4 : 3
+  // Portada · Tasas · [Payefy Card] · [Documentación] · Así arrancamos
+  const total = 3 + (hasDispersion ? 1 : 0) + (hasDocsPage ? 1 : 0)
+  const docsPage = hasDispersion ? 4 : 3
 
   return (
     <div id="proposal-document" className="bg-white">
@@ -1018,13 +1122,9 @@ export function ProposalDocument({ data }: { data: Partial<ProposalData> }) {
         </div>
       )}
 
-      <div className={pageClass}>
-        <TechPage page={techPage} total={total} />
-      </div>
-
       {hasDocsPage && (
         <div className={pageClass}>
-          <DocsPage data={data} page={techPage + 1} total={total} />
+          <DocsPage data={data} page={docsPage} total={total} />
         </div>
       )}
 

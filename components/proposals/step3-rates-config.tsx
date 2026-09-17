@@ -10,6 +10,7 @@ import {
   AMEX_FLOOR_RATE,
   INTERNATIONAL_FLOOR_RATE,
   formatCurrency,
+  fixedFeeForProduct,
 } from "@/lib/proposals/types"
 import {
   AlertTriangle,
@@ -34,6 +35,8 @@ function getRevenueShareTier(monthlyVolume: number) {
 
 export function Step3RatesConfig({ data, updateData }: StepProps) {
   const isComparative = data.proposalType === "comparative"
+  // Cargo fijo por transacción de link / botón de pago: fijo, no editable
+  const fixedFee = fixedFeeForProduct(data.productType)
 
   // Mismo validador que usan el wizard, el paso 4 y el servidor
   const rateErrors = validateRates(data)
@@ -114,12 +117,38 @@ export function Step3RatesConfig({ data, updateData }: StepProps) {
             <Globe className="h-4 w-4 text-gray-400" />
             <span>Internacional: <strong>{INTERNATIONAL_FLOOR_RATE}%</strong></span>
           </div>
+          {fixedFee && (
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-gray-400" />
+              <span>
+                Cargo fijo: <strong>${fixedFee.amount} MXN</strong> / transacción
+              </span>
+            </div>
+          )}
         </div>
         <p className="text-xs text-gray-500 mt-2">
           Giro: {data.sectorFamilia} (MCC {data.mccCode}) | AMEX e Internacional son
-          pisos fijos contractuales
+          pisos fijos contractuales{fixedFee ? ", igual que el cargo fijo por transacción" : ""}
         </p>
       </div>
+
+      {/* Cargo fijo por transacción (link / botón de pago) — énfasis: no se debe omitir al presentar */}
+      {fixedFee && (
+        <div className="p-4 bg-amber-50 border-2 border-amber-400 rounded-lg flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-amber-900">
+              {fixedFee.productLabel}: cargo fijo por transacción
+            </p>
+            <p className="text-sm text-amber-900/90 mt-1">
+              Este producto lleva un cargo fijo de{" "}
+              <strong className="text-base">${fixedFee.amount} MXN + IVA</strong>{" "}
+              {fixedFee.unitLabel}, además de la tasa por tipo de tarjeta. Se incluye
+              automáticamente en la propuesta y no es negociable.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Tasas negociadas */}
       <div className="border rounded-lg p-6">
