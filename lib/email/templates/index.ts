@@ -448,9 +448,9 @@ export function emailAllChangesResolved({
   return wrap(`
   ${header("Cambios")}
   <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
-    <h2 style="color:#1f7a4d;margin-top:0;">Todos los cambios corregidos ✓</h2>
-    <p><strong>${companyName}</strong> (${productName}) ya respondió <strong>todos</strong> los cambios que se le solicitaron.</p>
-    <p>El expediente está listo para re-revisión.</p>
+    <h2 style="color:#1f7a4d;margin-top:0;">Expediente completo ✓</h2>
+    <p><strong>${companyName}</strong> (${productName}) ya respondió <strong>todos</strong> los cambios que se le solicitaron y no le falta ningún documento requerido.</p>
+    <p>El expediente está al 100% y listo para revisión.</p>
     <div style="margin:24px 0;">${btn(reviewUrl, "Revisar expediente")}</div>
     ${footer()}
   </div>`)

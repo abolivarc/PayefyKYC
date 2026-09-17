@@ -7,10 +7,11 @@ import { logAudit } from "@/lib/audit"
 import { createNotification } from "@/lib/notifications"
 import { emailChangesRequested, emailApproved } from "@/lib/email/templates"
 import { sendEmail } from "@/lib/email/send"
+import { adminRecipientsExcept } from "@/lib/email/recipients"
 import { uploadChangeImages, signChangeImages, imagesEmailBlock, type ChangeImageInput } from "@/lib/documents/change-request-images"
 
 // Copia interna cuando se piden cambios en cualquier expediente
-const CHANGES_CC = "a.santibanez@payefy.me"
+// Copia interna: a los administradores que no fueron quienes pidieron el cambio
 
 function adminDb() {
   return createAdminClient(
@@ -178,10 +179,11 @@ export async function requestDocumentChanges(
       .eq("id", user.id)
       .single()
 
-    if (actor?.email?.toLowerCase() !== CHANGES_CC) {
+    const ccAdmins = adminRecipientsExcept(actor?.email)
+    if (ccAdmins.length > 0) {
       const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
       await sendEmail({
-        to: CHANGES_CC,
+        to: ccAdmins,
         subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (${product?.name ?? "—"})`,
         html: `
           <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> solicitó cambios en el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "—"}).</p>
@@ -560,10 +562,11 @@ export async function requestGeneralChanges(
     .eq("id", user.id)
     .single()
 
-  if (actor?.email?.toLowerCase() !== CHANGES_CC) {
+  const ccAdmins2 = adminRecipientsExcept(actor?.email)
+  if (ccAdmins2.length > 0) {
     const reviewUrl = `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${applicationId}/review`
     await sendEmail({
-      to: CHANGES_CC,
+      to: ccAdmins2,
       subject: `[PayefyKYC] Cambios solicitados a ${company?.legal_name ?? "un comercio"} (${product?.name ?? "—"})`,
       html: `
         <p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> envió un comentario general sobre el expediente de <strong>${company?.legal_name ?? "—"}</strong> (${product?.name ?? "—"}).</p>

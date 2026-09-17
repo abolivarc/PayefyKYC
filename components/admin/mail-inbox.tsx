@@ -4,6 +4,7 @@ import { useMemo, useState } from "react"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
 import { Search, X } from "lucide-react"
+import { ADMIN_EMAILS } from "@/lib/email/recipients"
 
 export interface MailRow {
   id: string
@@ -32,7 +33,7 @@ function categoria(to: string): TabKey {
   const t = to.toLowerCase()
   if (t.includes("e.lopez@payefy.me")) return "eli"
   if (t.includes("francisco.sosa@payefy.me")) return "fran"
-  if (t.includes("a.santibanez@payefy.me")) return "yo"
+  if (ADMIN_EMAILS.some((e) => t.includes(e))) return "yo"
   return "clientes"
 }
 

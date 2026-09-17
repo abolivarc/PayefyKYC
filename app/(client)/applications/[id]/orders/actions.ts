@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/send"
+import { ADMIN_EMAILS } from "@/lib/email/recipients"
 
 export async function createProductOrder({
   applicationId,
@@ -71,7 +72,7 @@ export async function createProductOrder({
 
   if (process.env.RESEND_API_KEY) {
     await sendEmail({
-      to: "a.santibanez@payefy.me",
+      to: ADMIN_EMAILS,
       subject: `[Pedido] ${companyName} — ${quantity}x ${productName}`,
       html: `
         <p><strong>${companyName}</strong> ha solicitado <strong>${quantity} unidad(es)</strong> de <strong>${productName}</strong>.</p>

@@ -6,6 +6,7 @@ import {
   emailCronInternalAlert,
 } from "@/lib/email/templates"
 import { isDocumentExpiringSoon } from "@/lib/documents/expiry"
+import { ADMIN_EMAILS, PRIMARY_ADMIN_EMAIL } from "@/lib/email/recipients"
 
 // Statuses where the client needs to act (7-day reminder to client)
 const CLIENT_ACTION_STATUSES = new Set([
@@ -31,7 +32,7 @@ const STATUS_LABELS: Record<string, string> = {
   activation_pending: "Activación pendiente",
 }
 
-const CRON_FROM = "a.santibanez@payefy.me"
+const CRON_FROM = PRIMARY_ADMIN_EMAIL
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://payefy-kyc.vercel.app"
 
 export const dynamic = "force-dynamic"
@@ -172,11 +173,11 @@ export async function GET(request: Request) {
         results.archived++
       } else if (ageDays >= 14 && !processed.has("cron_alert_14d")) {
         // ── ALERTA INTERNA (14 días) ────────────────────────────────
-        // Un borrador estancado es asunto del embudo (Alejandro), no del
-        // revisor: e.lopez solo recibe expedientes ya enviados.
-        const reviewerEmail =
+        // Un borrador estancado es asunto del embudo (los administradores),
+        // no del revisor: e.lopez solo recibe expedientes ya enviados.
+        const reviewerEmail: string | string[] | null | undefined =
           app.status === "draft"
-            ? "a.santibanez@payefy.me"
+            ? ADMIN_EMAILS
             : product?.internal_reviewer_email
         if (reviewerEmail && resend) {
           await resend.emails

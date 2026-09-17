@@ -12,6 +12,7 @@ import { Resend } from "resend"
 import JSZip from "jszip"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
 import { zipDeliverable } from "@/lib/email/bundle-expediente"
+import { ADMIN_EMAILS } from "@/lib/email/recipients"
 
 // ─────────────────────────────────────
 // Crear empresa + applications + documents iniciales
@@ -159,11 +160,11 @@ export async function createApplications(formData: FormData) {
 
     if (!firstAppId) firstAppId = app.id
 
-    // Aviso de comercio nuevo: SOLO a Alejandro. El revisor del producto no
-    // puede hacer nada con un borrador — le llega hasta que el expediente se
-    // envía completo (acordado con e.lopez, reunión 18-ago-2026).
+    // Aviso de comercio nuevo: SOLO a los administradores. El revisor del
+    // producto no puede hacer nada con un borrador — le llega hasta que el
+    // expediente se envía completo (acordado con e.lopez, reunión 18-ago-2026).
     {
-      const reviewerEmail = "a.santibanez@payefy.me"
+      const reviewerEmail = ADMIN_EMAILS
       const prodName = (product as unknown as { name?: string }).name ?? product.code
       if (reviewerEmail) {
         const { data: companyRow } = await supabase

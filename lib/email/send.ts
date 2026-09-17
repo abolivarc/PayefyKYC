@@ -1,5 +1,6 @@
 import { Resend } from "resend"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
+import { ADMIN_EMAILS, PRIMARY_ADMIN_EMAIL } from "./recipients"
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
@@ -44,7 +45,7 @@ export async function sendEmail({
   replyTo,
   applicationId,
 }: {
-  to: string
+  to: string | string[]
   subject: string
   html: string
   attachments?: { filename: string; content: string }[]
@@ -56,21 +57,22 @@ export async function sendEmail({
 
   const from =
     process.env.RESEND_FROM_EMAIL ??
-    "Adrián Santibáñez · Payefy <a.santibanez@payefy.me>"
+    `Adrián Santibáñez · Payefy <${PRIMARY_ADMIN_EMAIL}>`
+  const toLog = Array.isArray(to) ? to.join(", ") : to
 
   const { data, error } = await resend.emails.send({
     from,
     to,
     subject,
     html,
-    // Con INBOUND_CAPTURE_EMAIL configurado, las respuestas también caen en
-    // la bandeja de /admin/correos (Alejandro primero: su Gmail siempre recibe;
-    // clientes de correo viejos pueden ignorar la segunda dirección).
+    // Las respuestas llegan a todos los administradores y, con
+    // INBOUND_CAPTURE_EMAIL configurado, también a la bandeja de /admin/correos
+    // (los admins primero: clientes de correo viejos pueden ignorar las últimas).
     replyTo:
       replyTo ??
       (process.env.INBOUND_CAPTURE_EMAIL
-        ? ["a.santibanez@payefy.me", process.env.INBOUND_CAPTURE_EMAIL]
-        : "a.santibanez@payefy.me"),
+        ? [...ADMIN_EMAILS, process.env.INBOUND_CAPTURE_EMAIL]
+        : ADMIN_EMAILS),
     ...(attachments?.length
       ? {
           attachments: attachments.map((a) => ({
@@ -83,10 +85,10 @@ export async function sendEmail({
 
   if (error) {
     const msg = (error as { message?: string }).message ?? String(error)
-    await logEmail({ to, subject, html, applicationId, status: "error", error: msg })
+    await logEmail({ to: toLog, subject, html, applicationId, status: "error", error: msg })
     return { error: msg }
   }
 
-  await logEmail({ to, subject, html, applicationId, resendId: data?.id ?? null })
+  await logEmail({ to: toLog, subject, html, applicationId, resendId: data?.id ?? null })
   return {}
 }

@@ -5,9 +5,10 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { sendEmail } from "@/lib/email/send"
+import { adminRecipientsExcept } from "@/lib/email/recipients"
 import { generateChangesPdf, type ChangeItem } from "@/lib/pdf/changes-summary"
 
-const CHANGES_CC = "a.santibanez@payefy.me"
+// Copia interna: a los administradores que no fueron quienes pidieron el cambio
 
 const CHANGE_ACTIONS = [
   "document_changes_requested",
@@ -180,9 +181,10 @@ export async function resendChangesSummary(
     .select("email, full_name")
     .eq("id", user.id)
     .single()
-  if (actor?.email?.toLowerCase() !== CHANGES_CC) {
+  const ccAdmins = adminRecipientsExcept(actor?.email)
+  if (ccAdmins.length > 0) {
     await sendEmail({
-      to: CHANGES_CC,
+      to: ccAdmins,
       subject: `[PayefyKYC] Recordatorio de cambios reenviado a ${ctx.companyName}`,
       html: `<p><strong>${actor?.full_name ?? actor?.email ?? "Un revisor"}</strong> reenvió a
              ${ctx.clientEmail} el recordatorio con ${pending.length} punto(s) pendiente(s)
