@@ -23,6 +23,9 @@ import { ProviderRoundButton } from "@/components/admin/provider-round-dialog"
 import { RequestGeneralChangesButton } from "@/components/admin/request-general-changes-button"
 import { ModalitySelector } from "@/components/admin/modality-selector"
 
+// Las server actions de esta ruta arman ZIPs de expedientes de 80+ MB
+export const maxDuration = 60
+
 // Template codes that belong to the Anexos / Contratos section (not KYC).
 // Signature docs (terms_and_conditions, terms_opm) live here — the client downloads,
 // signs, and re-uploads them, so they need full approve/reject UI, not a form renderer.

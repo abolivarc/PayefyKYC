@@ -3,14 +3,25 @@
 import * as Sentry from "@sentry/nextjs"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/server"
-import JSZip from "jszip"
 import { generateDataPdf, type DataField } from "@/lib/documents/generate-data-pdf"
 
 const STAFF_ROLES = ["sales_agent", "sales_director", "compliance", "onboarding", "accounting", "super_admin"]
 
+// El ZIP se arma EN EL NAVEGADOR. El servidor solo devuelve el manifiesto:
+// URLs firmadas de cada documento (el navegador los baja directo de
+// storage) más el PDF de datos y el resumen, que son chicos. Así no hay
+// límite de tamaño (Vercel corta respuestas grandes, storage rechaza
+// objetos > 50 MB) ni timeout: un expediente de 80 MB con PDFs escaneados
+// no cabe por ningún otro camino.
+export type ExportManifest = {
+  filename: string
+  archivos: { nombre: string; url: string }[]
+  extras: { nombre: string; base64: string }[]
+}
+
 export async function exportExpediente(
   applicationId: string
-): Promise<{ base64?: string; filename?: string; error?: string }> {
+): Promise<{ manifest?: ExportManifest; error?: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: "No autenticado" }
@@ -80,9 +91,8 @@ export async function exportExpediente(
       .is("storage_path", null)
       .not("file_name", "is", null)
 
-    // 5. Build ZIP
-    const zip = new JSZip()
-    const docsFolder = zip.folder("documentos")!
+    // 5. Firmar la URL de cada archivo (1 hora); el navegador los descarga
+    const archivos: { nombre: string; url: string }[] = []
     let docCount = 0
 
     for (const doc of docs ?? []) {
@@ -90,8 +100,8 @@ export async function exportExpediente(
       const tmpl = (doc.document_templates as unknown) as { name: string; code: string; is_form: boolean; field_type?: string } | null
 
       for (const bucket of ["kyc-documents", "generated-pdfs"]) {
-        const { data, error } = await admin.storage.from(bucket).download(doc.storage_path)
-        if (error || !data) continue
+        const { data, error } = await admin.storage.from(bucket).createSignedUrl(doc.storage_path, 60 * 60)
+        if (error || !data?.signedUrl) continue
 
         const ext = doc.file_name?.split(".").pop() ?? "pdf"
         // Documentos adicionales (sin plantilla): se usa el título que puso
@@ -102,11 +112,16 @@ export async function exportExpediente(
             doc.file_name?.replace(/\.[^.]+$/, "") ||
             `documento_adicional_${docCount}`)
         const safeName = base.replace(/[^a-zA-Z0-9_\-. ]/g, "_").slice(0, 60)
-        docsFolder.file(`${docCount === 0 ? safeName : `${safeName}_${docCount}`}.${ext}`, await data.arrayBuffer())
+        archivos.push({
+          nombre: `documentos/${docCount === 0 ? safeName : `${safeName}_${docCount}`}.${ext}`,
+          url: data.signedUrl,
+        })
         docCount++
         break
       }
     }
+
+    const extras: { nombre: string; base64: string }[] = []
 
     // 5b. Generate DATOS_SOLICITADOS.pdf if any data_check fields exist
     const dataFields: DataField[] = (dataDocs ?? [])
@@ -141,7 +156,7 @@ export async function exportExpediente(
         exportDate,
         fields: dataFields,
       })
-      zip.file("DATOS_SOLICITADOS.pdf", pdfBytes)
+      extras.push({ nombre: "DATOS_SOLICITADOS.pdf", base64: Buffer.from(pdfBytes).toString("base64") })
     }
 
     // 6. Build summary JSON
@@ -192,15 +207,16 @@ export async function exportExpediente(
       })),
     }
 
-    zip.file("RESUMEN.json", JSON.stringify(summary, null, 2))
+    extras.push({
+      nombre: "RESUMEN.json",
+      base64: Buffer.from(JSON.stringify(summary, null, 2), "utf8").toString("base64"),
+    })
 
     const safeCompanyName = (company?.legal_name ?? "expediente")
       .replace(/[^a-zA-Z0-9\s]/g, "").replace(/\s+/g, "_").slice(0, 40)
     const dateStr = new Date().toISOString().split("T")[0]
-    const filename = `${safeCompanyName}_${dateStr}.zip`
 
-    const base64 = await zip.generateAsync({ type: "base64" })
-    return { base64, filename }
+    return { manifest: { filename: `${safeCompanyName}_${dateStr}.zip`, archivos, extras } }
   } catch (err) {
     Sentry.captureException(err, { extra: { applicationId } })
     return { error: `Error al exportar: ${(err as Error).message}` }

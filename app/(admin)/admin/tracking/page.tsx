@@ -2,6 +2,8 @@ import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { TrackingDashboard } from "@/components/admin/tracking-dashboard"
 
 export const dynamic = "force-dynamic"
+// Las server actions de esta ruta arman ZIPs de expedientes de 80+ MB
+export const maxDuration = 60
 
 export default async function TrackingPage() {
   const admin = createAdminClient(

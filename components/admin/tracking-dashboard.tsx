@@ -7,6 +7,7 @@ import { es } from "date-fns/locale"
 import { ContractManager } from "./contract-manager"
 import { EmailComposer } from "./email-composer"
 import { exportExpediente } from "@/app/(admin)/admin/tracking/export-action"
+import { downloadExpedienteZip } from "@/lib/documents/download-expediente-zip"
 import * as XLSX from "xlsx"
 
 // ── Types ──────────────────────────────────────────────
@@ -234,20 +235,13 @@ function ExpedientePanel({ app, onClose }: { app: AppRow; onClose: () => void })
     setExporting(true)
     try {
       const result = await exportExpediente(app.id)
-      if (result.error || !result.base64 || !result.filename) {
+      if (result.error || !result.manifest) {
         alert(result.error ?? "Error al exportar")
         return
       }
-      const binary = atob(result.base64)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-      const blob = new Blob([bytes.buffer], { type: "application/zip" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = result.filename
-      a.click()
-      URL.revokeObjectURL(url)
+      await downloadExpedienteZip(result.manifest)
+    } catch (e) {
+      alert((e as Error).message)
     } finally {
       setExporting(false)
     }

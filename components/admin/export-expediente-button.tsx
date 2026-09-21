@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { exportExpediente } from "@/app/(admin)/admin/tracking/export-action"
+import { downloadExpedienteZip } from "@/lib/documents/download-expediente-zip"
 
 interface Props {
   applicationId: string
@@ -9,29 +10,27 @@ interface Props {
 
 export function ExportExpedienteButton({ applicationId }: Props) {
   const [loading, setLoading] = useState(false)
+  const [progreso, setProgreso] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   async function handleExport() {
     setLoading(true)
     setError(null)
+    setProgreso(null)
     try {
       const result = await exportExpediente(applicationId)
-      if (result.error || !result.base64 || !result.filename) {
+      if (result.error || !result.manifest) {
         setError(result.error ?? "Error al exportar")
         return
       }
-      const binary = atob(result.base64)
-      const bytes = new Uint8Array(binary.length)
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
-      const blob = new Blob([bytes.buffer], { type: "application/zip" })
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = result.filename
-      a.click()
-      URL.revokeObjectURL(url)
+      await downloadExpedienteZip(result.manifest, (hecho, total) =>
+        setProgreso(`${hecho}/${total}`)
+      )
+    } catch (e) {
+      setError((e as Error).message)
     } finally {
       setLoading(false)
+      setProgreso(null)
     }
   }
 
@@ -54,7 +53,7 @@ export function ExportExpedienteButton({ applicationId }: Props) {
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ animation: "spin 1s linear infinite" }}>
               <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
             </svg>
-            Generando…
+            {progreso ? `Descargando ${progreso}…` : "Preparando…"}
           </>
         ) : (
           <>

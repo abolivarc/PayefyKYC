@@ -857,7 +857,7 @@ async function dispatchExpedienteEmails(
           /* el ZIP sale igual sin la hoja de datos */
         }
 
-        const zipBase64 = await zip.generateAsync({ type: "base64" })
+        const zipBase64 = await zip.generateAsync({ type: "base64", compression: "DEFLATE", compressionOptions: { level: 6 } })
         const safeCompany = (company?.legal_name ?? "empresa")
           .replace(/[/\\:*?"<>|]/g, "_")
           .trim()
