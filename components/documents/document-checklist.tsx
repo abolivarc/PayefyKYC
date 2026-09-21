@@ -5,6 +5,7 @@ import { PhotosUploadRow } from "./photos-upload-row"
 // Códigos que usan la cuadrícula de fotos (4 campos + agregar más)
 const PHOTO_CODES = new Set(["business_photos", "pf_business_photos"])
 import { CheckOrUploadRow } from "./check-or-upload-row"
+import { TextOrUploadRow } from "./text-or-upload-row"
 import { DataInputField } from "./data-input-field"
 
 export interface DocWithTemplate {
@@ -182,6 +183,23 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
 
                 const doc = group.docs[0]
                 if (!doc) return null
+
+                if (group.field_type === "text_or_upload") {
+                  return (
+                    <TextOrUploadRow
+                      key={group.templateCode}
+                      documentId={doc.id}
+                      applicationId={applicationId}
+                      templateName={group.templateName}
+                      templateInstructions={group.templateInstructions}
+                      currentStatus={doc.status}
+                      fileName={doc.file_name}
+                      hasFile={!!doc.storage_path}
+                      isRequired={group.is_required}
+                      reviewerNotes={doc.reviewer_notes}
+                    />
+                  )
+                }
 
                 if (group.field_type === "check_or_upload") {
                   return (

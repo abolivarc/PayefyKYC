@@ -1083,6 +1083,7 @@ export default async function ReviewPage({
                               isRequired={!isMulti && tmpl.is_required}
                               currentStatus={doc.status as DocStatus}
                               storageAvailable={!!doc.storage_path}
+                              textValue={tmpl.field_type === "text_or_upload" && !doc.storage_path ? doc.file_name : null}
                               reviewerNotes={doc.reviewer_notes}
                               clientNotes={doc.client_notes}
                               uploadedAt={doc.uploaded_at}

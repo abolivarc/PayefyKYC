@@ -547,11 +547,36 @@ export async function saveDataCheckValue(
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
   const trimmed = value.trim()
+
+  // text_or_upload: si había un archivo y ahora el cliente escribe la URL,
+  // el archivo se archiva como versión y el casillero pasa a modo texto
+  // (file_name = URL, sin storage_path) para no dejar un estado mixto.
+  const { data: prev } = await adminClient
+    .from("documents")
+    .select("storage_path, file_name, file_size, mime_type, uploaded_by, uploaded_at, version")
+    .eq("id", documentId)
+    .single()
+  if (prev?.storage_path && trimmed) {
+    await adminClient.from("document_versions").insert({
+      document_id: documentId,
+      version: prev.version ?? 1,
+      storage_path: prev.storage_path,
+      file_name: prev.file_name,
+      file_size: prev.file_size,
+      mime_type: prev.mime_type,
+      uploaded_by: prev.uploaded_by,
+      uploaded_at: prev.uploaded_at,
+    })
+  }
+
   const { error } = await adminClient
     .from("documents")
     .update({
       file_name: trimmed || null,
       status: trimmed ? "pending_review" : "pending_upload",
+      ...(prev?.storage_path && trimmed
+        ? { storage_path: null, file_size: null, mime_type: null, version: (prev.version ?? 1) + 1, uploaded_at: new Date().toISOString(), uploaded_by: user.id }
+        : {}),
     })
     .eq("id", documentId)
 
@@ -722,15 +747,22 @@ async function buildDatosSolicitadosPdf(
 
   const { data: docs } = await adminClient
     .from("documents")
-    .select("status, file_name, document_templates(name, field_type, sort_order)")
+    .select("status, file_name, storage_path, document_templates(name, field_type, sort_order)")
     .eq("application_id", applicationId)
 
   const rows = ((docs ?? []) as unknown as {
     status: string
     file_name: string | null
+    storage_path: string | null
     document_templates: { name: string; field_type: string; sort_order: number } | null
   }[])
-    .filter((d) => d.document_templates?.field_type === "data_check")
+    // Datos escritos: data_check siempre; text_or_upload solo si el cliente
+    // escribió la URL en lugar de subir archivo (entonces vive en file_name)
+    .filter(
+      (d) =>
+        d.document_templates?.field_type === "data_check" ||
+        (d.document_templates?.field_type === "text_or_upload" && !d.storage_path && !!d.file_name)
+    )
     .sort(
       (a, b) =>
         (a.document_templates?.sort_order ?? 999) - (b.document_templates?.sort_order ?? 999)

@@ -36,6 +36,8 @@ interface Props {
   version?: number
   /** Versiones anteriores con URL firmada */
   previousVersions?: { version: number; label: string; url: string }[]
+  /** Casilleros text_or_upload: la URL que escribió el cliente (sin archivo) */
+  textValue?: string | null
 }
 
 export function ReviewDocumentRow({
@@ -52,6 +54,7 @@ export function ReviewDocumentRow({
   reviewerNotes,
   clientNotes,
   uploadedAt,
+  textValue,
 }: Props) {
   const [status, setStatus] = useState<DocStatus>(currentStatus)
   const [isPending, startTransition] = useTransition()
@@ -201,6 +204,22 @@ export function ReviewDocumentRow({
               }}
             >
               Ver
+            </a>
+          )}
+          {!storageAvailable && textValue && (
+            <a
+              href={textValue}
+              target="_blank"
+              rel="noopener noreferrer"
+              title={textValue}
+              style={{
+                fontSize: 12, fontWeight: 600, color: "#1f7a4d", textDecoration: "none",
+                padding: "5px 10px", borderRadius: 7, border: "1px solid #b8e8ca", background: "#e7f6ec",
+                whiteSpace: "nowrap", maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis",
+                fontFamily: "ui-monospace, monospace",
+              }}
+            >
+              {textValue.replace(/^https?:\/\//, "")} ↗
             </a>
           )}
 

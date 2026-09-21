@@ -127,7 +127,8 @@ export async function exportExpediente(
     const dataFields: DataField[] = (dataDocs ?? [])
       .filter((d) => {
         const tmpl = (d.document_templates as unknown) as { field_type?: string } | null
-        return tmpl?.field_type === "data_check"
+        // text_or_upload sin storage_path = URL escrita por el cliente
+        return tmpl?.field_type === "data_check" || tmpl?.field_type === "text_or_upload"
       })
       .sort((a, b) => {
         const aOrder = ((a.document_templates as unknown) as { sort_order?: number } | null)?.sort_order ?? 999

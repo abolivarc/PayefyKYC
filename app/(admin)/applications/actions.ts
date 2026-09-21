@@ -896,11 +896,11 @@ export async function changeTerminalModality(
 
   const { data: docs } = await admin
     .from("documents")
-    .select("id, template_id, storage_path")
+    .select("id, template_id, storage_path, file_name")
     .eq("application_id", applicationId)
     .in("template_id", [...tmplPorCodigo.values()])
-  const docsPorTmpl = new Map<string, { id: string; storage_path: string | null }[]>()
-  for (const d of (docs ?? []) as unknown as { id: string; template_id: string; storage_path: string | null }[]) {
+  const docsPorTmpl = new Map<string, { id: string; storage_path: string | null; file_name: string | null }[]>()
+  for (const d of (docs ?? []) as unknown as { id: string; template_id: string; storage_path: string | null; file_name: string | null }[]) {
     const arr = docsPorTmpl.get(d.template_id) ?? []
     arr.push(d)
     docsPorTmpl.set(d.template_id, arr)
@@ -911,8 +911,9 @@ export async function changeTerminalModality(
     if (!tmplId) return
     const existentes = docsPorTmpl.get(tmplId) ?? []
     if (!requerido) {
-      // solo se eliminan casilleros VACÍOS; un archivo subido nunca se borra
-      const vacios = existentes.filter((d) => !d.storage_path).map((d) => d.id)
+      // solo se eliminan casilleros VACÍOS; un archivo subido (o una URL
+      // escrita, que vive en file_name sin storage_path) nunca se borra
+      const vacios = existentes.filter((d) => !d.storage_path && !d.file_name).map((d) => d.id)
       if (vacios.length) await admin.from("documents").delete().in("id", vacios)
     } else if (existentes.length === 0) {
       await admin.from("documents").insert(
