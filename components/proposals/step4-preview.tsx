@@ -16,12 +16,15 @@ export function Step4Preview({
   onBack,
   applicationId,
   companyName,
+  fromLeadId,
 }: {
   data: Partial<ProposalData>
   onBack: () => void
   /** Cotización desde un expediente: cambia guardar-lead por guardar-en-KYC */
   applicationId?: string
   companyName?: string
+  /** Propuesta del generador que se retomó: se marca ganada al guardar */
+  fromLeadId?: string
 }) {
   const router = useRouter()
   const [generatingPdf, setGeneratingPdf] = useState(false)
@@ -77,7 +80,7 @@ export function Step4Preview({
     if (!applicationId) return false
     const { pdf, fileName } = await buildPdf()
     const base64 = pdf.output("datauristring").split(",")[1]
-    const res = await saveQuote({ applicationId, data, pdfBase64: base64, pdfFileName: fileName })
+    const res = await saveQuote({ applicationId, data, pdfBase64: base64, pdfFileName: fileName, fromLeadId })
     if (res.error) {
       setFeedback({ type: "err", msg: res.error })
       return false

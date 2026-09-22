@@ -1,7 +1,8 @@
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { notFound } from "next/navigation"
-import { LeadsTable, type LeadRow } from "@/components/proposals/leads-table"
+import { LeadsTable, type LeadRow, type LeadSuggestion } from "@/components/proposals/leads-table"
+import { rankCompaniesForLead } from "@/lib/proposals/lead-match"
 import { getStaffContext } from "@/lib/auth/staff"
 import { Plus } from "lucide-react"
 
@@ -24,7 +25,9 @@ export default async function ProposalsPage() {
     )
   if (ctx?.isAgent) leadsQuery = leadsQuery.eq("created_by", ctx.userId)
 
-  let companiesQuery = supabase.from("companies").select("id, legal_name")
+  let companiesQuery = supabase
+    .from("companies")
+    .select("id, legal_name, internal_alias, contact_email, operator_email, phone")
   if (ctx?.isAgent) companiesQuery = companiesQuery.eq("assigned_agent_id", ctx.userId)
 
   const [{ data: leads }, { data: companies }] = await Promise.all([
@@ -33,6 +36,21 @@ export default async function ProposalsPage() {
   ])
 
   const active = (leads ?? []).filter((l) => !["ganado", "perdido"].includes(l.status))
+
+  // Propuesta ↔ cliente que ya se registró. Se calcula aquí y se ofrece como
+  // sugerencia; vincular sigue siendo una decisión de quien revisa.
+  const suggestions: Record<string, LeadSuggestion> = {}
+  for (const lead of leads ?? []) {
+    if (lead.company_id) continue
+    const best = rankCompaniesForLead(companies ?? [], lead)[0]
+    if (best) {
+      suggestions[lead.id] = {
+        companyId: best.company.id,
+        legalName: best.company.legal_name,
+        reason: best.match.reason,
+      }
+    }
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100%" }}>
@@ -58,7 +76,8 @@ export default async function ProposalsPage() {
       <div style={{ padding: "0 32px 32px" }}>
         <LeadsTable
           leads={(leads ?? []) as unknown as LeadRow[]}
-          companies={companies ?? []}
+          companies={(companies ?? []).map((c) => ({ id: c.id, legal_name: c.legal_name }))}
+          suggestions={suggestions}
         />
       </div>
     </div>

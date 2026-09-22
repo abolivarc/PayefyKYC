@@ -15,7 +15,8 @@ import type { ApplicationProposal } from "@/lib/proposals/attachment-actions"
 import { SendToTransferButton } from "@/components/admin/send-to-transfer-button"
 import { AmexRequirementButton } from "@/components/admin/amex-requirement-button"
 import { HealthcareRequirementButton } from "@/components/admin/healthcare-requirement-button"
-import { QuotePanel, type QuoteSummary } from "@/components/admin/quote-panel"
+import { QuotePanel, type QuoteSummary, type LeadSuggestion } from "@/components/admin/quote-panel"
+import { rankLeadsForCompany } from "@/lib/proposals/lead-match"
 import { CSF_CODES } from "@/lib/documents/healthcare"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
@@ -182,7 +183,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult, proposalsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, is_healthcare_professional, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, operator_email, phone, person_type, wants_amex, is_healthcare_professional, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -227,7 +228,7 @@ export default async function ReviewPage({
     .in("action", ["document_changes_requested", "document_rejected"])
     .filter("metadata->>application_id", "eq", appId)
   const changesCount = rawChangesCount ?? 0
-  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; is_healthcare_professional?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null; terminal_type?: string | null } | null
+  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; operator_email?: string | null; phone?: string | null; person_type?: string; wants_amex?: boolean; is_healthcare_professional?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null; terminal_type?: string | null } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
   const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
@@ -486,6 +487,35 @@ export default async function ReviewPage({
     (d) => d.template && CSF_CODES.includes(d.template.code) && !!d.storage_path
   )
   const puedeCotizar = ["super_admin", "onboarding"].includes(staffCtx?.role ?? "")
+
+  // Propuestas viejas del generador que parecen ser de este mismo negocio.
+  // El comercio se registra con su razón social y la propuesta se hizo con el
+  // nombre comercial, así que sin esto nadie las relaciona.
+  let sugerencias: LeadSuggestion[] = []
+  if (!quote && company) {
+    const { data: leadsLibres } = await admin
+      .from("leads")
+      .select("id, business_name, contact_email, contact_phone, sector_name, proposal_data, created_at, company_id")
+      .is("company_id", null)
+      .neq("status", "perdido")
+      .order("created_at", { ascending: false })
+      .limit(500)
+
+    sugerencias = rankLeadsForCompany(leadsLibres ?? [], company)
+      .slice(0, 3)
+      .map(({ lead: l, match }) => {
+        const pd = (l.proposal_data ?? {}) as { negotiatedDebitRate?: number; negotiatedCreditRate?: number }
+        return {
+          id: l.id as string,
+          business_name: (l.business_name as string) ?? "Sin nombre",
+          created_at: l.created_at as string,
+          sector_name: (l.sector_name as string | null) ?? null,
+          debit_rate: pd.negotiatedDebitRate ?? null,
+          credit_rate: pd.negotiatedCreditRate ?? null,
+          reason: match.reason,
+        }
+      })
+  }
 
   // Propuestas comerciales adjuntas (la más reciente es la vigente)
   const proposals: ApplicationProposal[] = (proposalsResult.data ?? []).map((p) => {
@@ -800,6 +830,7 @@ export default async function ReviewPage({
             quote={quote}
             canQuote={puedeCotizar}
             csfSubida={csfSubida}
+            suggestions={sugerencias}
           />
         </div>
 

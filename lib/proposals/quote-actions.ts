@@ -66,6 +66,8 @@ export async function saveQuote(input: {
   data: Partial<ProposalData>
   pdfBase64?: string
   pdfFileName?: string
+  /** Propuesta previa del generador que se retomó: se marca como ganada */
+  fromLeadId?: string
 }): Promise<{ error?: string; quoteId?: string }> {
   const auth = await requireQuoter()
   if ("error" in auth) return { error: auth.error }
@@ -124,6 +126,20 @@ export async function saveQuote(input: {
     .single()
   if (error) return { error: error.message }
 
+  // La propuesta del generador ya encontró a su cliente: se queda pegada al
+  // comercio y sale de la lista de pendientes comerciales.
+  if (input.fromLeadId) {
+    await admin
+      .from("leads")
+      .update({
+        company_id: app.company_id,
+        status: "ganado",
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", input.fromLeadId)
+    revalidatePath("/admin/proposals")
+  }
+
   await logAudit({
     actorId: user.id,
     action: "quote_saved",
@@ -134,6 +150,7 @@ export async function saveQuote(input: {
       mcc: data.mccCode,
       debito: data.negotiatedDebitRate,
       credito: data.negotiatedCreditRate,
+      ...(input.fromLeadId ? { lead_id: input.fromLeadId } : {}),
     },
   })
 

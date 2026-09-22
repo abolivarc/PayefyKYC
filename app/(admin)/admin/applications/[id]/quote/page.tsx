@@ -26,10 +26,13 @@ function productFromTerminal(terminalType: string | null | undefined): ProductTy
 
 export default async function QuoteApplicationPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ lead?: string }>
 }) {
   const { id: appId } = await params
+  const { lead: leadId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/admin/login")
@@ -66,18 +69,34 @@ export default async function QuoteApplicationPage({
     .eq("application_id", appId)
     .maybeSingle()
 
+  // Propuesta del generador que se está retomando ("ya le había cotizado")
+  const { data: lead } = leadId
+    ? await admin
+        .from("leads")
+        .select("id, business_name, proposal_data, created_at")
+        .eq("id", leadId)
+        .maybeSingle()
+    : { data: null }
+
   const previo = (quote?.proposal_data ?? {}) as Partial<ProposalData>
+  const delLead = (lead?.proposal_data ?? {}) as Partial<ProposalData>
 
   // Lo que ya sabemos del comercio no se vuelve a teclear; el revisor solo
-  // asigna el giro (MCC) y las tasas.
+  // asigna el giro (MCC) y las tasas. Si venimos de una propuesta anterior,
+  // sus tasas y su giro entran ya puestos, pero la identidad (nombre y correo)
+  // la manda siempre el expediente: el lead trae el nombre comercial y aquí
+  // vale la razón social con la que se afilia.
   const initialData: Partial<ProposalData> = {
-    businessName: company?.legal_name ?? "",
-    contactName: company?.legal_name ?? "",
-    contactEmail: company?.contact_email ?? company?.operator_email ?? "",
-    entityType: entityFromPerson(company?.person_type),
-    productType: productFromTerminal(company?.terminal_type),
     proposalType: "general",
-    ...previo,
+    ...delLead,
+    businessName: company?.legal_name ?? delLead.businessName ?? "",
+    contactName: company?.legal_name ?? delLead.contactName ?? "",
+    contactEmail: company?.contact_email ?? company?.operator_email ?? delLead.contactEmail ?? "",
+    entityType: entityFromPerson(company?.person_type) ?? delLead.entityType,
+    productType: productFromTerminal(company?.terminal_type) ?? delLead.productType,
+    // Retomar una propuesta es una decisión explícita: sus tasas ganan sobre
+    // lo que hubiera guardado antes en el expediente.
+    ...(lead ? {} : previo),
   }
 
   return (
@@ -99,12 +118,20 @@ export default async function QuoteApplicationPage({
             : "Asigna el MCC que le corresponde al comercio y configura sus tasas."}
           {quote?.sent_at && " · Ya se le envió una propuesta antes; al enviar de nuevo se reemplaza."}
         </p>
+        {lead && (
+          <p style={{ margin: "8px 0 0", padding: "8px 12px", borderRadius: 8, background: "#F0FDF4", border: "1px solid #BBF7D0", fontSize: 12.5, color: "#166534", display: "inline-block" }}>
+            Retomando la propuesta de <strong>{lead.business_name as string}</strong> del{" "}
+            {new Date(lead.created_at as string).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}.
+            Las tasas ya vienen puestas; al guardar, esa propuesta queda vinculada a este comercio.
+          </p>
+        )}
       </header>
       <div style={{ padding: "8px 32px 32px" }}>
         <ProposalWizard
           initialData={initialData}
           applicationId={appId}
           companyName={company?.legal_name ?? undefined}
+          fromLeadId={lead ? (lead.id as string) : undefined}
         />
       </div>
     </div>

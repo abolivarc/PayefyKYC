@@ -6,6 +6,18 @@ import { useRouter } from "next/navigation"
 import { Spinner } from "@/components/ui/spinner"
 import { sendQuote } from "@/lib/proposals/quote-actions"
 
+/** Propuesta vieja del generador que parece ser de este mismo comercio */
+export type LeadSuggestion = {
+  id: string
+  business_name: string
+  created_at: string
+  sector_name: string | null
+  debit_rate: number | null
+  credit_rate: number | null
+  /** Por qué creemos que es el mismo negocio ("mismo correo de contacto") */
+  reason: string
+}
+
 export type QuoteSummary = {
   mcc_code: string
   sector_name: string | null
@@ -28,12 +40,15 @@ export function QuotePanel({
   quote,
   canQuote,
   csfSubida,
+  suggestions = [],
 }: {
   applicationId: string
   quote: QuoteSummary | null
   canQuote: boolean
   /** La constancia de situación fiscal ya está cargada: hay con qué cotizar */
   csfSubida: boolean
+  /** Propuestas anteriores del generador que parecen ser de este comercio */
+  suggestions?: LeadSuggestion[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -52,41 +67,49 @@ export function QuotePanel({
   // ── Sin cotizar ──────────────────────────────────────────────────
   if (!quote) {
     return (
-      <div
-        style={{
-          background: csfSubida ? "#FFFBEB" : "var(--admin-surface, #fff)",
-          border: `1px solid ${csfSubida ? "#F59E0B" : "var(--admin-border, #E7ECF1)"}`,
-          borderRadius: 12,
-          padding: "14px 18px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div>
-          <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: csfSubida ? "#92400E" : "var(--admin-text, #0F1B2A)" }}>
-            {csfSubida ? "Falta cotizar a este comercio" : "Sin cotización"}
-          </p>
-          <p style={{ margin: "3px 0 0", fontSize: 12.5, color: csfSubida ? "#92400E" : "var(--admin-text-muted, #5A6B7B)" }}>
-            {csfSubida
-              ? "Ya subió su constancia de situación fiscal: puedes asignarle el MCC y sus tasas, y mandarle la propuesta."
-              : "En cuanto suba su constancia de situación fiscal podrás asignarle MCC y tasas."}
-          </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        <div
+          style={{
+            background: csfSubida ? "#FFFBEB" : "var(--admin-surface, #fff)",
+            border: `1px solid ${csfSubida ? "#F59E0B" : "var(--admin-border, #E7ECF1)"}`,
+            borderRadius: 12,
+            padding: "14px 18px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: csfSubida ? "#92400E" : "var(--admin-text, #0F1B2A)" }}>
+              {csfSubida ? "Falta cotizar a este comercio" : "Sin cotización"}
+            </p>
+            <p style={{ margin: "3px 0 0", fontSize: 12.5, color: csfSubida ? "#92400E" : "var(--admin-text-muted, #5A6B7B)" }}>
+              {csfSubida
+                ? "Ya subió su constancia de situación fiscal: puedes asignarle el MCC y sus tasas, y mandarle la propuesta."
+                : "En cuanto suba su constancia de situación fiscal podrás asignarle MCC y tasas."}
+            </p>
+          </div>
+          {canQuote && (
+            <Link
+              href={`/admin/applications/${applicationId}/quote`}
+              style={{
+                background: "#004238", color: "#AEFF99", padding: "9px 16px",
+                borderRadius: 9, fontSize: 13, fontWeight: 700, textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Cotizar →
+            </Link>
+          )}
         </div>
-        {canQuote && (
-          <Link
-            href={`/admin/applications/${applicationId}/quote`}
-            style={{
-              background: "#004238", color: "#AEFF99", padding: "9px 16px",
-              borderRadius: 9, fontSize: 13, fontWeight: 700, textDecoration: "none",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Cotizar →
-          </Link>
-        )}
+
+        <LeadSuggestions
+          applicationId={applicationId}
+          suggestions={suggestions}
+          canQuote={canQuote}
+        />
       </div>
     )
   }
@@ -183,6 +206,85 @@ export function QuotePanel({
       {error && (
         <p role="alert" style={{ margin: "10px 0 0", fontSize: 12, color: "#B91C1C" }}>{error}</p>
       )}
+    </div>
+  )
+}
+
+/**
+ * Propuestas que ya se le habían hecho a este negocio desde el generador.
+ * Un comercio se registra con su razón social y la propuesta se hizo con el
+ * nombre comercial, así que nadie las relaciona a mano: aquí se ofrecen para
+ * no volver a teclear las tasas que ya se le prometieron.
+ */
+function LeadSuggestions({
+  applicationId,
+  suggestions,
+  canQuote,
+}: {
+  applicationId: string
+  suggestions: LeadSuggestion[]
+  canQuote: boolean
+}) {
+  if (suggestions.length === 0) return null
+
+  return (
+    <div
+      style={{
+        background: "#F0FDF4",
+        border: "1px solid #BBF7D0",
+        borderRadius: 12,
+        padding: "12px 18px",
+      }}
+    >
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: "#166534" }}>
+        {suggestions.length === 1
+          ? "Ya le habías hecho una propuesta a este negocio"
+          : `Ya le habías hecho ${suggestions.length} propuestas a este negocio`}
+      </p>
+      <p style={{ margin: "2px 0 8px", fontSize: 12, color: "#15803D" }}>
+        Viene del generador de propuestas. Al retomarla, sus tasas entran ya puestas y el lead queda vinculado a este comercio.
+      </p>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {suggestions.map((s) => (
+          <div
+            key={s.id}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              gap: 12, flexWrap: "wrap",
+              background: "#fff", border: "1px solid #D1FAE5", borderRadius: 9,
+              padding: "9px 12px",
+            }}
+          >
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "var(--admin-text, #0F1B2A)" }}>
+                {s.business_name}
+                {s.debit_rate != null && (
+                  <span style={{ fontWeight: 500, color: "var(--admin-text-muted, #5A6B7B)" }}>
+                    {" "}· D {s.debit_rate}% · C {s.credit_rate}% + IVA
+                  </span>
+                )}
+              </p>
+              <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "var(--admin-text-subtle, #64748B)" }}>
+                {new Date(s.created_at).toLocaleDateString("es-MX", { day: "numeric", month: "long", year: "numeric" })}
+                {s.sector_name ? ` · ${s.sector_name.split("—")[0].trim()}` : ""} · {s.reason}
+              </p>
+            </div>
+            {canQuote && (
+              <Link
+                href={`/admin/applications/${applicationId}/quote?lead=${s.id}`}
+                style={{
+                  background: "#166534", color: "#fff", padding: "7px 13px",
+                  borderRadius: 8, fontSize: 12.5, fontWeight: 700,
+                  textDecoration: "none", whiteSpace: "nowrap",
+                }}
+              >
+                Usar esta propuesta →
+              </Link>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

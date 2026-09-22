@@ -21,12 +21,15 @@ export function ProposalWizard({
   initialData,
   applicationId,
   companyName,
+  fromLeadId,
 }: {
   /** Datos precargados cuando se cotiza desde un expediente */
   initialData?: Partial<ProposalData>
   /** Si viene, la propuesta se guarda y se envía dentro del KYC */
   applicationId?: string
   companyName?: string
+  /** Propuesta previa del generador que se está retomando */
+  fromLeadId?: string
 } = {}) {
   const [currentStep, setCurrentStep] = useState(1)
   const [data, setData] = useState<Partial<ProposalData>>({
@@ -123,7 +126,7 @@ export function ProposalWizard({
         {currentStep === 1 && <Step1BusinessInfo {...stepProps} />}
         {currentStep === 2 && <Step2ProposalType {...stepProps} />}
         {currentStep === 3 && <Step3RatesConfig {...stepProps} />}
-        {currentStep === 4 && <Step4Preview data={data} onBack={handleBack} applicationId={applicationId} companyName={companyName} />}
+        {currentStep === 4 && <Step4Preview data={data} onBack={handleBack} applicationId={applicationId} companyName={companyName} fromLeadId={fromLeadId} />}
       </div>
 
       {/* Navigation */}

@@ -34,6 +34,14 @@ export interface LeadRow {
   companies: { legal_name: string } | null
 }
 
+/** Cliente del KYC que parece ser este mismo negocio */
+export interface LeadSuggestion {
+  companyId: string
+  legalName: string
+  /** Por qué casaron ("mismo correo de contacto") */
+  reason: string
+}
+
 const STATUS_LABELS: Record<LeadRow["status"], string> = {
   propuesta: "Propuesta enviada",
   negociacion: "En negociación",
@@ -51,9 +59,12 @@ const STATUS_VARIANT: Record<LeadRow["status"], "success" | "warning" | "destruc
 export function LeadsTable({
   leads,
   companies,
+  suggestions = {},
 }: {
   leads: LeadRow[]
   companies: { id: string; legal_name: string }[]
+  /** leadId → cliente KYC que parece ser el mismo negocio */
+  suggestions?: Record<string, LeadSuggestion>
 }) {
   const [search, setSearch] = useState("")
   const [linkingLead, setLinkingLead] = useState<LeadRow | null>(null)
@@ -108,6 +119,7 @@ export function LeadsTable({
                 <LeadTableRow
                   key={lead.id}
                   lead={lead}
+                  suggestion={suggestions[lead.id]}
                   onLink={() => setLinkingLead(lead)}
                 />
               ))}
@@ -120,6 +132,7 @@ export function LeadsTable({
         <LinkCompanyDialog
           lead={linkingLead}
           companies={companies}
+          suggestion={suggestions[linkingLead.id]}
           onClose={() => setLinkingLead(null)}
         />
       )}
@@ -127,7 +140,15 @@ export function LeadsTable({
   )
 }
 
-function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
+function LeadTableRow({
+  lead,
+  suggestion,
+  onLink,
+}: {
+  lead: LeadRow
+  suggestion?: LeadSuggestion
+  onLink: () => void
+}) {
   const [isPending, startTransition] = useTransition()
   const pd = lead.proposal_data as {
     negotiatedDebitRate?: number
@@ -197,6 +218,28 @@ function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
           <span style={{ fontSize: 12, fontWeight: 600, color: "#0B7A44" }}>
             {lead.companies.legal_name}
           </span>
+        ) : suggestion ? (
+          // Ya se registró en el KYC: se propone el cliente, lo confirma el revisor
+          <button
+            type="button"
+            onClick={onLink}
+            title={`Coincide por ${suggestion.reason}`}
+            className="text-left"
+            style={{
+              background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8,
+              padding: "5px 9px", cursor: "pointer", maxWidth: 190,
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 700, color: "#166534" }}>
+              <Link2 className="h-3 w-3 shrink-0" />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {suggestion.legalName}
+              </span>
+            </span>
+            <span style={{ display: "block", fontSize: 10.5, color: "#15803D" }}>
+              ¿es este? · {suggestion.reason}
+            </span>
+          </button>
         ) : (
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onLink}>
             <Link2 className="h-3 w-3 mr-1" />
@@ -224,13 +267,15 @@ function LeadTableRow({ lead, onLink }: { lead: LeadRow; onLink: () => void }) {
 function LinkCompanyDialog({
   lead,
   companies,
+  suggestion,
   onClose,
 }: {
   lead: LeadRow
   companies: { id: string; legal_name: string }[]
+  suggestion?: LeadSuggestion
   onClose: () => void
 }) {
-  const [companyId, setCompanyId] = useState<string>("")
+  const [companyId, setCompanyId] = useState<string>(suggestion?.companyId ?? "")
   const [isPending, startTransition] = useTransition()
 
   const handleLink = () => {
@@ -251,6 +296,15 @@ function LinkCompanyDialog({
         <strong>{lead.business_name}</strong>. El lead se marcará como{" "}
         <strong>ganado</strong>.
       </p>
+      {suggestion && (
+        <p
+          className="text-xs mb-3"
+          style={{ background: "#F0FDF4", border: "1px solid #BBF7D0", borderRadius: 8, padding: "8px 10px", color: "#166534" }}
+        >
+          Ya viene seleccionada <strong>{suggestion.legalName}</strong>: coincide por {suggestion.reason}.
+          Cámbiala si no es la correcta.
+        </p>
+      )}
       <Select value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
         <option value="" disabled>
           Seleccionar empresa…
