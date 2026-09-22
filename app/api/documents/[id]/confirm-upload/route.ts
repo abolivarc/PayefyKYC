@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 import { sendEmail } from "@/lib/email/send"
-import { emailAllChangesResolved, emailNewUploadAdmin } from "@/lib/email/templates"
+import { emailAllChangesResolved, emailNewUploadAdmin, emailCotizacionPendiente } from "@/lib/email/templates"
+import { CSF_CODES } from "@/lib/documents/healthcare"
 import { ADMIN_EMAILS, adminRecipientsExcept } from "@/lib/email/recipients"
 
 export async function POST(
@@ -35,7 +36,7 @@ export async function POST(
   // es una corrección y hay que avisarle al revisor.
   const { data: prevDoc } = await serviceClient
     .from("documents")
-    .select("status, application_id, title, version, storage_path, file_name, file_size, mime_type, uploaded_by, uploaded_at, document_templates(name)")
+    .select("status, application_id, title, version, storage_path, file_name, file_size, mime_type, uploaded_by, uploaded_at, document_templates(code, name)")
     .eq("id", documentId)
     .single()
 
@@ -192,6 +193,52 @@ export async function POST(
       })
     } catch (e) {
       console.error("[CONFIRM-UPLOAD] aviso admin error:", e)
+    }
+  })()
+
+  // ── ¿Ya se puede cotizar? ───────────────────────────────────────────────
+  // La constancia de situación fiscal trae la actividad económica real: con
+  // ella el equipo asigna el MCC y las tasas. Se avisa una sola vez, cuando
+  // todavía no hay cotización, y fuera de la ráfaga de 15 min: es el
+  // disparador del paso comercial, no un aviso más de documentos.
+  ;(async () => {
+    try {
+      const code = ((prevDoc?.document_templates as unknown) as { code?: string } | null)?.code
+      if (!code || !CSF_CODES.includes(code)) return
+      if (!prevDoc?.application_id) return
+
+      const { data: yaCotizado } = await serviceClient
+        .from("application_quotes")
+        .select("id")
+        .eq("application_id", prevDoc.application_id)
+        .maybeSingle()
+      if (yaCotizado) return
+
+      const { data: appRow } = await serviceClient
+        .from("applications")
+        .select("id, companies(legal_name, internal_alias, business_activity), products(name)")
+        .eq("id", prevDoc.application_id)
+        .single()
+      const co = (appRow?.companies as unknown) as {
+        legal_name: string
+        internal_alias: string | null
+        business_activity: string | null
+      } | null
+
+      await sendEmail({
+        to: ADMIN_EMAILS,
+        subject: `[PayefyKYC] Listo para cotizar: ${co?.legal_name?.trim() ?? "comercio"}`,
+        html: emailCotizacionPendiente({
+          companyName: co?.legal_name ?? "Comercio",
+          alias: co?.internal_alias,
+          businessActivity: co?.business_activity,
+          productName: ((appRow?.products as unknown) as { name: string } | null)?.name ?? "",
+          quoteUrl: `${process.env.NEXT_PUBLIC_APP_URL}/admin/applications/${prevDoc.application_id}/quote`,
+        }),
+        applicationId: prevDoc.application_id,
+      })
+    } catch (e) {
+      console.error("[CONFIRM-UPLOAD] aviso cotización error:", e)
     }
   })()
 

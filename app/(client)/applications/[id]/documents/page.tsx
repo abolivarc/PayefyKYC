@@ -142,6 +142,14 @@ export default async function DocumentsPage({
     (company as unknown as { is_healthcare_professional?: boolean } | null)
       ?.is_healthcare_professional ?? false
 
+  // Propuesta comercial: solo se le muestra cuando el equipo ya se la envió
+  const { data: quoteRow } = await admin
+    .from("application_quotes")
+    .select("mcc_code, sector_name, debit_rate, credit_rate, amex_rate, international_rate, sent_at, pdf_storage_path")
+    .eq("application_id", appId)
+    .not("sent_at", "is", null)
+    .maybeSingle()
+
   const productCode = (app.products as unknown as { name: string; code: string } | null)?.code
 
   // 4. Cargar templates del producto actual
@@ -390,6 +398,62 @@ export default async function DocumentsPage({
 
         {/* StageStepper */}
         <StageStepper status={app.status} />
+
+        {/* Propuesta comercial que te enviamos */}
+        {quoteRow && (
+          <div
+            style={{
+              background: "#F0FAF3",
+              border: "1px solid #CBEFDB",
+              borderRadius: 16,
+              padding: "16px 20px",
+              marginBottom: 20,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 16,
+              flexWrap: "wrap",
+            }}
+          >
+            <div>
+              <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: "#1f7a4d" }}>
+                Tu propuesta Payefy
+              </p>
+              <div style={{ display: "flex", gap: 18, marginTop: 8, flexWrap: "wrap" }}>
+                {[
+                  { k: "Débito", v: quoteRow.debit_rate },
+                  { k: "Crédito", v: quoteRow.credit_rate },
+                  ...(quoteRow.amex_rate ? [{ k: "AMEX", v: quoteRow.amex_rate }] : []),
+                  ...(quoteRow.international_rate ? [{ k: "Internacional", v: quoteRow.international_rate }] : []),
+                ].map((t) => (
+                  <div key={t.k}>
+                    <p style={{ margin: 0, fontSize: 9.5, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "#5B7168" }}>
+                      {t.k}
+                    </p>
+                    <p style={{ margin: "2px 0 0", fontSize: 20, fontWeight: 800, color: "#004238", letterSpacing: "-.02em" }}>
+                      {t.v}<span style={{ fontSize: 12 }}>%</span>
+                      <span style={{ fontSize: 9.5, fontWeight: 600, color: "#5B7168" }}> + IVA</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {quoteRow.pdf_storage_path && (
+              <a
+                href={`/api/quotes/${appId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  background: "#004238", color: "#AEFF99", padding: "10px 18px",
+                  borderRadius: 9, fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Ver propuesta completa
+              </a>
+            )}
+          </div>
+        )}
 
         {/* CTA pedido de producto (cuenta activa) */}
         {app.status === "activated" && (

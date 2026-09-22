@@ -492,3 +492,92 @@ export function emailNewUploadAdmin({
     ${footer()}
   </div>`)
 }
+
+/**
+ * Propuesta comercial al cliente. Sale del expediente: el equipo asigna el
+ * giro y las tasas al revisar la documentación, y el PDF viaja adjunto.
+ */
+export function emailPropuestaComercial({
+  companyName,
+  productName,
+  debitRate,
+  creditRate,
+  sectorName,
+  portalUrl,
+}: {
+  companyName: string
+  productName: string
+  debitRate: number
+  creditRate: number
+  sectorName: string | null
+  portalUrl: string
+}): string {
+  return wrap(`
+  ${header("Propuesta comercial")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Tu propuesta de tasas</h2>
+    <p>Hola,</p>
+    <p>Revisamos la documentación de <strong>${companyName}</strong> y preparamos la propuesta
+    de <strong>${productName}</strong> para tu giro${sectorName ? ` (<strong>${sectorName}</strong>)` : ""}.
+    La encuentras completa en el PDF adjunto.</p>
+
+    <div style="background:#F0FAF3;border:1px solid #CBEFDB;border-radius:8px;padding:18px 20px;margin:22px 0;">
+      <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:${G};">Tus tasas</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <td style="padding:4px 0;font-size:14px;color:#374151;">Débito</td>
+          <td style="padding:4px 0;font-size:20px;font-weight:800;color:${G};text-align:right;">${debitRate}% <span style="font-size:11px;font-weight:600;color:#6B7F78;">+ IVA</span></td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;font-size:14px;color:#374151;">Crédito</td>
+          <td style="padding:4px 0;font-size:20px;font-weight:800;color:${G};text-align:right;">${creditRate}% <span style="font-size:11px;font-weight:600;color:#6B7F78;">+ IVA</span></td>
+        </tr>
+      </table>
+      <p style="margin:12px 0 0;font-size:12.5px;color:#2E5548;">Sin renta, sin permanencia y sin cargos ocultos.</p>
+    </div>
+
+    <p>Mientras tanto puedes seguir subiendo tu documentación; así activamos tu cuenta en cuanto aceptes.</p>
+    <div style="margin:22px 0;">${btn(portalUrl, "Ver mi expediente")}</div>
+    <p style="font-size:13px;color:#6b7280;">¿Dudas o quieres ajustar algo? Responde este correo y lo vemos.</p>
+    ${footer("Propuesta válida por 30 días · No representa un contrato vinculante.")}
+  </div>`)
+}
+
+/**
+ * Aviso interno: el comercio ya subió su constancia de situación fiscal, así
+ * que hay con qué asignarle giro y tasas. Es el disparador de la cotización
+ * para los comercios que llegan sin que nadie haya hablado de precio.
+ */
+export function emailCotizacionPendiente({
+  companyName,
+  alias,
+  businessActivity,
+  productName,
+  quoteUrl,
+}: {
+  companyName: string
+  alias?: string | null
+  businessActivity?: string | null
+  productName: string
+  quoteUrl: string
+}): string {
+  return wrap(`
+  ${header("Cotización pendiente")}
+  <div style="border:1px solid #e5e7eb;border-top:none;padding:24px;border-radius:0 0 8px 8px;">
+    <h2 style="color:${G};margin-top:0;">Listo para cotizar</h2>
+    <p><strong>${companyName}</strong>${alias ? ` <span style="color:#6b7280;">(${alias})</span>` : ""} acaba de subir su
+    <strong>constancia de situación fiscal</strong>. Ya puedes asignarle el MCC y sus tasas.</p>
+
+    ${businessActivity ? `
+    <div style="background:#FFFBEB;border:1px solid #F59E0B;border-radius:8px;padding:14px 16px;margin:18px 0;">
+      <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#92400E;">Giro que declaró el comercio</p>
+      <p style="margin:5px 0 0;font-size:14px;color:#92400E;">${businessActivity}</p>
+      <p style="margin:8px 0 0;font-size:12px;color:#92400E;">Verifícalo contra la actividad económica de su constancia antes de asignar el MCC.</p>
+    </div>` : ""}
+
+    <p style="font-size:13px;color:#6b7280;">Producto: ${productName}</p>
+    <div style="margin:22px 0;">${btn(quoteUrl, "Cotizar este comercio")}</div>
+    <p style="font-size:13px;color:#6b7280;">Al enviar la propuesta, el comercio la recibe por correo y le queda visible en su expediente.</p>
+    ${footer()}
+  </div>`)
+}

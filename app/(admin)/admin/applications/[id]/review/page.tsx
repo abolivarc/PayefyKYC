@@ -15,6 +15,8 @@ import type { ApplicationProposal } from "@/lib/proposals/attachment-actions"
 import { SendToTransferButton } from "@/components/admin/send-to-transfer-button"
 import { AmexRequirementButton } from "@/components/admin/amex-requirement-button"
 import { HealthcareRequirementButton } from "@/components/admin/healthcare-requirement-button"
+import { QuotePanel, type QuoteSummary } from "@/components/admin/quote-panel"
+import { CSF_CODES } from "@/lib/documents/healthcare"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -472,6 +474,19 @@ export default async function ReviewPage({
   const contractMap = new Map<string, { status: string; signed_doc_path: string | null }>()
   for (const c of contractsResult.data ?? []) contractMap.set(c.kind, { status: c.status, signed_doc_path: (c as unknown as { signed_doc_path: string | null }).signed_doc_path ?? null })
 
+  // Cotización del expediente (MCC + tasas que se le mandan al comercio)
+  const { data: quoteRow } = await admin
+    .from("application_quotes")
+    .select("mcc_code, sector_name, debit_rate, credit_rate, amex_rate, international_rate, pdf_storage_path, sent_at, sent_to")
+    .eq("application_id", appId)
+    .maybeSingle()
+  const quote = (quoteRow as QuoteSummary | null) ?? null
+  // Con la constancia de situación fiscal en mano ya se puede asignar el giro
+  const csfSubida = docs.some(
+    (d) => d.template && CSF_CODES.includes(d.template.code) && !!d.storage_path
+  )
+  const puedeCotizar = ["super_admin", "onboarding"].includes(staffCtx?.role ?? "")
+
   // Propuestas comerciales adjuntas (la más reciente es la vigente)
   const proposals: ApplicationProposal[] = (proposalsResult.data ?? []).map((p) => {
     const { profiles, ...rest } = p as typeof p & { profiles: { full_name: string | null } | null }
@@ -777,6 +792,16 @@ export default async function ReviewPage({
 
       {/* ── Content ── */}
       <div style={{ padding: "20px 32px 40px", flex: 1 }}>
+
+        {/* ── Cotización: MCC y tasas del comercio ── */}
+        <div style={{ marginBottom: 16 }}>
+          <QuotePanel
+            applicationId={appId}
+            quote={quote}
+            canQuote={puedeCotizar}
+            csfSubida={csfSubida}
+          />
+        </div>
 
         {/* ── Expediente enviado pero incompleto ── */}
         {faltantesPostEnvio.length > 0 && (
