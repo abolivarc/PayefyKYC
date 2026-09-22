@@ -13,6 +13,7 @@ export type DataPdfInput = {
   productName: string | null
   terminalType?: string | null // card_present | ecommerce | link_de_pago | both
   wantsAmex?: boolean | null
+  isHealthcare?: boolean | null
   businessActivity?: string | null
   descriptor?: string | null
   applicationId: string
@@ -111,6 +112,15 @@ export async function generateDataPdf(input: DataPdfInput): Promise<Uint8Array> 
     page.drawText(`American Express: ${label}`, {
       x: marginX, y, size: 10, font: fontBold,
       color: v === true ? GREEN_MID : v === false ? GREY_TEXT : rgb(0.71, 0.27, 0.02),
+    })
+    y -= 15
+  }
+
+  // Giro medico: el expediente debe traer la cedula profesional para
+  // sostener la tasa preferencial
+  if (input.isHealthcare) {
+    page.drawText("Profesional de la salud: SI (tasa preferencial de giro medico)", {
+      x: marginX, y, size: 10, font: fontBold, color: GREEN_MID,
     })
     y -= 15
   }

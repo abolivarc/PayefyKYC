@@ -130,6 +130,7 @@ function WizardContent() {
   const [selected, setSelected] = useState<ProductOption | null>(initialSelected)
   const [terminalType, setTerminalType] = useState("")
   const [wantsAmex, setWantsAmex] = useState("")
+  const [isHealthcare, setIsHealthcare] = useState("")
   const [personType, setPersonType] = useState<PersonType | "">("")
 
   const hasTerminals = selected === "terminals" || selected === "both"
@@ -448,6 +449,9 @@ function WizardContent() {
               {wantsAmex && (
                 <input type="hidden" name="wants_amex" value={wantsAmex} />
               )}
+              {isHealthcare && (
+                <input type="hidden" name="is_healthcare" value={isHealthcare} />
+              )}
               {personType && (
                 <input type="hidden" name="person_type" value={personType} />
               )}
@@ -603,6 +607,59 @@ function WizardContent() {
                               role="radio"
                               aria-checked={active}
                               onClick={() => setWantsAmex(opt.v)}
+                              style={{
+                                flex: 1,
+                                padding: "12px 16px",
+                                fontSize: 14,
+                                fontWeight: active ? 700 : 500,
+                                fontFamily: "inherit",
+                                textAlign: "left",
+                                cursor: "pointer",
+                                color: active ? T.brandStrong : T.text,
+                                background: active ? T.brandSoft : T.surface,
+                                border: `2px solid ${active ? T.brandStrong : T.border}`,
+                                borderRadius: 10,
+                              }}
+                            >
+                              {opt.label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Giro médico — los MCC de salud tienen intercambio casi cero,
+                    pero hay que acreditar la actividad con la cédula profesional */}
+                {hasTerminals && (
+                  <div style={{ marginBottom: 28 }}>
+                    <div style={sectionHeadStyle}>Profesionales de la salud</div>
+                    <div>
+                      <span id="healthcare-question" style={labelStyle}>
+                        ¿Eres profesional de la salud?{" "}
+                        <span style={{ color: T.req }} aria-hidden="true">*</span>
+                        <span className="sr-only">(obligatorio)</span>
+                      </span>
+                      <p style={helpStyle}>
+                        Médicos, dentistas, optometristas, quiroprácticos y
+                        veterinarios tienen la tasa más baja que podemos ofrecer.
+                        Para dártela necesitamos tu cédula profesional: si
+                        contestas que sí, más adelante te la pediremos.
+                      </p>
+                      <div role="radiogroup" aria-labelledby="healthcare-question" style={{ display: "flex", gap: 10 }}>
+                        {[
+                          { v: "si", label: "Sí, soy profesional de la salud" },
+                          { v: "no", label: "No" },
+                        ].map((opt) => {
+                          const active = isHealthcare === opt.v
+                          return (
+                            <button
+                              key={opt.v}
+                              type="button"
+                              role="radio"
+                              aria-checked={active}
+                              onClick={() => setIsHealthcare(opt.v)}
                               style={{
                                 flex: 1,
                                 padding: "12px 16px",

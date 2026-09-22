@@ -29,6 +29,8 @@ interface Props {
   templateCode: string
   templateName: string
   templateInstructions: string | null
+  /** Aviso destacado (p. ej. actividad económica para giros médicos) */
+  notice?: string | null
   currentStatus: DocStatus
   fileFormat: string
   isForm: boolean
@@ -48,6 +50,7 @@ export function DocumentUploadRow({
   templateCode,
   templateName,
   templateInstructions,
+  notice,
   currentStatus,
   fileFormat,
   isForm,
@@ -319,6 +322,23 @@ export function DocumentUploadRow({
           }}
         >
           {templateInstructions}
+        </p>
+      )}
+
+      {notice && (
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: 10.5,
+            lineHeight: 1.4,
+            color: "#92400E",
+            background: "#FFFBEB",
+            border: "1px solid #F59E0B",
+            borderRadius: 8,
+            padding: "7px 9px",
+          }}
+        >
+          {notice}
         </p>
       )}
 

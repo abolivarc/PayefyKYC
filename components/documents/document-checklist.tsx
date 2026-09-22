@@ -6,6 +6,7 @@ import { PhotosUploadRow } from "./photos-upload-row"
 const PHOTO_CODES = new Set(["business_photos", "pf_business_photos"])
 import { CheckOrUploadRow } from "./check-or-upload-row"
 import { TextOrUploadRow } from "./text-or-upload-row"
+import { showsHealthcareNotice, HEALTHCARE_CSF_NOTICE } from "@/lib/documents/healthcare"
 import { DataInputField } from "./data-input-field"
 
 export interface DocWithTemplate {
@@ -56,9 +57,11 @@ export interface ChecklistCategory {
 interface Props {
   categories: ChecklistCategory[]
   applicationId: string
+  /** Giro médico: agrega el aviso de actividad económica sobre la CSF */
+  isHealthcare?: boolean | null
 }
 
-export function DocumentChecklist({ categories, applicationId }: Props) {
+export function DocumentChecklist({ categories, applicationId, isHealthcare }: Props) {
   // Separate data_check groups into their own section
   const dataGroups = categories.flatMap((c) =>
     c.groups.filter((g) => g.field_type === "data_check")
@@ -225,6 +228,7 @@ export function DocumentChecklist({ categories, applicationId }: Props) {
                     templateCode={group.templateCode}
                     templateName={group.templateName}
                     templateInstructions={group.templateInstructions}
+                    notice={showsHealthcareNotice(group.templateCode, isHealthcare) ? HEALTHCARE_CSF_NOTICE : null}
                     currentStatus={doc.status}
                     fileFormat={group.file_format}
                     isForm={group.is_form}

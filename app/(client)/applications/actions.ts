@@ -11,6 +11,7 @@ import { sendEmail } from "@/lib/email/send"
 import { Resend } from "resend"
 import JSZip from "jszip"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
+import { filterTerminalTemplates } from "@/lib/documents/terminal-templates"
 import { zipDeliverable } from "@/lib/email/bundle-expediente"
 import { ADMIN_EMAILS } from "@/lib/email/recipients"
 
@@ -31,6 +32,7 @@ export async function createApplications(formData: FormData) {
   const operatorEmail = formData.get("operator_email") as string
   const personType = (formData.get("person_type") as string) || null
   const wantsAmexRaw = (formData.get("wants_amex") as string) || ""
+  const isHealthcareRaw = (formData.get("is_healthcare") as string) || ""
   // Reunión 18-ago-2026: giro declarado, descriptor (nombre del ticket) y canal
   const businessActivity = ((formData.get("business_activity") as string) || "").trim().slice(0, 200)
   const descriptor = ((formData.get("descriptor") as string) || "").trim().slice(0, 60)
@@ -66,6 +68,16 @@ export async function createApplications(formData: FormData) {
 
   const wantsAmex = wantsAmexRaw === "si"
 
+  // Mismo criterio que AMEX: un "no" real se distingue de una pregunta saltada
+  if (products.includes("terminals") && !isHealthcareRaw) {
+    redirect(
+      "/applications/new?error=" +
+        encodeURIComponent("Indica si eres profesional de la salud")
+    )
+  }
+
+  const isHealthcare = isHealthcareRaw === "si"
+
   // 1. Detectar si el cliente ya tiene empresa (flujo de invitación de lead)
   const { data: existingMembership } = await supabase
     .from("company_users")
@@ -89,6 +101,7 @@ export async function createApplications(formData: FormData) {
       operator_email: operatorEmail,
       person_type: personType,
       wants_amex: wantsAmex,
+      is_healthcare_professional: isHealthcare,
       business_activity: businessActivity || null,
       descriptor: descriptor || null,
       acquisition_channel: acquisitionChannel,
@@ -104,6 +117,7 @@ export async function createApplications(formData: FormData) {
         operator_email: operatorEmail,
         person_type: personType,
         wants_amex: wantsAmex,
+        is_healthcare_professional: isHealthcare,
         business_activity: businessActivity || null,
         descriptor: descriptor || null,
         acquisition_channel: acquisitionChannel,
@@ -196,7 +210,7 @@ export async function createApplications(formData: FormData) {
 
     let templates = allTemplates ?? []
     if (product.code === "terminals") {
-      templates = filterTerminalTemplates(templates, personType, terminalType, wantsAmex)
+      templates = filterTerminalTemplates(templates, personType, terminalType, wantsAmex, isHealthcare)
     }
 
     console.log("[CREATE DEBUG] templates found:", templates.length, "for product:", product.id, "personType:", personType, "error:", tmplErr?.message)
@@ -237,35 +251,6 @@ export async function createApplications(formData: FormData) {
 // - persona física usa las plantillas pf_*, moral las demás
 // - tarjeta presente: no se pide URL del sitio; e-commerce/link: no se piden
 //   fotos del negocio; ambas (o sin modalidad): se piden las dos
-function filterTerminalTemplates<T extends { code: string }>(
-  templates: T[],
-  personType: string | null,
-  terminalType: string | null,
-  wantsAmex?: boolean | null
-): T[] {
-  // La carátula AMEX no tiene variante pf_: es la misma para ambos tipos de
-  // persona. Sin esta excepción, una persona física que pide AMEX se quedaba
-  // sin el casillero (el filtro pf_ la descartaba).
-  let result =
-    personType === "persona_fisica"
-      ? templates.filter((t) => t.code.startsWith("pf_") || t.code === "amex_cover")
-      : templates.filter((t) => !t.code.startsWith("pf_"))
-
-  const PHOTO_CODES = ["business_photos", "pf_business_photos"]
-  const URL_CODES = ["website_url", "pf_website_url"]
-
-  if (terminalType === "card_present") {
-    result = result.filter((t) => !URL_CODES.includes(t.code))
-  } else if (terminalType === "ecommerce" || terminalType === "link_de_pago") {
-    result = result.filter((t) => !PHOTO_CODES.includes(t.code))
-  }
-
-  // La carátula AMEX solo aplica si el comercio va a aceptar American Express
-  if (!wantsAmex) result = result.filter((t) => t.code !== "amex_cover")
-
-  return result
-}
-
 // ─────────────────────────────────────
 // Agregar un producto adicional a empresa existente
 // ─────────────────────────────────────
@@ -310,14 +295,15 @@ export async function addProductToCompany(
   if (productCode === "terminals") {
     const { data: co } = await supabase
       .from("companies")
-      .select("person_type, terminal_type, wants_amex")
+      .select("person_type, terminal_type, wants_amex, is_healthcare_professional")
       .eq("id", companyId)
       .single()
     templates = filterTerminalTemplates(
       templates,
       co?.person_type ?? null,
       co?.terminal_type ?? null,
-      (co as unknown as { wants_amex?: boolean } | null)?.wants_amex ?? null
+      (co as unknown as { wants_amex?: boolean } | null)?.wants_amex ?? null,
+      (co as unknown as { is_healthcare_professional?: boolean } | null)?.is_healthcare_professional ?? null
     )
   }
 
@@ -741,7 +727,7 @@ async function buildDatosSolicitadosPdf(
 
   const { data: company } = await adminClient
     .from("companies")
-    .select("legal_name, tax_id, person_type, terminal_type, wants_amex, business_activity, descriptor")
+    .select("legal_name, tax_id, person_type, terminal_type, wants_amex, is_healthcare_professional, business_activity, descriptor")
     .eq("id", companyId)
     .single()
 
@@ -779,6 +765,7 @@ async function buildDatosSolicitadosPdf(
     person_type?: string | null
     terminal_type?: string | null
     wants_amex?: boolean | null
+    is_healthcare_professional?: boolean | null
     business_activity?: string | null
     descriptor?: string | null
   } | null
@@ -793,6 +780,7 @@ async function buildDatosSolicitadosPdf(
     productName,
     terminalType: co?.terminal_type ?? null,
     wantsAmex: co?.wants_amex ?? null,
+    isHealthcare: co?.is_healthcare_professional ?? null,
     businessActivity: co?.business_activity ?? null,
     descriptor: co?.descriptor ?? null,
     applicationId,

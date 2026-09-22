@@ -15,6 +15,7 @@ import { KycSummaryPanel } from "@/components/client/kyc-summary-panel"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { AdditionalDocRow } from "@/components/documents/additional-doc-row"
 import { codeForProduct } from "@/lib/documents/equivalent-codes"
+import { filterTerminalTemplates } from "@/lib/documents/terminal-templates"
 import { signChangeImages } from "@/lib/documents/change-request-images"
 import { createClient as createServiceClient } from "@supabase/supabase-js"
 
@@ -55,6 +56,7 @@ const CATEGORY_CODES: { title: string; codes: string[] }[] = [
       "shareholder_id",
       "administrator_id",
       "pf_official_id",
+      "professional_license",
     ],
   },
   {
@@ -132,9 +134,13 @@ export default async function DocumentsPage({
   // 3. Obtener tipo de persona de la empresa (para filtrar PF/PM en terminales)
   const { data: company } = await admin
     .from("companies")
-    .select("person_type, terminal_type, wants_amex")
+    .select("person_type, terminal_type, wants_amex, is_healthcare_professional")
     .eq("id", app.company_id)
     .single()
+
+  const isHealthcare =
+    (company as unknown as { is_healthcare_professional?: boolean } | null)
+      ?.is_healthcare_professional ?? false
 
   const productCode = (app.products as unknown as { name: string; code: string } | null)?.code
 
@@ -152,36 +158,18 @@ export default async function DocumentsPage({
   // ambos tipos de persona — así que se conserva; más abajo el filtro de
   // wants_amex decide si aplica. Sin esta excepción, una persona física que
   // pide AMEX se quedaba sin el requisito de la carátula firmada.
-  if (productCode === "terminals" && company?.person_type) {
-    if (company.person_type === "persona_fisica") {
-      productTemplates = productTemplates.filter(
-        (t) => t.code.startsWith("pf_") || t.code === "amex_cover"
-      )
-    } else {
-      productTemplates = productTemplates.filter((t) => !t.code.startsWith("pf_"))
-    }
-  }
-
-  // Link de pago y e-commerce no requieren fotos del negocio
+  // Misma regla que al crear la solicitud (persona, modalidad, AMEX, giro
+  // médico): una copia aparte se desincroniza y esconde casilleros que sí
+  // existen en el expediente.
   if (productCode === "terminals") {
-    const tt = (company as unknown as { terminal_type?: string | null } | null)?.terminal_type
-    if (tt === "ecommerce" || tt === "link_de_pago") {
-      productTemplates = productTemplates.filter(
-        (t) => !["business_photos", "pf_business_photos"].includes(t.code)
-      )
-    } else if (tt === "card_present") {
-      productTemplates = productTemplates.filter(
-        (t) => !["website_url", "pf_website_url"].includes(t.code)
-      )
-    }
-  }
-
-  // La carátula AMEX solo se muestra si el comercio aceptará American Express
-  if (productCode === "terminals") {
-    const wantsAmex = (company as unknown as { wants_amex?: boolean } | null)?.wants_amex
-    if (!wantsAmex) {
-      productTemplates = productTemplates.filter((t) => t.code !== "amex_cover")
-    }
+    const co = company as unknown as { terminal_type?: string | null; wants_amex?: boolean } | null
+    productTemplates = filterTerminalTemplates(
+      productTemplates,
+      company?.person_type ?? null,
+      co?.terminal_type ?? null,
+      co?.wants_amex ?? null,
+      isHealthcare
+    )
   }
 
   // Índices para lookup rápido
@@ -492,7 +480,7 @@ export default async function DocumentsPage({
         <KycSummaryPanel categories={categories} />
 
         {/* Checklist */}
-        <DocumentChecklist categories={categories} applicationId={appId} />
+        <DocumentChecklist categories={categories} applicationId={appId} isHealthcare={isHealthcare} />
 
         {/* Documentos adicionales */}
         <section className="mt-6">

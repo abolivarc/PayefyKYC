@@ -14,6 +14,7 @@ import { ProposalAttachments } from "@/components/admin/proposal-attachments"
 import type { ApplicationProposal } from "@/lib/proposals/attachment-actions"
 import { SendToTransferButton } from "@/components/admin/send-to-transfer-button"
 import { AmexRequirementButton } from "@/components/admin/amex-requirement-button"
+import { HealthcareRequirementButton } from "@/components/admin/healthcare-requirement-button"
 import { AdditionalUploadBox } from "@/components/documents/additional-upload-box"
 import { format } from "date-fns"
 import { es } from "date-fns/locale"
@@ -179,7 +180,7 @@ export default async function ReviewPage({
   const [appResult, docsResult, contractsResult, logsResult, proposalsResult] = await Promise.all([
     supabase
       .from("applications")
-      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
+      .select("id, status, rejection_reason, completion_override, transfer_status, company_id, companies(legal_name, internal_alias, tax_id, contact_email, person_type, wants_amex, is_healthcare_professional, business_activity, descriptor, acquisition_channel, terminal_type), products(name, code)")
       .eq("id", appId)
       .single(),
     supabase
@@ -224,7 +225,7 @@ export default async function ReviewPage({
     .in("action", ["document_changes_requested", "document_rejected"])
     .filter("metadata->>application_id", "eq", appId)
   const changesCount = rawChangesCount ?? 0
-  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null; terminal_type?: string | null } | null
+  const company = (app.companies as unknown) as { legal_name: string; internal_alias?: string | null; tax_id: string; contact_email?: string; person_type?: string; wants_amex?: boolean; is_healthcare_professional?: boolean; business_activity?: string | null; descriptor?: string | null; acquisition_channel?: string | null; terminal_type?: string | null } | null
   const product = (app.products as unknown) as { name: string; code: string } | null
   const completionOverride = (app as unknown as { completion_override?: boolean }).completion_override ?? false
   const transferStatus = (app as unknown as { transfer_status?: string | null }).transfer_status ?? null
@@ -699,6 +700,15 @@ export default async function ReviewPage({
                 applicationId={appId}
                 wantsAmex={
                   !!(company as unknown as { wants_amex?: boolean } | null)?.wants_amex
+                }
+              />
+            )}
+            {product?.code === "terminals" && (
+              <HealthcareRequirementButton
+                applicationId={appId}
+                isHealthcare={
+                  !!(company as unknown as { is_healthcare_professional?: boolean } | null)
+                    ?.is_healthcare_professional
                 }
               />
             )}
