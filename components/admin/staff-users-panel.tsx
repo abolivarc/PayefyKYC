@@ -10,11 +10,13 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { UserPlus, KeyRound } from "lucide-react"
 import { ROLE_LABELS, ASSIGNABLE_ROLES } from "@/lib/auth/roles"
+import { RATE_TIER_LABELS } from "@/lib/proposals/mcc-catalog"
 import {
   createStaffUser,
   updateStaffRole,
   setStaffActive,
   resetStaffPassword,
+  updateStaffAgentType,
 } from "@/app/(admin)/admin/usuarios/actions"
 
 export interface StaffRow {
@@ -22,6 +24,8 @@ export interface StaffRow {
   email: string | null
   full_name: string | null
   role: string
+  /** Tarifario de pisos con el que cotiza: interno | externo */
+  agent_type: string | null
   is_active: boolean
   must_change_password: boolean | null
   created_at: string
@@ -69,7 +73,7 @@ export function StaffUsersPanel({
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr style={{ background: "var(--admin-surface-2, #FBFCFD)", borderBottom: "1px solid var(--admin-border, #E7ECF1)" }}>
-                {["Usuario", "Rol", "Estado", "Acceso", ""].map((h) => (
+                {["Usuario", "Rol", "Tarifario", "Estado", "Acceso", ""].map((h) => (
                   <th key={h} style={{ textAlign: "left", padding: "12px 16px", fontSize: 11, fontWeight: 600, letterSpacing: ".05em", textTransform: "uppercase", color: "var(--admin-text-subtle, #64748B)", whiteSpace: "nowrap" }}>
                     {h}
                   </th>
@@ -120,6 +124,17 @@ function StaffRowItem({
   onReset: () => void
 }) {
   const [isPending, startTransition] = useTransition()
+
+  const handleAgentType = (agentType: string) => {
+    startTransition(async () => {
+      const res = await updateStaffAgentType(user.id, agentType)
+      onFeedback(
+        res.error
+          ? { type: "err", msg: res.error }
+          : { type: "ok", msg: `Tarifario actualizado para ${user.full_name ?? user.email}` }
+      )
+    })
+  }
 
   const handleRole = (role: string) => {
     startTransition(async () => {
@@ -182,6 +197,22 @@ function StaffRowItem({
         )}
       </td>
       <td style={{ padding: "13px 16px", verticalAlign: "middle" }}>
+        {user.role === "sales_agent" ? (
+          <Select
+            value={user.agent_type ?? "interno"}
+            onChange={(e) => handleAgentType(e.target.value)}
+            className="h-8 text-xs w-[150px]"
+            disabled={isPending}
+            title="Tarifario de pisos con el que cotiza"
+          >
+            <option value="interno">{RATE_TIER_LABELS.interno}</option>
+            <option value="externo">{RATE_TIER_LABELS.externo}</option>
+          </Select>
+        ) : (
+          <span style={{ fontSize: 12, color: "var(--admin-text-subtle, #64748B)" }}>Interno</span>
+        )}
+      </td>
+      <td style={{ padding: "13px 16px", verticalAlign: "middle" }}>
         <Badge variant={user.is_active ? "success" : "destructive"} className="text-xs">
           {user.is_active ? "Activo" : "Desactivado"}
         </Badge>
@@ -226,6 +257,7 @@ function CreateUserDialog({
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<string>("sales_agent")
+  const [agentType, setAgentType] = useState<string>("externo")
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
@@ -233,7 +265,7 @@ function CreateUserDialog({
     e.preventDefault()
     setError(null)
     startTransition(async () => {
-      const res = await createStaffUser({ fullName, email, password, role })
+      const res = await createStaffUser({ fullName, email, password, role, agentType })
       if (res.error) {
         setError(res.error)
       } else {
@@ -296,6 +328,25 @@ function CreateUserDialog({
             </p>
           )}
         </div>
+        {role === "sales_agent" && (
+          <div className="space-y-1.5">
+            <Label htmlFor="new-agent-type">¿Interno o externo?</Label>
+            <Select
+              id="new-agent-type"
+              value={agentType}
+              onChange={(e) => setAgentType(e.target.value)}
+              disabled={isPending}
+            >
+              <option value="externo">{RATE_TIER_LABELS.externo}</option>
+              <option value="interno">{RATE_TIER_LABELS.interno}</option>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {agentType === "externo"
+                ? "Cotiza con los pisos de agente, que ya traen la comisión de venta dentro del precio."
+                : "Cotiza con los pisos internos de Payefy, sin comisión de venta. Resérvalo para gente de la casa."}
+            </p>
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label htmlFor="new-password">Contraseña temporal</Label>
           <Input

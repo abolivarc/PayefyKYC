@@ -1,5 +1,6 @@
 // Contexto del usuario del panel interno (solo servidor).
 import { createClient } from "@/lib/supabase/server"
+import type { RateTier } from "@/lib/proposals/mcc-catalog"
 import { AGENT_ALLOWED_PREFIXES, AGENT_HOME, agentCanAccess } from "./agent-paths"
 import {
   ROLE_LABELS,
@@ -18,13 +19,20 @@ export {
   isAgent,
   isSuperAdmin,
 }
-export type { StaffRole }
+export type { StaffRole, RateTier }
 
 export interface StaffContext {
   userId: string
   role: string | null
   isAgent: boolean
   isSuperAdmin: boolean
+  /** Tarifario de pisos que le toca al cotizar */
+  rateTier: RateTier
+}
+
+/** Un perfil sin marca explícita cotiza con los pisos internos. */
+export function rateTierOf(agentType: string | null | undefined): RateTier {
+  return agentType === "externo" ? "externo" : "interno"
 }
 
 /** Contexto del usuario del panel (null si no hay sesión). */
@@ -37,7 +45,7 @@ export async function getStaffContext(): Promise<StaffContext | null> {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, agent_type")
     .eq("id", user.id)
     .single()
 
@@ -47,5 +55,6 @@ export async function getStaffContext(): Promise<StaffContext | null> {
     role,
     isAgent: isAgent(role),
     isSuperAdmin: isSuperAdmin(role),
+    rateTier: rateTierOf(profile?.agent_type as string | null),
   }
 }

@@ -4,7 +4,12 @@
 // el paso 4 (bloquear el PDF) y saveLead (rechazar en el servidor). Si se
 // valida en un solo lado, basta con retroceder un paso o manipular el estado
 // para dejar salir una cotización por debajo del piso.
-import { AMEX_FLOOR_RATE, INTERNATIONAL_FLOOR_RATE } from "./mcc-catalog"
+import {
+  AMEX_FLOOR_RATE,
+  INTERNATIONAL_FLOOR_RATE,
+  pisosPorMcc,
+  type RateTier,
+} from "./mcc-catalog"
 import type { ProposalData } from "./types"
 
 export type RateKey =
@@ -16,26 +21,34 @@ export type RateKey =
 export type RateErrors = Partial<Record<RateKey, string>>
 
 /**
- * Piso de cada tasa. Débito y crédito dependen del giro (MCC); AMEX e
- * internacional son fijos y ya traen el margen base.
+ * Piso de cada tasa, según el tarifario de quien cotiza.
  *
- * Devuelve `null` cuando el piso del giro aún no se conoce: eso es "no puedo
- * validar", no "el piso es cero". Antes se usaba `?? 0`, y un giro sin piso
- * dejaba pasar cualquier tasa, incluso 0 %.
+ * Los pisos se resuelven desde el catálogo con el MCC elegido, no desde lo que
+ * traiga `data`: así un agente no puede colar los pisos internos manipulando el
+ * estado del wizard. Solo se cae a los valores de `data` cuando el giro no está
+ * en el catálogo (leads viejos con un MCC retirado).
+ *
+ * Devuelve `null` cuando el piso aún no se conoce: eso es "no puedo validar",
+ * no "el piso es cero". Con `?? 0`, un giro sin piso dejaba pasar cualquier
+ * tasa, incluso 0 %.
  */
 export function floorFor(
   key: RateKey,
-  data: Partial<ProposalData>
+  data: Partial<ProposalData>,
+  tier: RateTier = "interno"
 ): number | null {
+  const pisos = pisosPorMcc(data.mccCode, tier)
   switch (key) {
     case "negotiatedDebitRate":
+      if (pisos) return pisos.debito
       return typeof data.sectorDebitFloor === "number" ? data.sectorDebitFloor : null
     case "negotiatedCreditRate":
+      if (pisos) return pisos.credito
       return typeof data.sectorCreditFloor === "number" ? data.sectorCreditFloor : null
     case "negotiatedAmexRate":
-      return AMEX_FLOOR_RATE
+      return pisos ? pisos.amex : AMEX_FLOOR_RATE
     case "negotiatedInternationalRate":
-      return INTERNATIONAL_FLOOR_RATE
+      return pisos ? pisos.internacional : INTERNATIONAL_FLOOR_RATE
   }
 }
 
@@ -51,12 +64,15 @@ const LABELS: Record<RateKey, string> = {
 const REQUIRED: RateKey[] = ["negotiatedDebitRate", "negotiatedCreditRate"]
 
 /** Errores por campo. Objeto vacío = la cotización respeta todos los pisos. */
-export function validateRates(data: Partial<ProposalData>): RateErrors {
+export function validateRates(
+  data: Partial<ProposalData>,
+  tier: RateTier = "interno"
+): RateErrors {
   const errors: RateErrors = {}
 
   for (const key of Object.keys(LABELS) as RateKey[]) {
     const rate = data[key]
-    const floor = floorFor(key, data)
+    const floor = floorFor(key, data, tier)
 
     if (rate === undefined || rate === null) {
       if (REQUIRED.includes(key)) {
@@ -85,13 +101,19 @@ export function validateRates(data: Partial<ProposalData>): RateErrors {
   return errors
 }
 
-export function ratesAreValid(data: Partial<ProposalData>): boolean {
-  return Object.keys(validateRates(data)).length === 0
+export function ratesAreValid(
+  data: Partial<ProposalData>,
+  tier: RateTier = "interno"
+): boolean {
+  return Object.keys(validateRates(data, tier)).length === 0
 }
 
 /** Mensaje de una línea para el servidor y los avisos de bloqueo. */
-export function firstRateError(data: Partial<ProposalData>): string | null {
-  const errors = validateRates(data)
+export function firstRateError(
+  data: Partial<ProposalData>,
+  tier: RateTier = "interno"
+): string | null {
+  const errors = validateRates(data, tier)
   const keys = Object.keys(errors) as RateKey[]
   return keys.length ? errors[keys[0]]! : null
 }

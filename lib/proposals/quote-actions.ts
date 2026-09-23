@@ -12,6 +12,7 @@ import { logAudit } from "@/lib/audit"
 import { sendEmail } from "@/lib/email/send"
 import { emailPropuestaComercial } from "@/lib/email/templates"
 import { firstRateError } from "@/lib/proposals/rate-floors"
+import { rateTierOf } from "@/lib/auth/staff"
 import type { ProposalData } from "@/lib/proposals/types"
 
 /** Quién puede fijar tasas: los dos admins y onboarding (Eli). */
@@ -47,7 +48,7 @@ async function requireQuoter() {
   )
   const { data: profile } = await admin
     .from("profiles")
-    .select("role, full_name")
+    .select("role, full_name, agent_type")
     .eq("id", user.id)
     .single()
   if (!profile || !QUOTE_ROLES.includes(profile.role as string)) {
@@ -77,8 +78,9 @@ export async function saveQuote(input: {
   if (!applicationId) return { error: "Falta la solicitud" }
   if (!data.mccCode) return { error: "Asigna el giro (MCC) del comercio" }
 
-  // Mismo candado que el generador: nunca por debajo del piso comercial
-  const rateError = firstRateError(data)
+  // Mismo candado que el generador: nunca por debajo del piso comercial que le
+  // toca a quien cotiza (el tarifario sale de su perfil, no del navegador)
+  const rateError = firstRateError(data, rateTierOf(auth.profile?.agent_type as string | null))
   if (rateError) return { error: rateError }
 
   const { data: app } = await admin

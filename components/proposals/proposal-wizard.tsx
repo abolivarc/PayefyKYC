@@ -8,6 +8,7 @@ import { Step2ProposalType } from "./step2-proposal-type"
 import { Step3RatesConfig } from "./step3-rates-config"
 import { Step4Preview } from "./step4-preview"
 import { ProposalData } from "@/lib/proposals/types"
+import type { RateTier } from "@/lib/proposals/mcc-catalog"
 import { ratesAreValid } from "@/lib/proposals/rate-floors"
 
 const steps = [
@@ -22,6 +23,7 @@ export function ProposalWizard({
   applicationId,
   companyName,
   fromLeadId,
+  tier = "interno",
 }: {
   /** Datos precargados cuando se cotiza desde un expediente */
   initialData?: Partial<ProposalData>
@@ -30,6 +32,8 @@ export function ProposalWizard({
   companyName?: string
   /** Propuesta previa del generador que se está retomando */
   fromLeadId?: string
+  /** Tarifario de pisos de quien cotiza (viene del perfil) */
+  tier?: RateTier
 } = {}) {
   const [currentStep, setCurrentStep] = useState(1)
   const [data, setData] = useState<Partial<ProposalData>>({
@@ -47,7 +51,7 @@ export function ProposalWizard({
   const handleNext = () => currentStep < steps.length && setCurrentStep(currentStep + 1)
   const handleBack = () => currentStep > 1 && setCurrentStep(currentStep - 1)
 
-  const ratesValid = ratesAreValid(data)
+  const ratesValid = ratesAreValid(data, tier)
 
   const canProceed = () => {
     switch (currentStep) {
@@ -78,7 +82,7 @@ export function ProposalWizard({
     }
   }
 
-  const stepProps = { data, updateData }
+  const stepProps = { data, updateData, tier }
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -126,7 +130,7 @@ export function ProposalWizard({
         {currentStep === 1 && <Step1BusinessInfo {...stepProps} />}
         {currentStep === 2 && <Step2ProposalType {...stepProps} />}
         {currentStep === 3 && <Step3RatesConfig {...stepProps} />}
-        {currentStep === 4 && <Step4Preview data={data} onBack={handleBack} applicationId={applicationId} companyName={companyName} fromLeadId={fromLeadId} />}
+        {currentStep === 4 && <Step4Preview data={data} onBack={handleBack} applicationId={applicationId} companyName={companyName} fromLeadId={fromLeadId} tier={tier} />}
       </div>
 
       {/* Navigation */}

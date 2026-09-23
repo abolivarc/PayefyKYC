@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { ProposalWizard } from "@/components/proposals/proposal-wizard"
+import { rateTierOf } from "@/lib/auth/staff"
 import type { ProposalData, EntityType, ProductType } from "@/lib/proposals/types"
 
 export const metadata = { title: "Cotizar expediente | Payefy Admin" }
@@ -41,7 +42,7 @@ export default async function QuoteApplicationPage({
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-  const { data: profile } = await admin.from("profiles").select("role").eq("id", user.id).single()
+  const { data: profile } = await admin.from("profiles").select("role, agent_type").eq("id", user.id).single()
   if (!profile || !QUOTE_ROLES.includes(profile.role as string)) {
     redirect(`/admin/applications/${appId}/review`)
   }
@@ -132,6 +133,7 @@ export default async function QuoteApplicationPage({
           applicationId={appId}
           companyName={company?.legal_name ?? undefined}
           fromLeadId={lead ? (lead.id as string) : undefined}
+          tier={rateTierOf(profile.agent_type as string | null)}
         />
       </div>
     </div>

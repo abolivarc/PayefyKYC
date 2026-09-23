@@ -33,13 +33,13 @@ function getRevenueShareTier(monthlyVolume: number) {
   return { percentage: 0.25, label: "25%", tier: "Estándar" }
 }
 
-export function Step3RatesConfig({ data, updateData }: StepProps) {
+export function Step3RatesConfig({ data, updateData, tier = "interno" }: StepProps) {
   const isComparative = data.proposalType === "comparative"
   // Cargo fijo por transacción de link / botón de pago: fijo, no editable
   const fixedFee = fixedFeeForProduct(data.productType)
 
   // Mismo validador que usan el wizard, el paso 4 y el servidor
-  const rateErrors = validateRates(data)
+  const rateErrors = validateRates(data, tier)
   const debitError = rateErrors.negotiatedDebitRate ?? null
   const creditError = rateErrors.negotiatedCreditRate ?? null
   const amexError = rateErrors.negotiatedAmexRate ?? null
@@ -57,10 +57,10 @@ export function Step3RatesConfig({ data, updateData }: StepProps) {
     floor: number
     error: string | null
   }[] = [
-    { key: "negotiatedDebitRate", label: "Tasa Débito (%)", floor: floorFor("negotiatedDebitRate", data) ?? 0, error: debitError },
-    { key: "negotiatedCreditRate", label: "Tasa Crédito (%)", floor: floorFor("negotiatedCreditRate", data) ?? 0, error: creditError },
-    { key: "negotiatedAmexRate", label: "Tasa AMEX (%)", floor: AMEX_FLOOR_RATE, error: amexError },
-    { key: "negotiatedInternationalRate", label: "Tasa Internacional (%)", floor: INTERNATIONAL_FLOOR_RATE, error: internationalError },
+    { key: "negotiatedDebitRate", label: "Tasa Débito (%)", floor: floorFor("negotiatedDebitRate", data, tier) ?? 0, error: debitError },
+    { key: "negotiatedCreditRate", label: "Tasa Crédito (%)", floor: floorFor("negotiatedCreditRate", data, tier) ?? 0, error: creditError },
+    { key: "negotiatedAmexRate", label: "Tasa AMEX (%)", floor: floorFor("negotiatedAmexRate", data, tier) ?? AMEX_FLOOR_RATE, error: amexError },
+    { key: "negotiatedInternationalRate", label: "Tasa Internacional (%)", floor: floorFor("negotiatedInternationalRate", data, tier) ?? INTERNATIONAL_FLOOR_RATE, error: internationalError },
   ]
 
   const competitorFields: {
@@ -111,11 +111,11 @@ export function Step3RatesConfig({ data, updateData }: StepProps) {
           </div>
           <div className="flex items-center gap-2">
             <CreditCard className="h-4 w-4 text-gray-400" />
-            <span>AMEX: <strong>{AMEX_FLOOR_RATE}%</strong></span>
+            <span>AMEX: <strong>{floorFor("negotiatedAmexRate", data, tier) ?? AMEX_FLOOR_RATE}%</strong></span>
           </div>
           <div className="flex items-center gap-2">
             <Globe className="h-4 w-4 text-gray-400" />
-            <span>Internacional: <strong>{INTERNATIONAL_FLOOR_RATE}%</strong></span>
+            <span>Internacional: <strong>{floorFor("negotiatedInternationalRate", data, tier) ?? INTERNATIONAL_FLOOR_RATE}%</strong></span>
           </div>
           {fixedFee && (
             <div className="flex items-center gap-2">

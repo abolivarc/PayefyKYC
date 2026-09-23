@@ -1,4 +1,5 @@
 // Tipos del Generador de Propuestas Comerciales
+import type { RateTier } from "./mcc-catalog"
 import {
   AMEX_FLOOR_RATE,
   INTERNATIONAL_FLOOR_RATE,
@@ -82,6 +83,8 @@ export interface ProposalCalculations {
 export interface StepProps {
   data: Partial<ProposalData>
   updateData: (data: Partial<ProposalData>) => void
+  /** Tarifario de pisos de quien cotiza */
+  tier?: RateTier
 }
 
 export const IVA_RATE = 1.16

@@ -8,6 +8,7 @@ import { Download, Save, ChevronLeft, Send } from "lucide-react"
 import { ProposalData } from "@/lib/proposals/types"
 import { ProposalDocument } from "./pdf/proposal-document"
 import { saveLead } from "@/app/(admin)/admin/proposals/actions"
+import type { RateTier } from "@/lib/proposals/mcc-catalog"
 import { firstRateError } from "@/lib/proposals/rate-floors"
 import { saveQuote, sendQuote } from "@/lib/proposals/quote-actions"
 
@@ -17,6 +18,7 @@ export function Step4Preview({
   applicationId,
   companyName,
   fromLeadId,
+  tier = "interno",
 }: {
   data: Partial<ProposalData>
   onBack: () => void
@@ -25,6 +27,8 @@ export function Step4Preview({
   companyName?: string
   /** Propuesta del generador que se retomó: se marca ganada al guardar */
   fromLeadId?: string
+  /** Tarifario de pisos de quien cotiza */
+  tier?: RateTier
 }) {
   const router = useRouter()
   const [generatingPdf, setGeneratingPdf] = useState(false)
@@ -127,7 +131,7 @@ export function Step4Preview({
   const handleGeneratePDF = async () => {
     // Último candado del lado del cliente: aunque se haya llegado hasta aquí,
     // el documento no se emite si alguna tasa quedó por debajo del piso.
-    const blocking = firstRateError(data)
+    const blocking = firstRateError(data, tier)
     if (blocking) {
       setFeedback({ type: "err", msg: `${blocking}. Corrígela en el paso 3.` })
       return

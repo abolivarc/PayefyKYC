@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import { logAudit } from "@/lib/audit"
 import { ASSIGNABLE_ROLES, type StaffRole } from "@/lib/auth/staff"
+import type { RateTier } from "@/lib/proposals/mcc-catalog"
 
 function adminDb() {
   return createAdminClient(
@@ -35,11 +36,15 @@ async function requireSuperAdmin(): Promise<{ userId: string } | { error: string
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const TIERS: RateTier[] = ["interno", "externo"]
+
 export async function createStaffUser(input: {
   fullName: string
   email: string
   password: string
   role: string
+  /** Tarifario de pisos: interno (equipo Payefy) o externo (agente con comisión) */
+  agentType?: string
 }): Promise<{ error?: string; success?: true }> {
   const auth = await requireSuperAdmin()
   if ("error" in auth) return { error: auth.error }
@@ -54,6 +59,12 @@ export async function createStaffUser(input: {
     return { error: "La contraseña debe tener al menos 8 caracteres" }
   }
   if (!ASSIGNABLE_ROLES.includes(role)) return { error: "Rol inválido" }
+
+  // El tarifario solo se elige para agentes; el resto del equipo cotiza interno
+  const agentType: RateTier =
+    role === "sales_agent" && TIERS.includes(input.agentType as RateTier)
+      ? (input.agentType as RateTier)
+      : "interno"
 
   const admin = adminDb()
 
@@ -75,6 +86,7 @@ export async function createStaffUser(input: {
     email,
     full_name: fullName,
     role,
+    agent_type: agentType,
     is_active: true,
     must_change_password: true,
   })
@@ -85,7 +97,34 @@ export async function createStaffUser(input: {
     action: "staff_user_created",
     entityType: "profile",
     entityId: created.user.id,
-    metadata: { email, role },
+    metadata: { email, role, agent_type: agentType },
+  })
+
+  revalidatePath("/admin/usuarios")
+  return { success: true }
+}
+
+/** Cambia el tarifario de pisos con el que cotiza un usuario. */
+export async function updateStaffAgentType(
+  profileId: string,
+  agentType: string
+): Promise<{ error?: string; success?: true }> {
+  const auth = await requireSuperAdmin()
+  if ("error" in auth) return { error: auth.error }
+  if (!TIERS.includes(agentType as RateTier)) return { error: "Tarifario inválido" }
+
+  const { error } = await adminDb()
+    .from("profiles")
+    .update({ agent_type: agentType })
+    .eq("id", profileId)
+  if (error) return { error: error.message }
+
+  await logAudit({
+    actorId: auth.userId,
+    action: "staff_rate_tier_changed",
+    entityType: "profile",
+    entityId: profileId,
+    metadata: { agent_type: agentType },
   })
 
   revalidatePath("/admin/usuarios")

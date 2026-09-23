@@ -13,7 +13,7 @@ import {
   qualifiesForComodato,
   formatCurrency,
 } from "@/lib/proposals/types"
-import { MCC_CATALOG, GiroMcc } from "@/lib/proposals/mcc-catalog"
+import { MCC_CATALOG, GiroMcc, pisosDelGiro } from "@/lib/proposals/mcc-catalog"
 import {
   Search,
   Building2,
@@ -25,7 +25,7 @@ import {
   CreditCard,
 } from "lucide-react"
 
-export function Step1BusinessInfo({ data, updateData }: StepProps) {
+export function Step1BusinessInfo({ data, updateData, tier = "interno" }: StepProps) {
   const [searchTerm, setSearchTerm] = useState(
     data.sectorName ? `${data.sectorName}` : ""
   )
@@ -43,15 +43,18 @@ export function Step1BusinessInfo({ data, updateData }: StepProps) {
   }, [searchTerm])
 
   const handleSelectSector = (sector: GiroMcc) => {
+    const pisos = pisosDelGiro(sector, tier)
     updateData({
       mccCode: sector.mcc,
       sectorName: sector.descripcion,
       sectorFamilia: sector.familia,
-      sectorDebitFloor: sector.pisoDebito,
-      sectorCreditFloor: sector.pisoCredito,
+      sectorDebitFloor: pisos.debito,
+      sectorCreditFloor: pisos.credito,
       // Prellenar las tasas negociadas con el piso
-      negotiatedDebitRate: sector.pisoDebito,
-      negotiatedCreditRate: sector.pisoCredito,
+      negotiatedDebitRate: pisos.debito,
+      negotiatedCreditRate: pisos.credito,
+      negotiatedAmexRate: pisos.amex,
+      negotiatedInternationalRate: pisos.internacional,
     })
     setSearchTerm(`${sector.familia} — ${sector.descripcion}`)
     setShowDropdown(false)
@@ -210,8 +213,8 @@ export function Step1BusinessInfo({ data, updateData }: StepProps) {
                     </span>
                   </div>
                   <div className="text-xs text-gray-400 mt-0.5">
-                    MCC {sector.mcc} | Piso Débito: {sector.pisoDebito}% | Piso
-                    Crédito: {sector.pisoCredito}%
+                    MCC {sector.mcc} | Piso Débito: {pisosDelGiro(sector, tier).debito}% | Piso
+                    Crédito: {pisosDelGiro(sector, tier).credito}%
                   </div>
                 </button>
               ))}

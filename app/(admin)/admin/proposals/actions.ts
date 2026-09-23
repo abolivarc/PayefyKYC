@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createClient as createAdminClient } from "@supabase/supabase-js"
 import type { ProposalData } from "@/lib/proposals/types"
 import { firstRateError } from "@/lib/proposals/rate-floors"
+import { rateTierOf, type RateTier } from "@/lib/auth/staff"
 
 function adminDb() {
   return createAdminClient(
@@ -23,6 +24,12 @@ async function requireStaff() {
   return user
 }
 
+/** Tarifario del usuario, leído del perfil: nunca de lo que mande el navegador. */
+async function tierDe(userId: string): Promise<RateTier> {
+  const { data } = await adminDb().from("profiles").select("agent_type").eq("id", userId).single()
+  return rateTierOf(data?.agent_type as string | null)
+}
+
 // Guarda (o actualiza) el lead generado por el wizard de propuestas
 export async function saveLead(
   data: Partial<ProposalData>,
@@ -33,8 +40,9 @@ export async function saveLead(
 
   // El piso se valida también aquí: la propuesta se arma en el navegador, así
   // que este es el único punto que no se puede saltar retrocediendo un paso
-  // ni tocando el estado del wizard.
-  const rateError = firstRateError(data)
+  // ni tocando el estado del wizard. El tarifario sale del perfil, no del
+  // payload: si no, bastaría con editar el estado para cotizar como interno.
+  const rateError = firstRateError(data, await tierDe(user.id))
   if (rateError) return { error: rateError }
 
   const admin = adminDb()

@@ -18,7 +18,7 @@ export default async function UsuariosPage() {
 
   const { data: users } = await admin
     .from("profiles")
-    .select("id, email, full_name, role, is_active, must_change_password, created_at")
+    .select("id, email, full_name, role, agent_type, is_active, must_change_password, created_at")
     .neq("role", "client")
     .order("created_at", { ascending: true })
 
